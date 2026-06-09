@@ -35,9 +35,11 @@
         <span class="flex-1" />
         <Button
           variant="solid"
-          :label="__('Simulate: Tech Recommended →')"
+          :label="__('Mark Tech Recommended')"
           @click="show = false"
-        />
+        >
+          <template #prefix><StageIcon name="check" class="h-4 w-4" /></template>
+        </Button>
       </div>
     </StageCard>
   </StageFormDialog>
