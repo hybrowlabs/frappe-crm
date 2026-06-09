@@ -14,7 +14,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const leadStatuses = createListResource({
     doctype: 'CRM Lead Status',
-    fields: ['name', 'color', 'position', 'type'],
+    fields: ['name', 'label', 'color', 'position', 'type'],
     orderBy: 'position asc',
     cache: 'lead-statuses',
     initialData: [],
@@ -30,7 +30,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const dealStatuses = createListResource({
     doctype: 'CRM Deal Status',
-    fields: ['name', 'color', 'position', 'type'],
+    fields: ['name', 'label', 'color', 'position', 'type'],
     orderBy: 'position asc',
     cache: 'deal-statuses',
     initialData: [],
@@ -96,10 +96,10 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
     let options = []
     for (const status in statusesByName) {
+      let statusLabel =
+        statusesByName[status]?.label || statusesByName[status]?.name
       options.push({
-        label: translatable
-          ? __(statusesByName[status]?.name)
-          : statusesByName[status]?.name,
+        label: translatable ? __(statusLabel) : statusLabel,
         value: statusesByName[status]?.name,
         icon: () => h(IndicatorIcon, { class: statusesByName[status]?.color }),
         onClick: async () => {

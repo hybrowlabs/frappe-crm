@@ -11,7 +11,8 @@
   "position",
   "column_break_ojiu",
   "probability",
-  "color"
+  "color",
+  "label"
  ],
  "fields": [
   {
@@ -53,12 +54,18 @@
   {
    "fieldname": "column_break_ojiu",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-05 12:42:47.973700",
+ "modified": "2026-06-09 21:40:50.671160",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal Status",
@@ -103,8 +110,10 @@
   }
  ],
  "row_format": "Dynamic",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "label",
  "translated_doctype": 1
 }

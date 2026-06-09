@@ -389,6 +389,7 @@ function getGroupedByRows(listRows, groupByField, columns) {
       rows: parseRows(filteredRows, columns),
     }
     if (groupByField.fieldname == 'status') {
+      groupDetail.group = getLeadStatus(option)?.label || groupDetail.group
       groupDetail.icon = () =>
         h(IndicatorIcon, {
           class: getLeadStatus(option)?.color,
@@ -456,7 +457,7 @@ function parseRows(rows, columns = []) {
         _rows[row] = website(lead.website)
       } else if (row == 'status') {
         _rows[row] = {
-          label: lead.status,
+          label: getLeadStatus(lead.status)?.label || lead.status,
           color: getLeadStatus(lead.status)?.color,
         }
       } else if (row == 'sla_status') {

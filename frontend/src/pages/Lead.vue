@@ -507,8 +507,9 @@ function openEmailBox() {
 }
 
 function statusLabel(status) {
-  if (isTranslatable('CRM Lead Status')) return __(status)
-  return status
+  let label = getLeadStatus(status)?.label || status
+  if (isTranslatable('CRM Lead Status')) return __(label)
+  return label
 }
 
 const showLostReasonModal = ref(false)

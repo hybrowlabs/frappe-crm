@@ -358,6 +358,7 @@ function getGroupedByRows(listRows, groupByField, columns) {
       rows: parseRows(filteredRows, columns),
     }
     if (groupByField.fieldname == 'status') {
+      groupDetail.group = getDealStatus(option)?.label || groupDetail.group
       groupDetail.icon = () =>
         h(IndicatorIcon, {
           class: getDealStatus(option)?.color,
@@ -422,7 +423,7 @@ function parseRows(rows, columns = []) {
         _rows[row] = website(deal.website)
       } else if (row == 'status') {
         _rows[row] = {
-          label: deal.status,
+          label: getDealStatus(deal.status)?.label || deal.status,
           color: getDealStatus(deal.status)?.color,
         }
       } else if (row == 'sla_status') {
