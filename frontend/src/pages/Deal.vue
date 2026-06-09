@@ -343,6 +343,12 @@
     doctype="CRM Deal"
     :document="document"
   />
+  <ReopenDealModal
+    v-if="showReopenDealModal"
+    v-model="showReopenDealModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
 </template>
 <script setup>
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
@@ -374,6 +380,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
+import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
@@ -582,7 +589,17 @@ const stageCta = computed(() => {
 })
 
 function onStageAction() {
+  if (getDealStatus(doc.value.status)?.type === 'Lost') {
+    reopenDeal()
+    return
+  }
   toast(stageCta.value?.label)
+}
+
+const showReopenDealModal = ref(false)
+
+function reopenDeal() {
+  showReopenDealModal.value = true
 }
 
 usePageMeta(() => {
