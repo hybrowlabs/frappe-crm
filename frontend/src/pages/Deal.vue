@@ -16,6 +16,16 @@
         v-if="document.actions?.length"
         :actions="document.actions"
       />
+      <Button
+        v-if="stageCta"
+        variant="solid"
+        :label="stageCta.label"
+        @click="onStageAction"
+      >
+        <template #prefix>
+          <component :is="stageCta.icon" class="h-4 w-4" />
+        </template>
+      </Button>
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
       <Dropdown
         v-if="doc && document.statuses"
@@ -354,6 +364,12 @@ import LinkIcon from '@/components/Icons/LinkIcon.vue'
 import ArrowUpRightIcon from '@/components/Icons/ArrowUpRightIcon.vue'
 import SuccessIcon from '@/components/Icons/SuccessIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
+import PackageIcon from '@/components/Icons/PackageIcon.vue'
+import BeakerIcon from '@/components/Icons/BeakerIcon.vue'
+import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
+import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
+import CheckIcon from '@/components/Icons/CheckIcon.vue'
+import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
@@ -545,6 +561,29 @@ const statuses = computed(() => {
     : document._statuses || []
   return statusOptions('deal', customStatuses, triggerStatusChange)
 })
+
+// Stage-wise contextual action shown in the header, keyed by status label.
+// (Display only for now — clicking just shows a placeholder toast.)
+const STAGE_CTA = {
+  'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
+  Qualified: { label: __('Initiate Trial'), icon: BeakerIcon },
+  'Tech Assignment': { label: __('Open Tech Task'), icon: BeakerIcon },
+  'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
+  Retrial: { label: __('Create Service Ticket'), icon: HeadphonesIcon },
+  'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
+  Won: { label: __('View Order Handoff'), icon: CheckIcon },
+  Lost: { label: __('Reopen Deal'), icon: RefreshIcon },
+}
+
+const stageCta = computed(() => {
+  if (!doc.value.status) return null
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+  return STAGE_CTA[label] || null
+})
+
+function onStageAction() {
+  toast(stageCta.value?.label)
+}
 
 usePageMeta(() => {
   return {
