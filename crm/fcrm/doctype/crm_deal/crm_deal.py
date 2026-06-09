@@ -19,14 +19,11 @@ class CRMDeal(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.types import DF
-
 		from crm.fcrm.doctype.crm_contacts.crm_contacts import CRMContacts
 		from crm.fcrm.doctype.crm_products.crm_products import CRMProducts
-		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import (
-			CRMRollingResponseTime,
-		)
+		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import CRMRollingResponseTime
 		from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import CRMStatusChangeLog
+		from frappe.types import DF
 
 		annual_revenue: DF.Currency
 		closed_date: DF.Date | None
@@ -106,10 +103,16 @@ class CRMDeal(Document):
 
 	def validate_status(self):
 		if self.is_new() and not self.status:
-			if frappe.db.exists("CRM Deal Status", "Qualification"):
-				self.status = "Qualification"
-			else:
-				self.status = frappe.get_all("CRM Deal Status", {"type": "Open"}, pluck="name")[0]
+			# New deals start at the first pipeline stage (lowest position),
+			# which is "Req. Discussion" in this setup.
+			first_open = frappe.get_all(
+				"CRM Deal Status",
+				filters={"type": "Open"},
+				order_by="position asc",
+				pluck="name",
+				limit=1,
+			)
+			self.status = first_open[0] if first_open else None
 
 	def set_primary_contact(self, contact=None):
 		if not self.contacts:
