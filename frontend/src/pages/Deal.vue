@@ -356,6 +356,70 @@
     :subtitle="`${title} · ${dealId}`"
     @ready="advanceToNextStage"
   />
+  <InitiateTrialModal
+    v-if="showInitiateTrialModal"
+    v-model="showInitiateTrialModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
+  <OpenTechTaskModal
+    v-if="showOpenTechTaskModal"
+    v-model="showOpenTechTaskModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
+  <RecordEvaluationModal
+    v-if="showRecordEvaluationModal"
+    v-model="showRecordEvaluationModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @lab="showLabRequestModal = true"
+  />
+  <RetrialStageModal
+    v-if="showRetrialStageModal"
+    v-model="showRetrialStageModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @ticket="showCreateServiceTicketModal = true"
+  />
+  <ProposalStageModal
+    v-if="showProposalStageModal"
+    v-model="showProposalStageModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @view-quotations="showQuotationsModal = true"
+  />
+  <OrderHandoffModal
+    v-if="showOrderHandoffModal"
+    v-model="showOrderHandoffModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :value="dealValueLabel"
+  />
+  <CreateServiceTicketModal
+    v-if="showCreateServiceTicketModal"
+    v-model="showCreateServiceTicketModal"
+    :customer="title"
+    :dealId="dealId"
+  />
+  <LabRequestModal
+    v-if="showLabRequestModal"
+    v-model="showLabRequestModal"
+    :customer="title"
+  />
+  <QuotationsModal
+    v-if="showQuotationsModal"
+    v-model="showQuotationsModal"
+    :org="title"
+    :dealId="dealId"
+    :value="doc.deal_value || 0"
+  />
+  <PreQuotationModal
+    v-if="showPreQuotationModal"
+    v-model="showPreQuotationModal"
+    :org="title"
+    :subtitle="`${title} · ${dealId}`"
+  />
 </template>
 <script setup>
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
@@ -389,6 +453,16 @@ import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
 import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
+import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
+import OpenTechTaskModal from '@/components/Modals/OpenTechTaskModal.vue'
+import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
+import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
+import ProposalStageModal from '@/components/Modals/ProposalStageModal.vue'
+import OrderHandoffModal from '@/components/Modals/OrderHandoffModal.vue'
+import CreateServiceTicketModal from '@/components/Modals/CreateServiceTicketModal.vue'
+import LabRequestModal from '@/components/Modals/LabRequestModal.vue'
+import QuotationsModal from '@/components/Modals/QuotationsModal.vue'
+import PreQuotationModal from '@/components/Modals/PreQuotationModal.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
@@ -570,6 +644,12 @@ const title = computed(() => {
   return doc.value?.[t] || props.dealId
 })
 
+const dealValueLabel = computed(() =>
+  doc.value?.deal_value
+    ? '₹' + Number(doc.value.deal_value).toLocaleString('en-IN')
+    : '',
+)
+
 const statuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
@@ -596,6 +676,17 @@ const stageCta = computed(() => {
   return STAGE_CTA[label] || null
 })
 
+// Each pipeline stage's header CTA opens its own stage-form modal.
+const STAGE_MODALS = {
+  'Req. Discussion': 'showCaptureRequirementsModal',
+  Qualified: 'showInitiateTrialModal',
+  'Tech Assignment': 'showOpenTechTaskModal',
+  'Tech Evaluation': 'showRecordEvaluationModal',
+  Retrial: 'showRetrialStageModal',
+  'Proposal/Quotation': 'showProposalStageModal',
+  Won: 'showOrderHandoffModal',
+}
+
 function onStageAction() {
   let label = getDealStatus(doc.value.status)?.label || doc.value.status
 
@@ -603,8 +694,10 @@ function onStageAction() {
     reopenDeal()
     return
   }
-  if (label === 'Req. Discussion') {
-    showCaptureRequirementsModal.value = true
+
+  let modal = STAGE_MODALS[label]
+  if (modal && stageModals[modal]) {
+    stageModals[modal].value = true
     return
   }
   toast(stageCta.value?.label)
@@ -612,6 +705,27 @@ function onStageAction() {
 
 const showReopenDealModal = ref(false)
 const showCaptureRequirementsModal = ref(false)
+const showInitiateTrialModal = ref(false)
+const showOpenTechTaskModal = ref(false)
+const showRecordEvaluationModal = ref(false)
+const showRetrialStageModal = ref(false)
+const showProposalStageModal = ref(false)
+const showOrderHandoffModal = ref(false)
+// side modals opened from within stage modals
+const showCreateServiceTicketModal = ref(false)
+const showLabRequestModal = ref(false)
+const showQuotationsModal = ref(false)
+const showPreQuotationModal = ref(false)
+
+const stageModals = {
+  showCaptureRequirementsModal,
+  showInitiateTrialModal,
+  showOpenTechTaskModal,
+  showRecordEvaluationModal,
+  showRetrialStageModal,
+  showProposalStageModal,
+  showOrderHandoffModal,
+}
 
 function reopenDeal() {
   showReopenDealModal.value = true

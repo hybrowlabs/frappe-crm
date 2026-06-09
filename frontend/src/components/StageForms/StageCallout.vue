@@ -3,16 +3,21 @@
     class="flex items-start gap-2.5 rounded-lg border p-3 text-base leading-5"
     :class="themeClass"
   >
-    <span class="mt-0.5 shrink-0"><slot name="icon" /></span>
+    <span class="mt-0.5 shrink-0">
+      <StageIcon v-if="icon" :name="icon" />
+      <slot v-else name="icon" />
+    </span>
     <span><slot /></span>
   </div>
 </template>
 
 <script setup>
+import StageIcon from '@/components/StageForms/StageIcon.vue'
 import { computed } from 'vue'
 
 const props = defineProps({
   theme: { type: String, default: 'blue' }, // blue | amber | gray | green | orange | red
+  icon: { type: String, default: '' },
 })
 
 const THEMES = {

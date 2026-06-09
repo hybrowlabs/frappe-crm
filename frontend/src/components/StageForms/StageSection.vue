@@ -19,7 +19,10 @@
       >
         <path d="m6 9 6 6 6-6" />
       </svg>
-      <span class="flex text-ink-gray-5"><slot name="icon" /></span>
+      <span class="flex text-ink-gray-5">
+        <StageIcon v-if="icon" :name="icon" />
+        <slot v-else name="icon" />
+      </span>
       <span class="text-base font-semibold text-ink-gray-8">{{ title }}</span>
     </button>
     <div v-show="open" class="p-3.5">
@@ -29,10 +32,12 @@
 </template>
 
 <script setup>
+import StageIcon from '@/components/StageForms/StageIcon.vue'
 import { ref } from 'vue'
 
 defineProps({
   title: { type: String, default: '' },
+  icon: { type: String, default: '' },
 })
 
 const open = ref(true)

@@ -1,12 +1,7 @@
 <template>
-  <StageFormDialog
-    v-model="show"
-    :statusLabel="statusLabel"
-    :subtitle="subtitle"
-  >
+  <StageFormDialog v-model="show" :statusLabel="statusLabel" :subtitle="subtitle">
     <!-- intro callout -->
-    <StageCallout theme="blue" class="mb-3">
-      <template #icon><ZapIcon /></template>
+    <StageCallout theme="blue" icon="zap" class="mb-3">
       <b>{{ __('3-layer pain capture.') }}</b>
       {{
         __(
@@ -16,8 +11,7 @@
     </StageCallout>
 
     <!-- Product Selection -->
-    <StageSection :title="__('Product Selection')">
-      <template #icon><PackageIcon /></template>
+    <StageSection :title="__('Product Selection')" icon="package">
       <FieldGrid :cols="3">
         <FieldSelect
           v-model="cat"
@@ -51,8 +45,8 @@
           variant,
         ])
       "
+      icon="alert"
     >
-      <template #icon><AlertIcon /></template>
       <div class="mb-3.5 grid grid-cols-3 gap-x-4 gap-y-2">
         <FieldCheckbox
           v-for="p in painOpts"
@@ -79,8 +73,7 @@
     </StageSection>
 
     <!-- Operational Impact -->
-    <StageSection :title="__('Operational Impact')">
-      <template #icon><TrendingUpIcon /></template>
+    <StageSection :title="__('Operational Impact')" icon="trendingUp">
       <div class="grid gap-2">
         <FieldCheckbox
           v-for="o in opOptions"
@@ -93,8 +86,7 @@
     </StageSection>
 
     <!-- Commercial Context -->
-    <StageSection :title="__('Commercial Context')">
-      <template #icon><FileTextIcon /></template>
+    <StageSection :title="__('Commercial Context')" icon="fileText">
       <FieldGrid :cols="2">
         <FieldSelect
           v-model="supplier"
@@ -117,8 +109,7 @@
         :options="creditOptions"
         class="mb-3"
       />
-      <StageCallout v-if="credit" theme="amber">
-        <template #icon><LockIcon /></template>
+      <StageCallout v-if="credit" theme="amber" icon="lock">
         <b>{{ __('Quotation locked') }}</b>
         {{
           __(
@@ -126,8 +117,7 @@
           )
         }}
       </StageCallout>
-      <StageCallout v-else theme="gray">
-        <template #icon><ClockIcon /></template>
+      <StageCallout v-else theme="gray" icon="clock">
         {{ __('Credit assessment not yet started.') }}
       </StageCallout>
     </StageSection>
@@ -140,7 +130,7 @@
           :label="__('Mark Ready to Qualify')"
           @click="markReadyToQualify"
         >
-          <template #suffix><ArrowRightIcon class="h-4 w-4" /></template>
+          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
         </Button>
       </div>
     </template>
@@ -151,19 +141,12 @@
 import StageFormDialog from '@/components/StageForms/StageFormDialog.vue'
 import StageSection from '@/components/StageForms/StageSection.vue'
 import StageCallout from '@/components/StageForms/StageCallout.vue'
+import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
-import PackageIcon from '@/components/Icons/PackageIcon.vue'
-import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
-import ZapIcon from '@/components/StageForms/icons/ZapIcon.vue'
-import AlertIcon from '@/components/StageForms/icons/AlertIcon.vue'
-import TrendingUpIcon from '@/components/StageForms/icons/TrendingUpIcon.vue'
-import LockIcon from '@/components/StageForms/icons/LockIcon.vue'
-import ClockIcon from '@/components/StageForms/icons/ClockIcon.vue'
-import ArrowRightIcon from '@/components/StageForms/icons/ArrowRightIcon.vue'
 import { Button, toast } from 'frappe-ui'
 import { ref, computed } from 'vue'
 

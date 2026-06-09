@@ -5,8 +5,7 @@
     :subtitle="subtitle"
     size="2xl"
   >
-    <StageCallout theme="red">
-      <template #icon><XIcon /></template>
+    <StageCallout theme="red" icon="x">
       {{
         __(
           'This deal is marked Lost. Reopen by changing Status in the panel.',
@@ -19,7 +18,6 @@
 <script setup>
 import StageFormDialog from '@/components/StageForms/StageFormDialog.vue'
 import StageCallout from '@/components/StageForms/StageCallout.vue'
-import XIcon from '@/components/StageForms/icons/XIcon.vue'
 
 defineProps({
   statusLabel: { type: String, default: '' },
