@@ -349,6 +349,13 @@
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
   />
+  <CaptureRequirementsModal
+    v-if="showCaptureRequirementsModal"
+    v-model="showCaptureRequirementsModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @ready="advanceToNextStage"
+  />
 </template>
 <script setup>
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
@@ -381,6 +388,7 @@ import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
+import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
@@ -431,7 +439,7 @@ import { useActiveTabManager } from '@/composables/useActiveTabManager'
 const { on } = useBroadcast()
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getDealStatus } = statusesStore()
+const { statusOptions, getDealStatus, dealStatuses } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const { updateOnboardingStep, isOnboardingStepsCompleted } =
@@ -589,17 +597,34 @@ const stageCta = computed(() => {
 })
 
 function onStageAction() {
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+
   if (getDealStatus(doc.value.status)?.type === 'Lost') {
     reopenDeal()
+    return
+  }
+  if (label === 'Req. Discussion') {
+    showCaptureRequirementsModal.value = true
     return
   }
   toast(stageCta.value?.label)
 }
 
 const showReopenDealModal = ref(false)
+const showCaptureRequirementsModal = ref(false)
 
 function reopenDeal() {
   showReopenDealModal.value = true
+}
+
+// Advance the deal to the next pipeline stage (by position).
+function advanceToNextStage() {
+  let ordered = dealStatuses.data || []
+  let idx = ordered.findIndex((s) => s.name === doc.value.status)
+  let next = idx > -1 ? ordered[idx + 1] : null
+  if (next) {
+    triggerStatusChange(next.name)
+  }
 }
 
 usePageMeta(() => {
