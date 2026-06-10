@@ -354,7 +354,8 @@
     v-model="showCaptureRequirementsModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
-    @ready="advanceToNextStage"
+    :deal="doc"
+    @save="saveRequirements"
   />
   <InitiateTrialModal
     v-if="showInitiateTrialModal"
@@ -739,6 +740,20 @@ function advanceToNextStage() {
   if (next) {
     triggerStatusChange(next.name)
   }
+}
+
+function saveRequirements({ values, advance }) {
+  Object.assign(doc.value, values)
+  document.save.submit(null, {
+    onSuccess: () => {
+      reload.value = true
+      toast.success(__('Requirements saved'))
+      if (advance) advanceToNextStage()
+    },
+    onError: (err) => {
+      toast.error(err.messages?.[0] || __('Error saving requirements'))
+    },
+  })
 }
 
 usePageMeta(() => {

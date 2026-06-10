@@ -23,13 +23,18 @@ const props = defineProps({
   options: { type: Array, default: () => [] },
   required: { type: Boolean, default: false },
   help: { type: String, default: '' },
+  placeholder: { type: String, default: '' },
 })
 
 defineEmits(['update:modelValue'])
 
-const normalizedOptions = computed(() =>
-  props.options.map((o) =>
+const normalizedOptions = computed(() => {
+  const opts = props.options.map((o) =>
     typeof o === 'object' ? o : { label: o, value: o },
-  ),
-)
+  )
+  if (props.placeholder) {
+    opts.unshift({ label: props.placeholder, value: '' })
+  }
+  return opts
+})
 </script>

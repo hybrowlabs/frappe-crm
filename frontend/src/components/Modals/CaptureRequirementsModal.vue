@@ -18,6 +18,7 @@
           :label="__('Product Category')"
           required
           :options="categories"
+          :placeholder="__('Select category')"
           @update:modelValue="onCategoryChange"
         />
         <FieldSelect
@@ -25,6 +26,7 @@
           :label="__('Sub-Category')"
           required
           :options="subs"
+          :placeholder="__('Select sub-category')"
           @update:modelValue="onSubChange"
         />
         <FieldSelect
@@ -32,6 +34,7 @@
           :label="__('Variant')"
           required
           :options="variants"
+          :placeholder="__('Select variant')"
         />
       </FieldGrid>
     </StageSection>
@@ -39,35 +42,39 @@
     <!-- Pain Points -->
     <StageSection
       :title="
-        __('Pain Points — {0} options for {1} → {2}', [
-          painOpts.length,
-          cat,
-          variant,
-        ])
+        sub
+          ? __('Pain Points — {0} options for {1}', [painOpts.length, sub])
+          : __('Pain Points')
       "
       icon="alert"
     >
-      <div class="mb-3.5 grid grid-cols-3 gap-x-4 gap-y-2">
+      <p v-if="!sub" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('Select a sub-category to load relevant pain points.') }}
+      </p>
+      <p v-else-if="!painOpts.length" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('No pain points mapped to this sub-category yet.') }}
+      </p>
+      <div v-else class="mb-3.5 grid grid-cols-3 gap-x-4 gap-y-2">
         <FieldCheckbox
           v-for="p in painOpts"
-          :key="p"
-          :label="p"
-          :checked="pains.includes(p)"
-          @change="togglePain(p)"
+          :key="p.name"
+          :label="p.name"
+          :checked="pains.includes(p.name)"
+          @change="togglePain(p.name)"
         />
       </div>
       <FieldGrid :cols="2">
         <FieldSelect
           v-model="freq"
           :label="__('Pain Frequency')"
-          required
           :options="freqOptions"
+          :placeholder="__('Select frequency')"
         />
         <FieldSelect
           v-model="severity"
           :label="__('Pain Severity')"
-          required
           :options="severityOptions"
+          :placeholder="__('Select severity')"
         />
       </FieldGrid>
     </StageSection>
@@ -76,11 +83,11 @@
     <StageSection :title="__('Operational Impact')" icon="trendingUp">
       <div class="grid gap-2">
         <FieldCheckbox
-          v-for="o in opOptions"
-          :key="o"
-          :label="o"
-          :checked="opImpact.includes(o)"
-          @change="toggleOp(o)"
+          v-for="o in OP_FIELDS"
+          :key="o.key"
+          :label="__(o.label)"
+          :checked="opImpact[o.key]"
+          @change="opImpact[o.key] = !opImpact[o.key]"
         />
       </div>
     </StageSection>
@@ -92,19 +99,25 @@
           v-model="supplier"
           :label="__('Current Supplier')"
           :options="supplierOptions"
+          :placeholder="__('Select supplier')"
         />
-        <FieldText
-          v-model="dm"
-          :label="__('Decision Maker')"
-          required
-          :help="__('Must link to a Contact record')"
-        />
+        <div class="space-y-1.5">
+          <label class="block text-xs text-ink-gray-5">
+            {{ __('Decision Maker') }}
+          </label>
+          <Link
+            class="form-control"
+            :value="decisionMaker"
+            doctype="Contact"
+            :placeholder="__('Link to a Contact')"
+            @change="(v) => (decisionMaker = v)"
+          />
+        </div>
       </FieldGrid>
       <div class="my-3.5 h-px bg-outline-gray-2" />
       <FieldRadioGroup
         v-model="credit"
         :label="__('Credit Check')"
-        required
         inline
         :options="creditOptions"
         class="mb-3"
@@ -113,7 +126,7 @@
         <b>{{ __('Quotation locked') }}</b>
         {{
           __(
-            'until Tejal (Credit Control) approves terms for this new customer. Advance / 0 / 7 / 15 / 30 / 45 days.',
+            'until Credit Control approves terms for this customer. Advance / 0 / 7 / 15 / 30 / 45 days.',
           )
         }}
       </StageCallout>
@@ -144,108 +157,148 @@ import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
-import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
-import { Button, toast } from 'frappe-ui'
-import { ref, computed } from 'vue'
+import Link from '@/components/Controls/Link.vue'
+import { Button, createListResource } from 'frappe-ui'
+import { ref, reactive, computed, onMounted } from 'vue'
 
-defineProps({
+const props = defineProps({
   statusLabel: { type: String, default: '' },
   subtitle: { type: String, default: '' },
+  deal: { type: Object, default: () => ({}) },
 })
 
 const show = defineModel({ type: Boolean })
-const emit = defineEmits(['ready'])
+const emit = defineEmits(['save'])
 
-// ---- product tree & pain options (from the prototype) ----
-const PRODUCT_TREE = {
-  Alloys: {
-    'Casting Alloys': ['Yellow Gold', 'White Gold', 'Rose Gold'],
-    'Stamping Alloys': ['Yellow Gold 22K', 'Yellow Gold 18K'],
-    'Solder Alloys': ['Easy', 'Medium', 'Hard'],
-  },
-  Plating: {
-    Rhodium: ['Bright Rhodium', 'White Rhodium'],
-    'Gold Plating': ['Hard Gold', 'Soft Gold'],
-  },
-  Machines: {
-    'Casting Machine': ['VC-Series', 'IC-Series'],
-    'Plating Line': ['Manual', 'Automatic'],
-  },
-}
-const PAIN_OPTIONS = {
-  'Yellow Gold': [
-    'Porosity / Pin Holes',
-    'Poor Casting Yield',
-    'Shrinkage',
-    'Fire Scale',
-    'Hardness',
-    'Brittleness',
-    'Non-Fill',
-    'Stone Breakage',
-    'Colour Mismatch',
-    'Discoloration',
-    'High Rework',
-    'Metal Loss',
-    'Delayed Fulfillment',
-    'Inconsistent Batches',
-  ],
-  _default: [
-    'Porosity / Pin Holes',
-    'Poor Yield',
-    'Discoloration',
-    'Hardness',
-    'High Rework',
-    'Metal Loss',
-  ],
-}
-
-// ---- reactive form state (prototype defaults) ----
-const cat = ref('Alloys')
-const sub = ref('Casting Alloys')
-const variant = ref('Yellow Gold')
-const pains = ref(['Porosity / Pin Holes', 'Poor Casting Yield'])
-const freq = ref('Every Production Cycle')
-const severity = ref('Critical')
-const opImpact = ref([
-  'Production downtime due to casting failure',
-  'Increased scrap and metal loss',
-])
-const supplier = ref('Indian Supplier')
-const dm = ref('')
-const credit = ref(true)
-
-const categories = Object.keys(PRODUCT_TREE)
+// ---- static select options (mirror the CRM Deal field definitions) ----
 const freqOptions = ['Every Production Cycle', 'Weekly', 'Monthly', 'Occasional']
 const severityOptions = ['Critical', 'High', 'Medium', 'Low']
 const supplierOptions = ['Indian Supplier', 'Imported', 'In-house', 'None / New']
-const opOptions = [
-  'Production downtime due to casting failure',
-  'Increased scrap and metal loss',
-  'High rework cost',
-  'Delayed order fulfillment',
-]
 const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
 ]
+// operational-impact fields are fixed checkboxes on CRM Deal
+const OP_FIELDS = [
+  {
+    key: 'production_downtime_due_to_casting_failure',
+    label: 'Production downtime due to casting failure',
+  },
+  { key: 'increased_scrap_and_metal_loss', label: 'Increased scrap and metal loss' },
+  { key: 'high_rework_cost', label: 'High rework cost' },
+  { key: 'delayed_order_fulfillment', label: 'Delayed order fulfillment' },
+]
 
-const subs = computed(() => Object.keys(PRODUCT_TREE[cat.value] || {}))
-const variants = computed(() => (PRODUCT_TREE[cat.value] || {})[sub.value] || [])
-const painOpts = computed(() => PAIN_OPTIONS[variant.value] || PAIN_OPTIONS._default)
+// ---- live master data ----
+const categoryList = createListResource({
+  doctype: 'CRM Product Category',
+  fields: ['name'],
+  orderBy: 'product_category asc',
+  pageLength: 0,
+  auto: true,
+})
+const subCategoryList = createListResource({
+  doctype: 'CRM Product Sub Category',
+  fields: ['name'],
+  orderBy: 'product_sub_category asc',
+  pageLength: 0,
+  auto: false,
+})
+const variantList = createListResource({
+  doctype: 'CRM Product Variant',
+  fields: ['name'],
+  orderBy: 'product_variant asc',
+  pageLength: 0,
+  auto: false,
+})
+const painPointList = createListResource({
+  doctype: 'CRM Pain Point',
+  fields: ['name', 'pain_type'],
+  orderBy: 'pain_point asc',
+  pageLength: 0,
+  auto: false,
+})
+
+const categories = computed(() => (categoryList.data || []).map((d) => d.name))
+const subs = computed(() => (subCategoryList.data || []).map((d) => d.name))
+const variants = computed(() => (variantList.data || []).map((d) => d.name))
+const painOpts = computed(() => painPointList.data || [])
+
+function loadSubs(category) {
+  if (!category) return
+  subCategoryList.update({ filters: { product_category: category } })
+  subCategoryList.reload()
+}
+function loadVariants(subCat) {
+  if (!subCat) return
+  variantList.update({ filters: { product_sub_category: subCat } })
+  variantList.reload()
+}
+function loadPains(subCat) {
+  if (!subCat) {
+    painPointList.data = []
+    return
+  }
+  // filter the parent via its Sub-Category multiselect child table
+  painPointList.update({
+    filters: [
+      ['CRM Product Sub Category Select', 'product_sub_category', '=', subCat],
+    ],
+  })
+  painPointList.reload()
+}
+
+// ---- form state (prefilled from the deal) ----
+const cat = ref('')
+const sub = ref('')
+const variant = ref('')
+const pains = ref([])
+const freq = ref('')
+const severity = ref('')
+const opImpact = reactive({})
+const supplier = ref('')
+const decisionMaker = ref('')
+const credit = ref(false)
+
+onMounted(() => {
+  const d = props.deal || {}
+  cat.value = d.product_category || ''
+  sub.value = d.product_sub_category || ''
+  variant.value = d.product_variant || ''
+  pains.value = (d.pain_points || []).map((r) => r.pain_point)
+  freq.value = d.pain_frequency || ''
+  severity.value = d.pain_severity || ''
+  OP_FIELDS.forEach((o) => (opImpact[o.key] = !!d[o.key]))
+  supplier.value = d.current_supplier || ''
+  decisionMaker.value = d.decision_maker || ''
+  credit.value = !!d.credit_check
+
+  // hydrate dependent dropdowns for the already-selected values
+  if (cat.value) loadSubs(cat.value)
+  if (sub.value) {
+    loadVariants(sub.value)
+    loadPains(sub.value)
+  }
+})
 
 function onCategoryChange(v) {
   cat.value = v
-  const firstSub = Object.keys(PRODUCT_TREE[v])[0]
-  sub.value = firstSub
-  variant.value = PRODUCT_TREE[v][firstSub][0]
+  sub.value = ''
+  variant.value = ''
   pains.value = []
+  variantList.data = []
+  painPointList.data = []
+  loadSubs(v)
 }
 
 function onSubChange(v) {
   sub.value = v
-  variant.value = PRODUCT_TREE[cat.value][v][0]
+  variant.value = ''
+  pains.value = []
+  loadVariants(v)
+  loadPains(v)
 }
 
 function togglePain(p) {
@@ -254,18 +307,29 @@ function togglePain(p) {
     : [...pains.value, p]
 }
 
-function toggleOp(o) {
-  opImpact.value = opImpact.value.includes(o)
-    ? opImpact.value.filter((x) => x !== o)
-    : [...opImpact.value, o]
+function buildValues() {
+  const values = {
+    product_category: cat.value || null,
+    product_sub_category: sub.value || null,
+    product_variant: variant.value || null,
+    pain_points: pains.value.map((p) => ({ pain_point: p })),
+    pain_frequency: freq.value || '',
+    pain_severity: severity.value || '',
+    current_supplier: supplier.value || '',
+    decision_maker: decisionMaker.value || null,
+    credit_check: credit.value ? 1 : 0,
+  }
+  OP_FIELDS.forEach((o) => (values[o.key] = opImpact[o.key] ? 1 : 0))
+  return values
 }
 
 function saveDraft() {
-  toast.success(__('Draft saved'))
+  emit('save', { values: buildValues(), advance: false })
+  show.value = false
 }
 
 function markReadyToQualify() {
+  emit('save', { values: buildValues(), advance: true })
   show.value = false
-  emit('ready')
 }
 </script>
