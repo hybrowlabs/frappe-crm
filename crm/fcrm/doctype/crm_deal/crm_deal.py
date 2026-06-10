@@ -20,6 +20,7 @@ class CRMDeal(Document):
 
 	if TYPE_CHECKING:
 		from crm.fcrm.doctype.crm_contacts.crm_contacts import CRMContacts
+		from crm.fcrm.doctype.crm_pain_point_select.crm_pain_point_select import CRMPainPointSelect
 		from crm.fcrm.doctype.crm_products.crm_products import CRMProducts
 		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import CRMRollingResponseTime
 		from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import CRMStatusChangeLog
@@ -30,9 +31,13 @@ class CRMDeal(Document):
 		communication_status: DF.Link | None
 		contact: DF.Link | None
 		contacts: DF.Table[CRMContacts]
+		credit_check: DF.Check
 		currency: DF.Link | None
+		current_supplier: DF.Literal["", "Indian Supplier", "Imported", "In-house", "None / New"]
 		deal_owner: DF.Link | None
 		deal_value: DF.Currency
+		decision_maker: DF.Link | None
+		delayed_order_fulfillment: DF.Check
 		email: DF.Data | None
 		exchange_rate: DF.Float
 		expected_closure_date: DF.Date | None
@@ -41,6 +46,8 @@ class CRMDeal(Document):
 		first_responded_on: DF.Datetime | None
 		first_response_time: DF.Duration | None
 		gender: DF.Link | None
+		high_rework_cost: DF.Check
+		increased_scrap_and_metal_loss: DF.Check
 		industry: DF.Link | None
 		job_title: DF.Data | None
 		last_name: DF.Data | None
@@ -57,8 +64,15 @@ class CRMDeal(Document):
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		organization: DF.Link | None
 		organization_name: DF.Data | None
+		pain_frequency: DF.Literal["", "Every Production Cycle", "Weekly", "Monthly", "Occasional"]
+		pain_points: DF.TableMultiSelect[CRMPainPointSelect]
+		pain_severity: DF.Literal["", "Critical", "High", "Medium", "Low"]
 		phone: DF.Data | None
 		probability: DF.Percent
+		product_category: DF.Link | None
+		product_sub_category: DF.Link | None
+		product_variant: DF.Link | None
+		production_downtime_due_to_casting_failure: DF.Check
 		products: DF.Table[CRMProducts]
 		response_by: DF.Datetime | None
 		rolling_responses: DF.Table[CRMRollingResponseTime]

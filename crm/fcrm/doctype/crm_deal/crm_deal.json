@@ -21,6 +21,28 @@
   "column_break_kpxa",
   "expected_closure_date",
   "closed_date",
+  "requirements_tab",
+  "product_selection_section",
+  "product_category",
+  "product_sub_category",
+  "column_break_bjad",
+  "product_variant",
+  "pain_point_deatils_section",
+  "pain_frequency",
+  "pain_severity",
+  "column_break_gtvl",
+  "pain_points",
+  "operational_impact_section",
+  "production_downtime_due_to_casting_failure",
+  "increased_scrap_and_metal_loss",
+  "column_break_aasi",
+  "high_rework_cost",
+  "delayed_order_fulfillment",
+  "commercial_context_section",
+  "current_supplier",
+  "credit_check",
+  "column_break_qnga",
+  "decision_maker",
   "contacts_tab",
   "contacts",
   "contact",
@@ -471,12 +493,131 @@
    "fieldname": "lost_details_tab",
    "fieldtype": "Tab Break",
    "label": "Lost Details"
+  },
+  {
+   "fieldname": "requirements_tab",
+   "fieldtype": "Tab Break",
+   "label": "Requirements"
+  },
+  {
+   "fieldname": "product_category",
+   "fieldtype": "Link",
+   "label": "Product Category",
+   "options": "CRM Product Category"
+  },
+  {
+   "fieldname": "product_sub_category",
+   "fieldtype": "Link",
+   "label": "Product Sub Category",
+   "options": "CRM Product Sub Category"
+  },
+  {
+   "fieldname": "product_variant",
+   "fieldtype": "Link",
+   "label": "Product Variant",
+   "options": "CRM Product Variant"
+  },
+  {
+   "fieldname": "pain_point_deatils_section",
+   "fieldtype": "Section Break",
+   "label": "Pain Point Deatils"
+  },
+  {
+   "fieldname": "pain_points",
+   "fieldtype": "Table MultiSelect",
+   "label": "Pain Points",
+   "options": "CRM Pain Point Select"
+  },
+  {
+   "fieldname": "pain_frequency",
+   "fieldtype": "Select",
+   "label": "Pain Frequency",
+   "options": "\nEvery Production Cycle\nWeekly\nMonthly\nOccasional"
+  },
+  {
+   "fieldname": "pain_severity",
+   "fieldtype": "Select",
+   "label": "Pain Severity",
+   "options": "\nCritical\nHigh\nMedium\nLow"
+  },
+  {
+   "fieldname": "product_selection_section",
+   "fieldtype": "Section Break",
+   "label": "Product Selection"
+  },
+  {
+   "fieldname": "column_break_bjad",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_gtvl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "operational_impact_section",
+   "fieldtype": "Section Break",
+   "label": "Operational Impact"
+  },
+  {
+   "default": "0",
+   "fieldname": "production_downtime_due_to_casting_failure",
+   "fieldtype": "Check",
+   "label": "Production downtime due to casting failure"
+  },
+  {
+   "default": "0",
+   "fieldname": "increased_scrap_and_metal_loss",
+   "fieldtype": "Check",
+   "label": "Increased scrap and metal loss"
+  },
+  {
+   "fieldname": "column_break_aasi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "high_rework_cost",
+   "fieldtype": "Check",
+   "label": "High rework cost"
+  },
+  {
+   "default": "0",
+   "fieldname": "delayed_order_fulfillment",
+   "fieldtype": "Check",
+   "label": "Delayed order fulfillment"
+  },
+  {
+   "fieldname": "commercial_context_section",
+   "fieldtype": "Section Break",
+   "label": "Commercial Context"
+  },
+  {
+   "fieldname": "current_supplier",
+   "fieldtype": "Select",
+   "label": "Current Supplier",
+   "options": "\nIndian Supplier\nImported\nIn-house\nNone / New"
+  },
+  {
+   "fieldname": "column_break_qnga",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "decision_maker",
+   "fieldtype": "Link",
+   "label": "Decision Maker",
+   "options": "Contact"
+  },
+  {
+   "default": "0",
+   "fieldname": "credit_check",
+   "fieldtype": "Check",
+   "label": "Credit Check"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-10 01:11:16.684268",
+ "modified": "2026-06-10 18:14:41.952339",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",
