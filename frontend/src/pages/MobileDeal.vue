@@ -292,12 +292,6 @@
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
   />
-  <OpenTechTaskModal
-    v-if="showOpenTechTaskModal"
-    v-model="showOpenTechTaskModal"
-    :statusLabel="statusLabel(doc.status)"
-    :subtitle="`${title} · ${dealId}`"
-  />
   <RecordEvaluationModal
     v-if="showRecordEvaluationModal"
     v-model="showRecordEvaluationModal"
@@ -376,7 +370,6 @@ import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
 import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
-import OpenTechTaskModal from '@/components/Modals/OpenTechTaskModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
 import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
 import ProposalStageModal from '@/components/Modals/ProposalStageModal.vue'
@@ -497,7 +490,6 @@ const _organization = ref({})
 const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
   Qualified: { label: __('Initiate Trial'), icon: BeakerIcon },
-  'Tech Assignment': { label: __('Open Tech Task'), icon: BeakerIcon },
   'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Create Service Ticket'), icon: HeadphonesIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
@@ -521,7 +513,6 @@ const dealValueLabel = computed(() =>
 const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualified: 'showInitiateTrialModal',
-  'Tech Assignment': 'showOpenTechTaskModal',
   'Tech Evaluation': 'showRecordEvaluationModal',
   Retrial: 'showRetrialStageModal',
   'Proposal/Quotation': 'showProposalStageModal',
@@ -531,7 +522,6 @@ const STAGE_MODALS = {
 const showReopenDealModal = ref(false)
 const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
-const showOpenTechTaskModal = ref(false)
 const showRecordEvaluationModal = ref(false)
 const showRetrialStageModal = ref(false)
 const showProposalStageModal = ref(false)
@@ -544,7 +534,6 @@ const showPreQuotationModal = ref(false)
 const stageModals = {
   showCaptureRequirementsModal,
   showInitiateTrialModal,
-  showOpenTechTaskModal,
   showRecordEvaluationModal,
   showRetrialStageModal,
   showProposalStageModal,

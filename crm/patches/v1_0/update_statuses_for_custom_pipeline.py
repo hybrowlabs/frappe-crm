@@ -11,16 +11,14 @@ DEAL_STATUSES = [
 	{"name": "Req. Discussion", "label": "Req. Discussion", "position": 1,
 		"new": True, "color": "gray", "type": "Open", "probability": 5},
 	{"name": "Qualification", "label": "Qualified", "position": 2},
-	{"name": "Tech Assignment", "label": "Tech Assignment", "position": 3,
-		"new": True, "color": "purple", "type": "Ongoing", "probability": 20},
-	{"name": "Demo/Making", "label": "Tech Evaluation", "position": 4},
-	{"name": "Retrial", "label": "Retrial", "position": 5,
+	{"name": "Demo/Making", "label": "Tech Evaluation", "position": 3},
+	{"name": "Retrial", "label": "Retrial", "position": 4,
 		"new": True, "color": "red", "type": "Ongoing", "probability": 30},
-	{"name": "Proposal/Quotation", "label": "Proposal/Quotation", "position": 6},
-	{"name": "Negotiation", "label": "Negotiation", "position": 7},
-	{"name": "Ready to Close", "label": "Ready to Close", "position": 8},
-	{"name": "Won", "label": "Won", "position": 9},
-	{"name": "Lost", "label": "Lost", "position": 10},
+	{"name": "Proposal/Quotation", "label": "Proposal/Quotation", "position": 5},
+	{"name": "Negotiation", "label": "Negotiation", "position": 6},
+	{"name": "Ready to Close", "label": "Ready to Close", "position": 7},
+	{"name": "Won", "label": "Won", "position": 8},
+	{"name": "Lost", "label": "Lost", "position": 9},
 ]
 
 # Lead status: only labels change — existing sequence/positions are left untouched.
