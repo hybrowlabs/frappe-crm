@@ -28,7 +28,7 @@
         :bordered="false"
       />
 
-      <div class="mt-3.5 flex items-center gap-2">
+      <div class="mt-3.5 flex flex-wrap items-center gap-2 gap-y-2">
         <Button :label="__('Open Tech Task')">
           <template #prefix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
         </Button>

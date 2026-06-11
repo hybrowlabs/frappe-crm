@@ -10,7 +10,7 @@
       }}
     </StageCallout>
 
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 gap-y-2">
       <Button :label="__('View Quotations')" @click="$emit('view-quotations')">
         <template #prefix><StageIcon name="fileText" class="h-4 w-4" /></template>
       </Button>

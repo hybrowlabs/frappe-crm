@@ -129,7 +129,7 @@
     </StageSection>
 
     <template #actions>
-      <div class="flex w-full items-center gap-2">
+      <div class="flex w-full flex-wrap items-center gap-2 gap-y-2">
         <Button :label="__('Save Draft')" @click="toast.success(__('Draft saved'))" />
         <Button
           v-if="outcome === 'Successful'"

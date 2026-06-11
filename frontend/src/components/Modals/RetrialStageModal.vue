@@ -23,7 +23,7 @@
         "
         class="mt-2"
       />
-      <div class="mt-3 flex items-center gap-2">
+      <div class="mt-3 flex flex-wrap items-center gap-2 gap-y-2">
         <Button :label="__('Create Service Ticket')" @click="$emit('ticket')">
           <template #prefix><StageIcon name="headphones" class="h-4 w-4" /></template>
         </Button>

@@ -11,6 +11,10 @@ const props = defineProps({
   cols: { type: [Number, String], default: 2 },
 })
 
-const COLS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' }
+const COLS = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-3',
+}
 const colsClass = computed(() => COLS[props.cols] || COLS[2])
 </script>

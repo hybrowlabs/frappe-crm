@@ -42,6 +42,16 @@
   >
     <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
     <div class="flex items-center gap-2">
+      <Button
+        v-if="stageCta"
+        variant="solid"
+        :label="stageCta.label"
+        @click="onStageAction"
+      >
+        <template #prefix>
+          <component :is="stageCta.icon" class="h-4 w-4" />
+        </template>
+      </Button>
       <CustomActions
         v-if="document._actions?.length"
         :actions="document._actions"
@@ -262,6 +272,84 @@
     doctype="CRM Deal"
     :document="document"
   />
+  <ReopenDealModal
+    v-if="showReopenDealModal"
+    v-model="showReopenDealModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
+  <CaptureRequirementsModal
+    v-if="showCaptureRequirementsModal"
+    v-model="showCaptureRequirementsModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @save="saveRequirements"
+  />
+  <InitiateTrialModal
+    v-if="showInitiateTrialModal"
+    v-model="showInitiateTrialModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
+  <OpenTechTaskModal
+    v-if="showOpenTechTaskModal"
+    v-model="showOpenTechTaskModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+  />
+  <RecordEvaluationModal
+    v-if="showRecordEvaluationModal"
+    v-model="showRecordEvaluationModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @lab="showLabRequestModal = true"
+  />
+  <RetrialStageModal
+    v-if="showRetrialStageModal"
+    v-model="showRetrialStageModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @ticket="showCreateServiceTicketModal = true"
+  />
+  <ProposalStageModal
+    v-if="showProposalStageModal"
+    v-model="showProposalStageModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    @view-quotations="showQuotationsModal = true"
+  />
+  <OrderHandoffModal
+    v-if="showOrderHandoffModal"
+    v-model="showOrderHandoffModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :value="dealValueLabel"
+  />
+  <CreateServiceTicketModal
+    v-if="showCreateServiceTicketModal"
+    v-model="showCreateServiceTicketModal"
+    :customer="title"
+    :dealId="dealId"
+  />
+  <LabRequestModal
+    v-if="showLabRequestModal"
+    v-model="showLabRequestModal"
+    :customer="title"
+  />
+  <QuotationsModal
+    v-if="showQuotationsModal"
+    v-model="showQuotationsModal"
+    :org="title"
+    :dealId="dealId"
+    :value="doc.deal_value || 0"
+  />
+  <PreQuotationModal
+    v-if="showPreQuotationModal"
+    v-model="showPreQuotationModal"
+    :org="title"
+    :subtitle="`${title} · ${dealId}`"
+  />
 </template>
 <script setup>
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
@@ -285,6 +373,24 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
+import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
+import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
+import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
+import OpenTechTaskModal from '@/components/Modals/OpenTechTaskModal.vue'
+import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
+import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
+import ProposalStageModal from '@/components/Modals/ProposalStageModal.vue'
+import OrderHandoffModal from '@/components/Modals/OrderHandoffModal.vue'
+import CreateServiceTicketModal from '@/components/Modals/CreateServiceTicketModal.vue'
+import LabRequestModal from '@/components/Modals/LabRequestModal.vue'
+import QuotationsModal from '@/components/Modals/QuotationsModal.vue'
+import PreQuotationModal from '@/components/Modals/PreQuotationModal.vue'
+import PackageIcon from '@/components/Icons/PackageIcon.vue'
+import BeakerIcon from '@/components/Icons/BeakerIcon.vue'
+import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
+import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
+import CheckIcon from '@/components/Icons/CheckIcon.vue'
+import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
 import Section from '@/components/Section.vue'
@@ -318,7 +424,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const { brand } = getSettings()
 const { $dialog, $socket } = globalStore()
-const { statusOptions, getDealStatus } = statusesStore()
+const { statusOptions, getDealStatus, dealStatuses } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const route = useRoute()
@@ -386,6 +492,108 @@ watch(
 const reload = ref(false)
 const showOrganizationModal = ref(false)
 const _organization = ref({})
+
+// Stage-wise contextual action shown in the header, keyed by status label.
+const STAGE_CTA = {
+  'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
+  Qualified: { label: __('Initiate Trial'), icon: BeakerIcon },
+  'Tech Assignment': { label: __('Open Tech Task'), icon: BeakerIcon },
+  'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
+  Retrial: { label: __('Create Service Ticket'), icon: HeadphonesIcon },
+  'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
+  Won: { label: __('View Order Handoff'), icon: CheckIcon },
+  Lost: { label: __('Reopen Deal'), icon: RefreshIcon },
+}
+
+const stageCta = computed(() => {
+  if (!doc.value.status) return null
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+  return STAGE_CTA[label] || null
+})
+
+const dealValueLabel = computed(() =>
+  doc.value?.deal_value
+    ? '₹' + Number(doc.value.deal_value).toLocaleString('en-IN')
+    : '',
+)
+
+// Each pipeline stage's header CTA opens its own stage-form modal.
+const STAGE_MODALS = {
+  'Req. Discussion': 'showCaptureRequirementsModal',
+  Qualified: 'showInitiateTrialModal',
+  'Tech Assignment': 'showOpenTechTaskModal',
+  'Tech Evaluation': 'showRecordEvaluationModal',
+  Retrial: 'showRetrialStageModal',
+  'Proposal/Quotation': 'showProposalStageModal',
+  Won: 'showOrderHandoffModal',
+}
+
+const showReopenDealModal = ref(false)
+const showCaptureRequirementsModal = ref(false)
+const showInitiateTrialModal = ref(false)
+const showOpenTechTaskModal = ref(false)
+const showRecordEvaluationModal = ref(false)
+const showRetrialStageModal = ref(false)
+const showProposalStageModal = ref(false)
+const showOrderHandoffModal = ref(false)
+const showCreateServiceTicketModal = ref(false)
+const showLabRequestModal = ref(false)
+const showQuotationsModal = ref(false)
+const showPreQuotationModal = ref(false)
+
+const stageModals = {
+  showCaptureRequirementsModal,
+  showInitiateTrialModal,
+  showOpenTechTaskModal,
+  showRecordEvaluationModal,
+  showRetrialStageModal,
+  showProposalStageModal,
+  showOrderHandoffModal,
+}
+
+function reopenDeal() {
+  showReopenDealModal.value = true
+}
+
+function onStageAction() {
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+
+  if (getDealStatus(doc.value.status)?.type === 'Lost') {
+    reopenDeal()
+    return
+  }
+
+  let modal = STAGE_MODALS[label]
+  if (modal && stageModals[modal]) {
+    stageModals[modal].value = true
+    return
+  }
+  toast(stageCta.value?.label)
+}
+
+// Advance the deal to the next pipeline stage (by position).
+function advanceToNextStage() {
+  let ordered = dealStatuses.data || []
+  let idx = ordered.findIndex((s) => s.name === doc.value.status)
+  let next = idx > -1 ? ordered[idx + 1] : null
+  if (next) {
+    triggerStatusChange(next.name)
+  }
+}
+
+function saveRequirements({ values, advance }) {
+  Object.assign(doc.value, values)
+  document.save.submit(null, {
+    onSuccess: () => {
+      reload.value = true
+      toast.success(__('Requirements saved'))
+      if (advance) advanceToNextStage()
+    },
+    onError: (err) => {
+      toast.error(err.messages?.[0] || __('Error saving requirements'))
+    },
+  })
+}
 
 const breadcrumbs = computed(() => {
   let items = [{ label: __('Deals'), route: { name: 'Deals' } }]

@@ -6,7 +6,8 @@
     :size="preview ? '3xl' : '2xl'"
   >
     <!-- list -->
-    <table v-if="!preview" class="w-full text-base">
+    <div v-if="!preview" class="overflow-x-auto">
+    <table class="w-full min-w-[28rem] text-base">
       <thead>
         <tr class="border-b border-outline-gray-2 text-left text-ink-gray-5">
           <th class="py-2 font-medium">{{ __('Quotation No') }}</th>
@@ -40,6 +41,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
 
     <!-- PDF preview -->
     <div

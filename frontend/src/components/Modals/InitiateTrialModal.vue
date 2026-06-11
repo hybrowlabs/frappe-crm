@@ -37,7 +37,7 @@
       <div class="mb-1.5 text-sm text-ink-gray-5">
         {{ __('Decision Criteria (multi-select)') }}
       </div>
-      <div class="mb-3.5 grid grid-cols-2 gap-x-4 gap-y-2">
+      <div class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
         <FieldCheckbox
           v-for="c in criteriaOptions"
           :key="c"
