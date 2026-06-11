@@ -7,9 +7,11 @@
       type="select"
       :modelValue="modelValue"
       :options="normalizedOptions"
+      :class="error ? 'rounded [&_select]:!border-outline-red-2' : ''"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
-    <div v-if="help" class="mt-1 text-xs text-ink-gray-4">{{ help }}</div>
+    <div v-if="error" class="mt-1 text-xs text-ink-red-3">{{ error }}</div>
+    <div v-else-if="help" class="mt-1 text-xs text-ink-gray-4">{{ help }}</div>
   </div>
 </template>
 
@@ -24,6 +26,7 @@ const props = defineProps({
   required: { type: Boolean, default: false },
   help: { type: String, default: '' },
   placeholder: { type: String, default: '' },
+  error: { type: String, default: '' },
 })
 
 defineEmits(['update:modelValue'])

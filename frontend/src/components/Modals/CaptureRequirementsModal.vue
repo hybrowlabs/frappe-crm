@@ -19,6 +19,7 @@
           required
           :options="categories"
           :placeholder="__('Select category')"
+          :error="errors.cat"
           @update:modelValue="onCategoryChange"
         />
         <FieldSelect
@@ -27,6 +28,7 @@
           required
           :options="subs"
           :placeholder="__('Select sub-category')"
+          :error="errors.sub"
           @update:modelValue="onSubChange"
         />
         <FieldSelect
@@ -35,6 +37,7 @@
           required
           :options="variants"
           :placeholder="__('Select variant')"
+          :error="errors.variant"
         />
       </FieldGrid>
     </StageSection>
@@ -67,14 +70,18 @@
         <FieldSelect
           v-model="freq"
           :label="__('Pain Frequency')"
+          required
           :options="freqOptions"
           :placeholder="__('Select frequency')"
+          :error="errors.freq"
         />
         <FieldSelect
           v-model="severity"
           :label="__('Pain Severity')"
+          required
           :options="severityOptions"
           :placeholder="__('Select severity')"
+          :error="errors.severity"
         />
       </FieldGrid>
     </StageSection>
@@ -101,10 +108,10 @@
           :options="supplierOptions"
           :placeholder="__('Select supplier')"
         />
-        <div class="space-y-1.5">
-          <label class="block text-xs text-ink-gray-5">
-            {{ __('Decision Maker') }}
-          </label>
+        <div>
+          <div class="mb-1.5 text-sm text-ink-gray-5">
+            {{ __('Decision Maker') }} <span class="text-ink-red-3">*</span>
+          </div>
           <Link
             class="form-control"
             :value="decisionMaker"
@@ -112,6 +119,9 @@
             :placeholder="__('Link to a Contact')"
             @change="(v) => (decisionMaker = v)"
           />
+          <div v-if="errors.decisionMaker" class="mt-1 text-xs text-ink-red-3">
+            {{ errors.decisionMaker }}
+          </div>
         </div>
       </FieldGrid>
       <div class="my-3.5 h-px bg-outline-gray-2" />
@@ -160,7 +170,7 @@ import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import Link from '@/components/Controls/Link.vue'
-import { Button, createListResource } from 'frappe-ui'
+import { Button, createListResource, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -171,6 +181,16 @@ const props = defineProps({
 
 const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save'])
+
+// fields required to mark the deal ready to qualify (not enforced on draft)
+const REQUIRED_FIELDS = [
+  { key: 'cat', label: __('Product Category') },
+  { key: 'sub', label: __('Sub-Category') },
+  { key: 'variant', label: __('Variant') },
+  { key: 'freq', label: __('Pain Frequency') },
+  { key: 'severity', label: __('Pain Severity') },
+  { key: 'decisionMaker', label: __('Decision Maker') },
+]
 
 // ---- static select options (mirror the CRM Deal field definitions) ----
 const freqOptions = ['Every Production Cycle', 'Weekly', 'Monthly', 'Occasional']
@@ -233,7 +253,13 @@ function loadSubs(category) {
 }
 function loadVariants(subCat) {
   if (!subCat) return
-  variantList.update({ filters: { product_sub_category: subCat } })
+  // a variant maps to many sub-categories via its product_sub_categories
+  // multiselect child table — filter the parent through that child
+  variantList.update({
+    filters: [
+      ['CRM Product Sub Category Select', 'product_sub_category', '=', subCat],
+    ],
+  })
   variantList.reload()
 }
 function loadPains(subCat) {
@@ -261,6 +287,18 @@ const opImpact = reactive({})
 const supplier = ref('')
 const decisionMaker = ref('')
 const credit = ref(false)
+
+// validation — errors only surface after a qualify attempt, then clear live
+const attempted = ref(false)
+const fieldValues = { cat, sub, variant, freq, severity, decisionMaker }
+const errors = computed(() => {
+  if (!attempted.value) return {}
+  const e = {}
+  for (const f of REQUIRED_FIELDS) {
+    if (!fieldValues[f.key].value) e[f.key] = __('Required')
+  }
+  return e
+})
 
 onMounted(() => {
   const d = props.deal || {}
@@ -324,11 +362,24 @@ function buildValues() {
 }
 
 function saveDraft() {
+  // drafts persist as-is — no required-field validation
+  attempted.value = false
   emit('save', { values: buildValues(), advance: false })
   show.value = false
 }
 
 function markReadyToQualify() {
+  attempted.value = true
+  const missing = REQUIRED_FIELDS.filter((f) => !fieldValues[f.key].value)
+  if (missing.length) {
+    toast.error(
+      __('Please fill all required fields: {0}', [
+        missing.map((f) => f.label).join(', '),
+      ]),
+    )
+    return
+  }
+  // advance: true → Deal.vue moves the deal to the next stage (Qualified)
   emit('save', { values: buildValues(), advance: true })
   show.value = false
 }

@@ -1,0 +1,345 @@
+{
+  "categories": [
+    "Alloys",
+    "Plating",
+    "Machines"
+  ],
+  "sub_categories": [
+    {
+      "sub_category": "Casting Alloys",
+      "category": "Alloys"
+    },
+    {
+      "sub_category": "Mechanical / Handmade",
+      "category": "Alloys"
+    },
+    {
+      "sub_category": "Solder Alloys",
+      "category": "Alloys"
+    },
+    {
+      "sub_category": "Precious Metal Plating",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Base Metal Plating",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Surface Treatment Chemical",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Anti-Tarnish Plating",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Lacquer Coating",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Plating Equipment & Spares",
+      "category": "Plating"
+    },
+    {
+      "sub_category": "Machines",
+      "category": "Machines"
+    }
+  ],
+  "variants": [
+    {
+      "variant": "Brass",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Silver (Master / RTU)",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Yellow Gold Alloys",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Rose Gold Alloys",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "White Gold Alloys",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Platinum Alloys (RTU)",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Palladium Alloys",
+      "uom": "Kg",
+      "sub_categories": [
+        "Casting Alloys",
+        "Mechanical / Handmade",
+        "Solder Alloys"
+      ]
+    },
+    {
+      "variant": "Gold",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Silver",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Rhodium",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Ruthenium",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Palladium",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Platinum",
+      "uom": "Litre",
+      "sub_categories": [
+        "Precious Metal Plating"
+      ]
+    },
+    {
+      "variant": "Copper",
+      "uom": "Litre",
+      "sub_categories": [
+        "Base Metal Plating"
+      ]
+    },
+    {
+      "variant": "Nickel",
+      "uom": "Litre",
+      "sub_categories": [
+        "Base Metal Plating"
+      ]
+    },
+    {
+      "variant": "White Bronze",
+      "uom": "Litre",
+      "sub_categories": [
+        "Base Metal Plating"
+      ]
+    },
+    {
+      "variant": "Degreasing Salts",
+      "uom": "Kg",
+      "sub_categories": [
+        "Surface Treatment Chemical"
+      ]
+    },
+    {
+      "variant": "Ultrasonic Soaps",
+      "uom": "Litre",
+      "sub_categories": [
+        "Surface Treatment Chemical"
+      ]
+    },
+    {
+      "variant": "Strippers",
+      "uom": "Litre",
+      "sub_categories": [
+        "Surface Treatment Chemical"
+      ]
+    },
+    {
+      "variant": "Conductive Salts",
+      "uom": "Kg",
+      "sub_categories": [
+        "Surface Treatment Chemical"
+      ]
+    },
+    {
+      "variant": "OXIFEND",
+      "uom": "Litre",
+      "sub_categories": [
+        "Anti-Tarnish Plating"
+      ]
+    },
+    {
+      "variant": "T-PRO",
+      "uom": "Litre",
+      "sub_categories": [
+        "Anti-Tarnish Plating"
+      ]
+    },
+    {
+      "variant": "CERAMIX",
+      "uom": "Litre",
+      "sub_categories": [
+        "Lacquer Coating"
+      ]
+    },
+    {
+      "variant": "KLIAR",
+      "uom": "Litre",
+      "sub_categories": [
+        "Lacquer Coating"
+      ]
+    },
+    {
+      "variant": "Customized Plating Plants",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Rectifiers",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Peripheral Controls",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Filtration Unit",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Cartridge Filters (Active / Normal)",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Anodes (SS / Pt-Ti / MMO / Nickel / Copper / Silver)",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Heaters",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Sensors (Temperature / Level)",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Spares",
+      "uom": "Unit",
+      "sub_categories": [
+        "Plating Equipment & Spares"
+      ]
+    },
+    {
+      "variant": "Casting Machines",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Continuous Casting Machines",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Graining Machines",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Steel / Platinum Casting",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Induction Melter",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Atomizer",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    },
+    {
+      "variant": "Classifier",
+      "uom": "Unit",
+      "sub_categories": [
+        "Machines"
+      ]
+    }
+  ]
+}
