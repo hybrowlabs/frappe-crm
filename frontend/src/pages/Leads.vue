@@ -11,7 +11,7 @@
       <Button
         :label="__('Import')"
         iconLeft="upload"
-        @click="showImportLeadsModal = true"
+        @click="showLeadImportModal = true"
       />
       <Button
         variant="solid"
@@ -270,7 +270,7 @@
     v-model="showLeadModal"
     :defaults="defaults"
   />
-  <ImportLeadsModal v-model="showImportLeadsModal" />
+  <LeadImportModal v-if="showLeadImportModal" v-model="showLeadImportModal" />
 </template>
 
 <script setup>
@@ -289,7 +289,7 @@ import LeadsListView from '@/components/ListViews/LeadsListView.vue'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import KanbanView from '@/components/Kanban/KanbanView.vue'
 import LeadModal from '@/components/Modals/LeadModal.vue'
-import ImportLeadsModal from '@/components/Modals/ImportLeadsModal.vue'
+import LeadImportModal from '@/components/Modals/LeadImportModal.vue'
 import ViewControls from '@/components/ViewControls.vue'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { getMeta } from '@/stores/meta'
@@ -318,7 +318,7 @@ const route = useRoute()
 
 const leadsListView = ref(null)
 const showLeadModal = ref(false)
-const showImportLeadsModal = ref(false)
+const showLeadImportModal = ref(false)
 
 on('trigger_lead_create', (data) => {
   showLeadModal.value = Boolean(data)

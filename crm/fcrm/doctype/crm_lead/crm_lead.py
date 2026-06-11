@@ -76,6 +76,10 @@ class CRMLead(Document):
 	def before_validate(self):
 		self.set_sla()
 
+	def before_insert(self):
+		if frappe.flags.in_import:
+			self.handle_import_dedup()
+
 	def validate(self):
 		self.validate_status()
 		self.set_full_name()
@@ -200,6 +204,80 @@ class CRMLead(Document):
 					user,
 					flags={"ignore_share_permission": True, "ignore_permissions": True},
 				)
+
+	def handle_import_dedup(self):
+		"""
+		Deduplication logic for bulk Data Import.
+
+		1. Both org + contact exist → skip row (frappe.throw)
+		2. Org exists, contact new → create Contact for existing org, skip lead
+		3. Neither exists → allow insert (normal lead creation)
+		"""
+		org_exists = False
+		existing_org = None
+		contact_exists = False
+
+		# Check if organization already exists in CRM Organization
+		if self.organization:
+			existing_org = frappe.db.exists(
+				"CRM Organization", {"organization_name": self.organization}
+			)
+			org_exists = bool(existing_org)
+
+		# Check if contact already exists (by email or mobile_no)
+		if self.email:
+			contact_exists = bool(frappe.db.exists("Contact Email", {"email_id": self.email}))
+		if not contact_exists and self.mobile_no:
+			contact_exists = bool(frappe.db.exists("Contact Phone", {"phone": self.mobile_no}))
+
+		# Case 1: Both exist → duplicate, skip this row
+		if org_exists and contact_exists:
+			frappe.throw(
+				_("Duplicate: Organization '{0}' and Contact already exist in the CRM").format(
+					self.organization
+				),
+				title=_("Skipped - Duplicate"),
+			)
+
+		# Case 2: Org exists, contact is new → create contact, skip lead
+		if org_exists and not contact_exists:
+			self.create_contact_for_existing_org()
+			frappe.db.commit()  # persist contact before throwing
+			frappe.throw(
+				_("Contact added to existing Organization '{0}'. Lead not created.").format(
+					self.organization
+				),
+				title=_("Contact Added"),
+			)
+
+	def create_contact_for_existing_org(self):
+		"""
+		Create a Contact record and link it to the existing CRM Organization.
+		Called during Data Import when org exists but contact is new.
+		"""
+		contact = frappe.new_doc("Contact")
+		contact.update(
+			{
+				"first_name": self.first_name or self.lead_name,
+				"last_name": self.last_name,
+				"salutation": self.salutation,
+				"gender": self.gender,
+				"designation": self.job_title,
+				"company_name": self.organization,
+				"image": self.image or "",
+			}
+		)
+
+		if self.email:
+			contact.append("email_ids", {"email_id": self.email, "is_primary": 1})
+
+		if self.mobile_no:
+			contact.append("phone_nos", {"phone": self.mobile_no, "is_primary_mobile_no": 1})
+
+		if self.phone:
+			contact.append("phone_nos", {"phone": self.phone, "is_primary_phone": 1})
+
+		contact.insert(ignore_permissions=True)
 
 	def create_contact(self, existing_contact=None, throw=True):
 		if not self.lead_name:
