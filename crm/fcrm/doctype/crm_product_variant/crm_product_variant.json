@@ -8,8 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "product_variant",
-  "product_sub_category",
-  "unit_of_measure"
+  "unit_of_measure",
+  "product_sub_categories"
  ],
  "fields": [
   {
@@ -21,25 +21,24 @@
    "unique": 1
   },
   {
-   "fieldname": "product_sub_category",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Product Sub Category",
-   "options": "CRM Product Sub Category",
-   "reqd": 1
-  },
-  {
    "fieldname": "unit_of_measure",
    "fieldtype": "Link",
    "label": "Unit Of Measure",
    "options": "UOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "product_sub_categories",
+   "fieldtype": "Table MultiSelect",
+   "label": "Product Sub categories",
+   "options": "CRM Product Sub Category Select",
    "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-10 12:21:53.078108",
+ "modified": "2026-06-11 09:56:48.311705",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Product Variant",
