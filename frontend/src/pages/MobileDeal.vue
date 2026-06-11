@@ -355,6 +355,7 @@
     v-model="showPreQuotationModal"
     :org="title"
     :subtitle="`${title} · ${dealId}`"
+    @confirm="confirmPreQuotation"
   />
 </template>
 <script setup>
@@ -849,6 +850,25 @@ function statusLabel(status) {
 }
 
 async function triggerStatusChange(value) {
+  // Moving into Proposal/Quotation goes through the pre-quotation customer gate.
+  if (
+    getDealStatus(value)?.label === 'Proposal/Quotation' &&
+    getDealStatus(doc.value.status)?.label !== 'Proposal/Quotation'
+  ) {
+    pendingProposalStatus.value = value
+    showPreQuotationModal.value = true
+    return
+  }
+  await triggerOnChange('status', value)
+  setLostReason()
+}
+
+const pendingProposalStatus = ref(null)
+
+async function confirmPreQuotation() {
+  let value = pendingProposalStatus.value
+  pendingProposalStatus.value = null
+  if (!value) return
   await triggerOnChange('status', value)
   setLostReason()
 }

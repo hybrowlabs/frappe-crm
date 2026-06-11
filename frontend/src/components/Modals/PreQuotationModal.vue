@@ -77,7 +77,7 @@
               ? __('Proceed to Quotation')
               : __('Create Customer & Proceed')
           "
-          @click="show = false"
+          @click="proceed"
         >
           <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
         </Button>
@@ -106,6 +106,15 @@ defineProps({
 })
 
 const show = defineModel({ type: Boolean })
+const emit = defineEmits(['confirm'])
+
+function proceed() {
+  emit('confirm', {
+    shipping_address: sameAsBilling.value ? billing.value : shipping.value,
+    freight_terms: freight.value,
+  })
+  show.value = false
+}
 
 const legalName = ref('')
 const gst = ref('')
