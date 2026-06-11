@@ -451,6 +451,7 @@
     v-model="showPreQuotationModal"
     :org="title"
     :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
     @confirm="confirmPreQuotation"
   />
 </template>
@@ -1021,12 +1022,51 @@ async function triggerStatusChange(value) {
 
 const pendingProposalStatus = ref(null)
 
-async function confirmPreQuotation() {
+async function confirmPreQuotation(payload) {
   let value = pendingProposalStatus.value
   pendingProposalStatus.value = null
   if (!value) return
+  if (payload) await createDealAddresses(payload)
   await triggerOnChange('status', value)
   setLostReason()
+}
+
+async function createDealAddresses(payload) {
+  doc.value.legal_name = payload.legalName
+  doc.value.gstin = payload.gstin
+  doc.value.freight_terms = payload.freight_terms
+  const addressTitle = payload.legalName || title.value || props.dealId
+  const links = [{ link_doctype: 'CRM Deal', link_name: props.dealId }]
+  try {
+    const billingAddress = await call('frappe.client.insert', {
+      doc: {
+        doctype: 'Address',
+        address_title: addressTitle,
+        address_type: 'Billing',
+        gstin: payload.gstin,
+        ...payload.billing,
+        links,
+      },
+    })
+    doc.value.billing_address = billingAddress.name
+    if (!payload.sameAsBilling) {
+      const shippingAddress = await call('frappe.client.insert', {
+        doc: {
+          doctype: 'Address',
+          address_title: addressTitle,
+          address_type: 'Shipping',
+          gstin: payload.gstin,
+          ...payload.shipping,
+          links,
+        },
+      })
+      doc.value.shipping_address = shippingAddress.name
+    } else {
+      doc.value.shipping_address = billingAddress.name
+    }
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Error creating address'))
+  }
 }
 
 function updateField(name, value) {
