@@ -8,8 +8,10 @@
       :rows="rows"
       :modelValue="modelValue"
       :placeholder="placeholder"
+      :class="error ? 'rounded [&_textarea]:!border-outline-red-2' : ''"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
+    <div v-if="error" class="mt-1 text-xs text-ink-red-3">{{ error }}</div>
     <div v-if="help" class="mt-1 text-xs text-ink-gray-4">{{ help }}</div>
   </div>
 </template>
@@ -24,6 +26,7 @@ defineProps({
   rows: { type: [Number, String], default: 3 },
   required: { type: Boolean, default: false },
   help: { type: String, default: '' },
+  error: { type: String, default: '' },
 })
 
 defineEmits(['update:modelValue'])

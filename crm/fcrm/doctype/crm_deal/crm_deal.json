@@ -67,6 +67,25 @@
   "column_break_trial_3",
   "assigned_tech_member",
   "assignment_notes",
+  "evaluation_tab",
+  "trial_logistics_section",
+  "evaluation_start",
+  "evaluation_end",
+  "column_break_eval_1",
+  "technical_person",
+  "technical_observations_section",
+  "evaluation_observations",
+  "performance_baseline",
+  "performance_trial",
+  "customer_feedback",
+  "testimonial_captured",
+  "evaluation_outcome_section",
+  "manager_reviewed",
+  "customer_validation_received",
+  "column_break_eval_2",
+  "trial_outcome",
+  "lost_reason",
+  "lost_notes",
   "contacts_tab",
   "contacts",
   "contact",
@@ -766,6 +785,104 @@
    "fieldname": "assignment_notes",
    "fieldtype": "Small Text",
    "label": "Assignment Notes"
+  },
+  {
+   "fieldname": "evaluation_tab",
+   "fieldtype": "Tab Break",
+   "label": "Evaluation"
+  },
+  {
+   "fieldname": "trial_logistics_section",
+   "fieldtype": "Section Break",
+   "label": "Trial Logistics"
+  },
+  {
+   "fieldname": "evaluation_start",
+   "fieldtype": "Date",
+   "label": "Evaluation Start"
+  },
+  {
+   "fieldname": "evaluation_end",
+   "fieldtype": "Date",
+   "label": "Evaluation End"
+  },
+  {
+   "fieldname": "column_break_eval_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "technical_person",
+   "fieldtype": "Data",
+   "label": "Technical Person"
+  },
+  {
+   "fieldname": "technical_observations_section",
+   "fieldtype": "Section Break",
+   "label": "Technical Observations"
+  },
+  {
+   "fieldname": "evaluation_observations",
+   "fieldtype": "Small Text",
+   "label": "Observations"
+  },
+  {
+   "fieldname": "performance_baseline",
+   "fieldtype": "Data",
+   "label": "Performance — Baseline"
+  },
+  {
+   "fieldname": "performance_trial",
+   "fieldtype": "Data",
+   "label": "Performance — Trial"
+  },
+  {
+   "fieldname": "customer_feedback",
+   "fieldtype": "Small Text",
+   "label": "Customer Feedback"
+  },
+  {
+   "default": "0",
+   "fieldname": "testimonial_captured",
+   "fieldtype": "Check",
+   "label": "Testimonial Captured?"
+  },
+  {
+   "fieldname": "evaluation_outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "default": "0",
+   "fieldname": "manager_reviewed",
+   "fieldtype": "Check",
+   "label": "Manager Reviewed?"
+  },
+  {
+   "default": "0",
+   "fieldname": "customer_validation_received",
+   "fieldtype": "Check",
+   "label": "Customer Validation Received?"
+  },
+  {
+   "fieldname": "column_break_eval_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trial_outcome",
+   "fieldtype": "Select",
+   "label": "Trial Outcome",
+   "options": "\nSuccessful\nPartial\nUnsuccessful"
+  },
+  {
+   "fieldname": "lost_reason",
+   "fieldtype": "Select",
+   "label": "Lost Reason",
+   "options": "\nTrial failed — quality\nPrice too high\nCompetitor selected\nBudget / no decision\nTimeline mismatch\nNo requirement\nOther"
+  },
+  {
+   "fieldname": "lost_notes",
+   "fieldtype": "Small Text",
+   "label": "Lost Notes"
   }
  ],
  "grid_page_length": 50,
