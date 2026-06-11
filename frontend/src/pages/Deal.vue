@@ -24,9 +24,6 @@
         <template #prefix>
           <FileTextIcon class="h-4 w-4" />
         </template>
-        <template #suffix>
-          <Badge :label="'1'" theme="gray" variant="subtle" />
-        </template>
       </Button>
       <Button
         v-if="stageCta"
@@ -739,9 +736,10 @@ function onStageAction() {
     return
   }
 
-  // Quotations live in ERPNext — jump straight to the Desk create page.
+  // Quotations live in ERPNext — jump straight to the Desk create page,
+  // prefilling the custom_deal link back to this deal.
   if (label === 'Proposal/Quotation') {
-    window.open('/app/quotation/new', '_blank')
+    window.open(`/app/quotation/new?custom_deal=${encodeURIComponent(props.dealId)}`, '_blank')
     return
   }
 
