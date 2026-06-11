@@ -63,7 +63,7 @@
           <div class="text-sm text-ink-gray-6">{{ preview.no }}</div>
         </div>
       </div>
-      <div class="grid grid-cols-4 gap-3 py-4 text-sm">
+      <div class="grid grid-cols-2 gap-3 py-4 text-sm sm:grid-cols-4">
         <div><div class="text-ink-gray-5">{{ __('Buyer') }}</div><div class="font-medium text-ink-gray-8">{{ org }}</div></div>
         <div><div class="text-ink-gray-5">{{ __('Date') }}</div><div class="font-medium text-ink-gray-8">{{ preview.date }}</div></div>
         <div><div class="text-ink-gray-5">{{ __('Valid Till') }}</div><div class="font-medium text-ink-gray-8">{{ preview.validTill }}</div></div>
