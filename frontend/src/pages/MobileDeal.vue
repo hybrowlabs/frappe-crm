@@ -72,6 +72,14 @@
       >
         <template #prefix><BeakerIcon class="h-4 w-4" /></template>
       </Button>
+      <Button
+        v-if="canPrepareQuotation"
+        variant="solid"
+        :label="__('Prepare for Quotation')"
+        @click="prepareForQuotation"
+      >
+        <template #prefix><RupeeIcon class="h-4 w-4" /></template>
+      </Button>
       <CustomActions
         v-if="document._actions?.length"
         :actions="document._actions"
@@ -577,6 +585,20 @@ const canApproveEvaluation = computed(
     !doc.value?.sales_manager_approved &&
     isManager(),
 )
+
+// Once approval isn't required (or is already granted), proceed to the quotation.
+const canPrepareQuotation = computed(
+  () =>
+    getDealStatus(doc.value?.status)?.label === 'Evaluation Completed' &&
+    (!doc.value?.sales_manager_approval_required ||
+      doc.value?.sales_manager_approved),
+)
+
+// Open the same pre-quotation gate that fires when moving into Proposal/Quotation.
+function prepareForQuotation() {
+  let target = statusNameByLabel('Proposal/Quotation')
+  if (target) triggerStatusChange(target)
+}
 const showRetrialStageModal = ref(false)
 const showProposalStageModal = ref(false)
 const showOrderHandoffModal = ref(false)
@@ -603,6 +625,12 @@ function onStageAction() {
 
   if (getDealStatus(doc.value.status)?.type === 'Lost') {
     reopenDeal()
+    return
+  }
+
+  // Quotations live in ERPNext — jump straight to the Desk create page.
+  if (label === 'Proposal/Quotation') {
+    window.open('/app/quotation/new', '_blank')
     return
   }
 

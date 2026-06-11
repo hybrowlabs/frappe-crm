@@ -46,6 +46,14 @@
       >
         <template #prefix><BeakerIcon class="h-4 w-4" /></template>
       </Button>
+      <Button
+        v-if="canPrepareQuotation"
+        variant="solid"
+        :label="__('Prepare for Quotation')"
+        @click="prepareForQuotation"
+      >
+        <template #prefix><RupeeIcon class="h-4 w-4" /></template>
+      </Button>
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
       <Dropdown
         v-if="doc && document.statuses"
@@ -731,6 +739,12 @@ function onStageAction() {
     return
   }
 
+  // Quotations live in ERPNext — jump straight to the Desk create page.
+  if (label === 'Proposal/Quotation') {
+    window.open('/app/quotation/new', '_blank')
+    return
+  }
+
   let modal = STAGE_MODALS[label]
   if (modal && stageModals[modal]) {
     stageModals[modal].value = true
@@ -754,6 +768,20 @@ const canApproveEvaluation = computed(
     !doc.value?.sales_manager_approved &&
     isManager(),
 )
+
+// Once approval isn't required (or is already granted), proceed to the quotation.
+const canPrepareQuotation = computed(
+  () =>
+    getDealStatus(doc.value?.status)?.label === 'Evaluation Completed' &&
+    (!doc.value?.sales_manager_approval_required ||
+      doc.value?.sales_manager_approved),
+)
+
+// Open the same pre-quotation gate that fires when moving into Proposal/Quotation.
+function prepareForQuotation() {
+  let target = statusNameByLabel('Proposal/Quotation')
+  if (target) triggerStatusChange(target)
+}
 const showProposalStageModal = ref(false)
 const showOrderHandoffModal = ref(false)
 // side modals opened from within stage modals
