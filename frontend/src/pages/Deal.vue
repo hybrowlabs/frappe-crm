@@ -742,23 +742,25 @@ function reopenDeal() {
   showReopenDealModal.value = true
 }
 
-// Advance the deal to the next pipeline stage (by position).
-function advanceToNextStage() {
+// Find the next pipeline stage (by position) after the current status.
+function nextStageName() {
   let ordered = dealStatuses.data || []
   let idx = ordered.findIndex((s) => s.name === doc.value.status)
   let next = idx > -1 ? ordered[idx + 1] : null
-  if (next) {
-    triggerStatusChange(next.name)
-  }
+  return next?.name || null
 }
 
 function saveRequirements({ values, advance }) {
   Object.assign(doc.value, values)
+  // Advance to the next stage in the same save so the status reliably persists.
+  if (advance) {
+    let next = nextStageName()
+    if (next) doc.value.status = next
+  }
   document.save.submit(null, {
     onSuccess: () => {
       reload.value = true
       toast.success(__('Requirements saved'))
-      if (advance) advanceToNextStage()
     },
     onError: (err) => {
       toast.error(err.messages?.[0] || __('Error saving requirements'))
