@@ -693,57 +693,52 @@ const statuses = computed(() => {
   return statusOptions('deal', customStatuses, triggerStatusChange)
 })
 
-// Stage-wise contextual action shown in the header, keyed by status label.
-// (Display only for now — clicking just shows a placeholder toast.)
+// Stage-wise contextual action shown in the header, keyed by status name (PK).
 const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
-  Qualified: { label: __('Initiate Trial'), icon: BeakerIcon },
-  'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
+  Qualification: { label: __('Initiate Trial'), icon: BeakerIcon },
+  'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
-  Won: { label: __('View Order Handoff'), icon: CheckIcon },
   Lost: { label: __('Reopen Deal'), icon: RefreshIcon },
 }
 
 const stageCta = computed(() => {
   if (!doc.value.status) return null
-  let label = getDealStatus(doc.value.status)?.label || doc.value.status
-  return STAGE_CTA[label] || null
+  return STAGE_CTA[doc.value.status] || null
 })
 
 // Quotations are reviewable directly from the header on the Proposal & Won stages.
 const hasQuotation = computed(() => {
   if (!doc.value.status) return false
-  let label = getDealStatus(doc.value.status)?.label || doc.value.status
-  return ['Proposal/Quotation', 'Won'].includes(label)
+  return ['Proposal/Quotation', 'Won'].includes(doc.value.status)
 })
 
-// Each pipeline stage's header CTA opens its own stage-form modal.
+// Each pipeline stage's header CTA opens its own stage-form modal (keyed by status name).
 const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
-  Qualified: 'showInitiateTrialModal',
-  'Tech Evaluation': 'showRecordEvaluationModal',
+  Qualification: 'showInitiateTrialModal',
+  'Demo/Making': 'showRecordEvaluationModal',
   Retrial: 'showRecordEvaluationModal',
   'Proposal/Quotation': 'showProposalStageModal',
-  Won: 'showOrderHandoffModal',
 }
 
 function onStageAction() {
-  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+  let status = doc.value.status
 
-  if (getDealStatus(doc.value.status)?.type === 'Lost') {
+  if (getDealStatus(status)?.type === 'Lost') {
     reopenDeal()
     return
   }
 
   // Quotations live in ERPNext — jump straight to the Desk create page,
   // prefilling the custom_deal link back to this deal.
-  if (label === 'Proposal/Quotation') {
+  if (status === 'Proposal/Quotation') {
     window.open(`/app/quotation/new?custom_deal=${encodeURIComponent(props.dealId)}`, '_blank')
     return
   }
 
-  let modal = STAGE_MODALS[label]
+  let modal = STAGE_MODALS[status]
   if (modal && stageModals[modal]) {
     stageModals[modal].value = true
     return
@@ -761,7 +756,7 @@ const showRetrialStageModal = ref(false)
 // Sales Managers can approve a partially-successful evaluation awaiting their decision.
 const canApproveEvaluation = computed(
   () =>
-    getDealStatus(doc.value?.status)?.label === 'Evaluation Completed' &&
+    doc.value?.status === 'Evaluation Completed' &&
     doc.value?.sales_manager_approval_required &&
     !doc.value?.sales_manager_approved &&
     isManager(),
@@ -770,15 +765,14 @@ const canApproveEvaluation = computed(
 // Once approval isn't required (or is already granted), proceed to the quotation.
 const canPrepareQuotation = computed(
   () =>
-    getDealStatus(doc.value?.status)?.label === 'Evaluation Completed' &&
+    doc.value?.status === 'Evaluation Completed' &&
     (!doc.value?.sales_manager_approval_required ||
       doc.value?.sales_manager_approved),
 )
 
 // Open the same pre-quotation gate that fires when moving into Proposal/Quotation.
 function prepareForQuotation() {
-  let target = statusNameByLabel('Proposal/Quotation')
-  if (target) triggerStatusChange(target)
+  triggerStatusChange('Proposal/Quotation')
 }
 const showProposalStageModal = ref(false)
 const showOrderHandoffModal = ref(false)
@@ -809,19 +803,12 @@ function nextStageName() {
   return next?.name || null
 }
 
-// Resolve a status by its display label to the actual status name.
-function statusNameByLabel(label) {
-  let ordered = dealStatuses.data || []
-  let found = ordered.find((s) => (getDealStatus(s.name)?.label || s.name) === label)
-  return found?.name || null
-}
-
 function saveRequirements({ values, advance, status }) {
   Object.assign(doc.value, values)
   // Advance to the next stage in the same save so the status reliably persists.
+  // `status`, when provided, is a status name (PK).
   if (status) {
-    let target = statusNameByLabel(status)
-    if (target) doc.value.status = target
+    doc.value.status = status
   } else if (advance) {
     let next = nextStageName()
     if (next) doc.value.status = next
@@ -1023,10 +1010,7 @@ function triggerCall() {
 
 async function triggerStatusChange(value) {
   // Moving into Proposal/Quotation goes through the pre-quotation customer gate.
-  if (
-    getDealStatus(value)?.label === 'Proposal/Quotation' &&
-    getDealStatus(doc.value.status)?.label !== 'Proposal/Quotation'
-  ) {
+  if (value === 'Proposal/Quotation' && doc.value.status !== 'Proposal/Quotation') {
     pendingProposalStatus.value = value
     showPreQuotationModal.value = true
     return
