@@ -30,7 +30,7 @@
           v-model="techPerson"
           :label="__('Technical Person')"
           required
-          :options="['Suraj', 'Pankaj', 'Akshay']"
+          :options="techPersonOptions"
           :error="errors.techPerson"
         />
       </FieldGrid>
@@ -158,7 +158,7 @@
         </Button>
         <span class="flex-1" />
         <template v-if="outcome === 'Unsuccessful'">
-          <Button :label="__('Send to Retrial (+1)')">
+          <Button :label="__('Send to Retrial (+1)')" @click="sendToRetrial">
             <template #prefix><StageIcon name="refresh" class="h-4 w-4" /></template>
           </Button>
           <Button
@@ -205,7 +205,7 @@ import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
-import { Button, toast } from 'frappe-ui'
+import { Button, toast, createResource, createListResource } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -240,16 +240,26 @@ const outcomeOptions = [
   { label: __('Partially Successful → Sales Manager decides'), value: 'Partial' },
   { label: __('Unsuccessful → +1 Retrial or Close (Lost)'), value: 'Unsuccessful' },
 ]
-const lostReasonOptions = [
+
+// Technical Person options come from the CRM Tech Team doctype; label reads as
+// "Category — Member First Name", value is the record name.
+const techTeamResource = createResource({
+  url: 'crm.api.tech_team.get_tech_teams',
+  auto: true,
+})
+const techPersonOptions = computed(() => techTeamResource.data || [])
+
+// Lost Reason options come from the CRM Lost Reason doctype.
+const lostReasonResource = createListResource({
+  doctype: 'CRM Lost Reason',
+  fields: ['name'],
+  pageLength: 99,
+  auto: true,
+})
+const lostReasonOptions = computed(() => [
   '',
-  'Trial failed — quality',
-  'Price too high',
-  'Competitor selected',
-  'Budget / no decision',
-  'Timeline mismatch',
-  'No requirement',
-  'Other',
-]
+  ...(lostReasonResource.data || []).map((r) => r.name),
+])
 
 onMounted(() => {
   const d = props.deal || {}
@@ -331,7 +341,7 @@ function saveDraft() {
 
 function submitEvaluation() {
   if (!validate()) return
-  emit('save', { values: buildValues(), advance: true })
+  emit('save', { values: buildValues(), status: 'Proposal/Quotation' })
   show.value = false
 }
 
@@ -343,7 +353,13 @@ function sendToSalesManager() {
 
 function markAsLost() {
   if (!validate()) return
-  emit('save', { values: buildValues(), advance: false })
+  emit('save', { values: buildValues(), status: 'Lost' })
+  show.value = false
+}
+
+function sendToRetrial() {
+  if (!validate()) return
+  emit('save', { values: buildValues(), status: 'Retrial' })
   show.value = false
 }
 </script>

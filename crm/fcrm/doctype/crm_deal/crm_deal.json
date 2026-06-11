@@ -812,8 +812,9 @@
   },
   {
    "fieldname": "technical_person",
-   "fieldtype": "Data",
-   "label": "Technical Person"
+   "fieldtype": "Link",
+   "label": "Technical Person",
+   "options": "CRM Tech Team"
   },
   {
    "fieldname": "technical_observations_section",
@@ -875,9 +876,9 @@
   },
   {
    "fieldname": "lost_reason",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Lost Reason",
-   "options": "\nTrial failed — quality\nPrice too high\nCompetitor selected\nBudget / no decision\nTimeline mismatch\nNo requirement\nOther"
+   "options": "CRM Lost Reason"
   },
   {
    "fieldname": "lost_notes",

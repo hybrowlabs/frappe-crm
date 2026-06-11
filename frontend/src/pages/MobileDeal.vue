@@ -509,7 +509,7 @@ const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
   Qualified: { label: __('Initiate Trial'), icon: BeakerIcon },
   'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
-  Retrial: { label: __('Create Service Ticket'), icon: HeadphonesIcon },
+  Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
   Won: { label: __('View Order Handoff'), icon: CheckIcon },
   Lost: { label: __('Reopen Deal'), icon: RefreshIcon },
@@ -539,7 +539,7 @@ const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualified: 'showInitiateTrialModal',
   'Tech Evaluation': 'showRecordEvaluationModal',
-  Retrial: 'showRetrialStageModal',
+  Retrial: 'showRecordEvaluationModal',
   'Proposal/Quotation': 'showProposalStageModal',
   Won: 'showOrderHandoffModal',
 }
@@ -593,10 +593,20 @@ function nextStageName() {
   return next?.name || null
 }
 
-function saveRequirements({ values, advance }) {
+// Resolve a status by its display label to the actual status name.
+function statusNameByLabel(label) {
+  let ordered = dealStatuses.data || []
+  let found = ordered.find((s) => (getDealStatus(s.name)?.label || s.name) === label)
+  return found?.name || null
+}
+
+function saveRequirements({ values, advance, status }) {
   Object.assign(doc.value, values)
   // Advance to the next stage in the same save so the status reliably persists.
-  if (advance) {
+  if (status) {
+    let target = statusNameByLabel(status)
+    if (target) doc.value.status = target
+  } else if (advance) {
     let next = nextStageName()
     if (next) doc.value.status = next
   }
