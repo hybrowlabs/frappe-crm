@@ -56,8 +56,16 @@ def get_tech_teams():
 	)
 	options = []
 	for r in rows:
-		first_name = frappe.db.get_value("User", r.team_member, "first_name") or r.team_member
-		options.append({"value": r.name, "label": f"{r.product_category} — {first_name}"})
+		first_name, full_name = frappe.db.get_value(
+			"User", r.team_member, ["first_name", "full_name"]
+		) or (r.team_member, r.team_member)
+		options.append(
+			{
+				"value": r.name,
+				"label": f"{r.product_category} — {first_name}",
+				"full_name": full_name or r.team_member,
+			}
+		)
 	return options
 
 

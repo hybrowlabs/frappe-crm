@@ -247,7 +247,12 @@ const techTeamResource = createResource({
   url: 'crm.api.tech_team.get_tech_teams',
   auto: true,
 })
-const techPersonOptions = computed(() => techTeamResource.data || [])
+const techPersonOptions = computed(() =>
+  (techTeamResource.data || []).map((o) => ({
+    value: o.value,
+    label: o.full_name,
+  })),
+)
 
 // Lost Reason options come from the CRM Lost Reason doctype.
 const lostReasonResource = createListResource({
@@ -341,25 +346,37 @@ function saveDraft() {
 
 function submitEvaluation() {
   if (!validate()) return
-  emit('save', { values: buildValues(), status: 'Proposal/Quotation' })
+  const values = buildValues()
+  values.sales_manager_approval_required = 0
+  values.sales_manager_approved = 0
+  emit('save', { values, status: 'Evaluation Completed' })
   show.value = false
 }
 
 function sendToSalesManager() {
   if (!validate()) return
-  emit('save', { values: buildValues(), advance: false })
+  const values = buildValues()
+  values.sales_manager_approval_required = 1
+  values.sales_manager_approved = 0
+  emit('save', { values, status: 'Evaluation Completed' })
   show.value = false
 }
 
 function markAsLost() {
   if (!validate()) return
-  emit('save', { values: buildValues(), status: 'Lost' })
+  const values = buildValues()
+  values.sales_manager_approval_required = 0
+  values.sales_manager_approved = 0
+  emit('save', { values, status: 'Lost' })
   show.value = false
 }
 
 function sendToRetrial() {
   if (!validate()) return
-  emit('save', { values: buildValues(), status: 'Retrial' })
+  const values = buildValues()
+  values.sales_manager_approval_required = 0
+  values.sales_manager_approved = 0
+  emit('save', { values, status: 'Retrial' })
   show.value = false
 }
 </script>

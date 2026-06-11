@@ -84,6 +84,8 @@
   "customer_validation_received",
   "column_break_eval_2",
   "trial_outcome",
+  "sales_manager_approval_required",
+  "sales_manager_approved",
   "lost_reason",
   "lost_notes",
   "contacts_tab",
@@ -873,6 +875,18 @@
    "fieldtype": "Select",
    "label": "Trial Outcome",
    "options": "\nSuccessful\nPartial\nUnsuccessful"
+  },
+  {
+   "default": "0",
+   "fieldname": "sales_manager_approval_required",
+   "fieldtype": "Check",
+   "label": "Sales Manager Approval Required"
+  },
+  {
+   "default": "0",
+   "fieldname": "sales_manager_approved",
+   "fieldtype": "Check",
+   "label": "Sales Manager Approved"
   },
   {
    "fieldname": "lost_reason",

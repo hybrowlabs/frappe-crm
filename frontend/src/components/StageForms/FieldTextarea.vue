@@ -8,6 +8,7 @@
       :rows="rows"
       :modelValue="modelValue"
       :placeholder="placeholder"
+      :readonly="readonly"
       :class="error ? 'rounded [&_textarea]:!border-outline-red-2' : ''"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
@@ -24,6 +25,7 @@ defineProps({
   modelValue: { type: String, default: '' },
   placeholder: { type: String, default: '' },
   rows: { type: [Number, String], default: 3 },
+  readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
   help: { type: String, default: '' },
   error: { type: String, default: '' },

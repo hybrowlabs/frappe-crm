@@ -38,6 +38,14 @@
           <component :is="stageCta.icon" class="h-4 w-4" />
         </template>
       </Button>
+      <Button
+        v-if="canApproveEvaluation"
+        variant="solid"
+        :label="__('Approve Evaluation')"
+        @click="showApproveEvaluationModal = true"
+      >
+        <template #prefix><BeakerIcon class="h-4 w-4" /></template>
+      </Button>
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
       <Dropdown
         v-if="doc && document.statuses"
@@ -386,6 +394,14 @@
     @save="saveRequirements"
     @lab="showLabRequestModal = true"
   />
+  <ApproveEvaluationModal
+    v-if="showApproveEvaluationModal"
+    v-model="showApproveEvaluationModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @save="saveRequirements"
+  />
   <RetrialStageModal
     v-if="showRetrialStageModal"
     v-model="showRetrialStageModal"
@@ -468,6 +484,7 @@ import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
 import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
+import ApproveEvaluationModal from '@/components/Modals/ApproveEvaluationModal.vue'
 import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
 import ProposalStageModal from '@/components/Modals/ProposalStageModal.vue'
 import OrderHandoffModal from '@/components/Modals/OrderHandoffModal.vue'
@@ -493,6 +510,7 @@ import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
 import { statusesStore } from '@/stores/statuses'
+import { usersStore } from '@/stores/users'
 import { getMeta } from '@/stores/meta'
 import { useDocument } from '@/data/document'
 import { whatsappEnabled } from '@/composables/whatsapp'
@@ -526,6 +544,7 @@ const { on } = useBroadcast()
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
 const { statusOptions, getDealStatus, dealStatuses } = statusesStore()
+const { isManager } = usersStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const { updateOnboardingStep, isOnboardingStepsCompleted } =
@@ -724,7 +743,17 @@ const showReopenDealModal = ref(false)
 const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
 const showRecordEvaluationModal = ref(false)
+const showApproveEvaluationModal = ref(false)
 const showRetrialStageModal = ref(false)
+
+// Sales Managers can approve a partially-successful evaluation awaiting their decision.
+const canApproveEvaluation = computed(
+  () =>
+    getDealStatus(doc.value?.status)?.label === 'Evaluation Completed' &&
+    doc.value?.sales_manager_approval_required &&
+    !doc.value?.sales_manager_approved &&
+    isManager(),
+)
 const showProposalStageModal = ref(false)
 const showOrderHandoffModal = ref(false)
 // side modals opened from within stage modals
