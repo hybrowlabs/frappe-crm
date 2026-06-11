@@ -17,8 +17,11 @@ class CRMProduct(Document):
 		disabled: DF.Check
 		image: DF.AttachImage | None
 		naming_series: DF.Literal["CRM-PROD-.YYYY.-"]
+		product_category: DF.Link | None
 		product_code: DF.Data
 		product_name: DF.Data | None
+		product_sub_category: DF.Link | None
+		product_variant: DF.Link | None
 		standard_rate: DF.Currency
 	# end: auto-generated types
 

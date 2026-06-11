@@ -43,6 +43,18 @@
     <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
     <div class="flex items-center gap-2">
       <Button
+        v-if="hasQuotation"
+        :label="__('View Quotations')"
+        @click="showQuotationsModal = true"
+      >
+        <template #prefix>
+          <FileTextIcon class="h-4 w-4" />
+        </template>
+        <template #suffix>
+          <Badge :label="'1'" theme="gray" variant="subtle" />
+        </template>
+      </Button>
+      <Button
         v-if="stageCta"
         variant="solid"
         :label="stageCta.label"
@@ -384,6 +396,7 @@ import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
 import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
 import CheckIcon from '@/components/Icons/CheckIcon.vue'
 import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
+import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
 import Section from '@/components/Section.vue'
@@ -501,6 +514,13 @@ const stageCta = computed(() => {
   if (!doc.value.status) return null
   let label = getDealStatus(doc.value.status)?.label || doc.value.status
   return STAGE_CTA[label] || null
+})
+
+// Quotations are reviewable directly from the header on the Proposal & Won stages.
+const hasQuotation = computed(() => {
+  if (!doc.value.status) return false
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+  return ['Proposal/Quotation', 'Won'].includes(label)
 })
 
 const dealValueLabel = computed(() =>

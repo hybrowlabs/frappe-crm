@@ -17,6 +17,18 @@
         :actions="document.actions"
       />
       <Button
+        v-if="hasQuotation"
+        :label="__('View Quotations')"
+        @click="showQuotationsModal = true"
+      >
+        <template #prefix>
+          <FileTextIcon class="h-4 w-4" />
+        </template>
+        <template #suffix>
+          <Badge :label="'1'" theme="gray" variant="subtle" />
+        </template>
+      </Button>
+      <Button
         v-if="stageCta"
         variant="solid"
         :label="stageCta.label"
@@ -442,6 +454,7 @@ import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
 import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
 import CheckIcon from '@/components/Icons/CheckIcon.vue'
 import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
+import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
@@ -667,6 +680,13 @@ const stageCta = computed(() => {
   if (!doc.value.status) return null
   let label = getDealStatus(doc.value.status)?.label || doc.value.status
   return STAGE_CTA[label] || null
+})
+
+// Quotations are reviewable directly from the header on the Proposal & Won stages.
+const hasQuotation = computed(() => {
+  if (!doc.value.status) return false
+  let label = getDealStatus(doc.value.status)?.label || doc.value.status
+  return ['Proposal/Quotation', 'Won'].includes(label)
 })
 
 // Each pipeline stage's header CTA opens its own stage-form modal.
