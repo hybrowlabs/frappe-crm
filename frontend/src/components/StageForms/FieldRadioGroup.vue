@@ -15,6 +15,7 @@
         @select="$emit('update:modelValue', opt.value)"
       />
     </div>
+    <div v-if="error" class="mt-1 text-xs text-ink-red-3">{{ error }}</div>
   </div>
 </template>
 
@@ -29,6 +30,7 @@ const props = defineProps({
   options: { type: Array, default: () => [] },
   required: { type: Boolean, default: false },
   inline: { type: Boolean, default: false },
+  error: { type: String, default: '' },
 })
 
 defineEmits(['update:modelValue'])

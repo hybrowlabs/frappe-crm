@@ -13,7 +13,12 @@ def after_insert(doc, method):
 				doc.reference_type, doc.reference_name, fieldname, doc.allocated_to, update_modified=False
 			)
 
-	if doc.reference_type in ["CRM Lead", "CRM Deal", "CRM Task"] and doc.reference_name and doc.allocated_to:
+	if (
+		doc.reference_type in ["CRM Lead", "CRM Deal", "CRM Task"]
+		and doc.reference_name
+		and doc.allocated_to
+		and not frappe.flags.get("skip_assignment_notification")
+	):
 		notify_assigned_user(doc)
 
 

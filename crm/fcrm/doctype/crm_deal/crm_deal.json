@@ -43,6 +43,30 @@
   "credit_check",
   "column_break_qnga",
   "decision_maker",
+  "trial_qualification_tab",
+  "qualification_section",
+  "opportunity_type",
+  "decision_maker_involved",
+  "column_break_trial_1",
+  "decision_timeline",
+  "forecast_category",
+  "decision_criteria_section",
+  "dc_performance_metal_loss",
+  "dc_performance_colour",
+  "column_break_dc",
+  "dc_price_competitive",
+  "dc_delivery_lead_time",
+  "trial_details_section",
+  "expected_monthly_volume",
+  "column_break_trial_2",
+  "trial_required_before_decision",
+  "trial_required",
+  "technical_assignment_section",
+  "assign_to_tech_team",
+  "tech_team_category",
+  "column_break_trial_3",
+  "assigned_tech_member",
+  "assignment_notes",
   "contacts_tab",
   "contacts",
   "contact",
@@ -612,6 +636,136 @@
    "fieldname": "credit_check",
    "fieldtype": "Check",
    "label": "Credit Check"
+  },
+  {
+   "fieldname": "trial_qualification_tab",
+   "fieldtype": "Tab Break",
+   "label": "Trial / Qualification"
+  },
+  {
+   "fieldname": "qualification_section",
+   "fieldtype": "Section Break",
+   "label": "Qualification"
+  },
+  {
+   "fieldname": "opportunity_type",
+   "fieldtype": "Select",
+   "label": "Opportunity Type",
+   "options": "\nNew Business\nNew Product\nExpansion\nWin-back"
+  },
+  {
+   "fieldname": "decision_maker_involved",
+   "fieldtype": "Select",
+   "label": "Decision Maker Involved?",
+   "options": "\nYes — Strong Deal\nPartial\nNo"
+  },
+  {
+   "fieldname": "column_break_trial_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "decision_timeline",
+   "fieldtype": "Select",
+   "label": "Decision Timeline",
+   "options": "\nImmediate (<1 month)\nShort (<2 months)\nMedium (3-6 months)\nLong (6 months+)"
+  },
+  {
+   "fieldname": "forecast_category",
+   "fieldtype": "Select",
+   "label": "Forecast Category",
+   "options": "\nPipeline\nBest Case\nCommit\nOmitted"
+  },
+  {
+   "fieldname": "trial_details_section",
+   "fieldtype": "Section Break",
+   "label": "Trial Details"
+  },
+  {
+   "fieldname": "decision_criteria_section",
+   "fieldtype": "Section Break",
+   "label": "Decision Criteria"
+  },
+  {
+   "default": "0",
+   "fieldname": "dc_performance_metal_loss",
+   "fieldtype": "Check",
+   "label": "Performance — Metal Loss"
+  },
+  {
+   "default": "0",
+   "fieldname": "dc_performance_colour",
+   "fieldtype": "Check",
+   "label": "Performance — Colour"
+  },
+  {
+   "fieldname": "column_break_dc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "dc_price_competitive",
+   "fieldtype": "Check",
+   "label": "Price — Competitive"
+  },
+  {
+   "default": "0",
+   "fieldname": "dc_delivery_lead_time",
+   "fieldtype": "Check",
+   "label": "Delivery — Lead Time"
+  },
+  {
+   "fieldname": "expected_monthly_volume",
+   "fieldtype": "Float",
+   "label": "Expected Monthly Volume (KG)"
+  },
+  {
+   "fieldname": "column_break_trial_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "trial_required_before_decision",
+   "fieldtype": "Check",
+   "label": "Trial Required Before Decision"
+  },
+  {
+   "default": "0",
+   "fieldname": "trial_required",
+   "fieldtype": "Check",
+   "label": "Trial Required"
+  },
+  {
+   "fieldname": "technical_assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Technical Assignment"
+  },
+  {
+   "default": "0",
+   "fieldname": "assign_to_tech_team",
+   "fieldtype": "Check",
+   "label": "Assign to Tech Team?"
+  },
+  {
+   "fieldname": "tech_team_category",
+   "fieldtype": "Link",
+   "label": "Tech Team Category",
+   "options": "CRM Tech Team"
+  },
+  {
+   "fieldname": "column_break_trial_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assigned_tech_member",
+   "fieldtype": "Link",
+   "label": "Assigned Tech Member",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assignment_notes",
+   "fieldtype": "Small Text",
+   "label": "Assignment Notes"
   }
  ],
  "grid_page_length": 50,

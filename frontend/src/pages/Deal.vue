@@ -374,6 +374,8 @@
     v-model="showInitiateTrialModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @save="saveRequirements"
   />
   <RecordEvaluationModal
     v-if="showRecordEvaluationModal"
