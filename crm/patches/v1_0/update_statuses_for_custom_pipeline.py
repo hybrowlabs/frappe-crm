@@ -16,7 +16,7 @@ DEAL_STATUSES = [
 		"new": True, "color": "red", "type": "Ongoing", "probability": 30},
 	{"name": "Evaluation Completed", "label": "Evaluation Completed", "position": 5,
 		"new": True, "color": "green", "type": "Ongoing", "probability": 50},
-	{"name": "Proposal/Quotation", "label": "Proposal/Quotation", "position": 6},
+	{"name": "Proposal/Quotation", "label": "Quotation", "position": 6},
 	{"name": "Negotiation", "label": "Negotiation", "position": 7},
 	{"name": "Ready to Close", "label": "Ready to Close", "position": 8},
 	{"name": "Won", "label": "Won", "position": 9},
