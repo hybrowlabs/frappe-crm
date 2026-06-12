@@ -32,7 +32,7 @@
           v-model="gstin"
           :label="__('GSTIN')"
           required
-          :help="__('Required to invoice')"
+          :help="gstinHelp"
           :error="errors.gstin"
         />
       </FieldGrid>
@@ -128,8 +128,8 @@ import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
-import { Button, call } from 'frappe-ui'
-import { ref, reactive, computed, onMounted } from 'vue'
+import { Button, call, toast } from 'frappe-ui'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 
 const props = defineProps({
   org: { type: String, default: '' },
@@ -196,6 +196,43 @@ const freightOptions = [
   { label: __('Charged (added to invoice)'), value: 'Charged' },
   { label: __('Paid upfront'), value: 'Paid Upfront' },
 ]
+
+// Auto-fetch legal name + billing address from the GSTIN via india_compliance.
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
+const gstinLoading = ref(false)
+// Skip the value pre-filled from the deal so we don't overwrite saved details.
+let lastFetchedGstin = (gstin.value || '').toUpperCase()
+
+const gstinHelp = computed(() =>
+  gstinLoading.value
+    ? __('Fetching GST details…')
+    : __('Required to invoice'),
+)
+
+watch(gstin, (value) => {
+  const clean = (value || '').toUpperCase().replace(/\s/g, '')
+  if (clean !== value) gstin.value = clean
+  if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
+  lastFetchedGstin = clean
+  fetchGstinInfo(clean)
+})
+
+async function fetchGstinInfo(value) {
+  gstinLoading.value = true
+  try {
+    const info = await call(
+      'india_compliance.gst_india.utils.gstin_info.get_gstin_info',
+      { gstin: value },
+    )
+    if (info?.business_name) legalName.value = info.business_name
+    if (info?.permanent_address) fillAddress(billing, info.permanent_address)
+    toast.success(__('GST details fetched'))
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Could not fetch GST details'))
+  } finally {
+    gstinLoading.value = false
+  }
+}
 
 const attempted = ref(false)
 const errors = computed(() => {
