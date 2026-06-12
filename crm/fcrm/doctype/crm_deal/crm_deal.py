@@ -12,6 +12,60 @@ from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import add_sta
 from crm.fcrm.doctype.utils import add_or_remove_lost_reason_section_in_sidepanel
 
 
+# Data that must already be captured for a deal to reach a given pipeline stage.
+# Each gate is keyed by the status it guards; moving a deal forward into (or past)
+# that status requires every listed field — and every field of earlier gates — to
+# be filled. The "step" label tells the user which stage form collects the data.
+STAGE_GATES = [
+	{
+		"status": "Qualification",
+		"step": "Capture Requirements",
+		"fields": [
+			("product_category", "Product Category"),
+			("product_sub_category", "Sub-Category"),
+			("product_variant", "Variant"),
+			("pain_frequency", "Pain Frequency"),
+			("pain_severity", "Pain Severity"),
+			("decision_maker", "Decision Maker"),
+		],
+	},
+	{
+		"status": "Demo/Making",
+		"step": "Initiate Trial / Qualify Opportunity",
+		"fields": [
+			("opportunity_type", "Opportunity Type"),
+			("decision_maker_involved", "Decision Maker Involved"),
+			("decision_timeline", "Decision Timeline"),
+			("expected_monthly_volume", "Expected Monthly Volume"),
+			("deal_value", "Deal Value"),
+			("forecast_category", "Forecast Category"),
+			("tech_team_category", "Tech Team Category"),
+		],
+	},
+	{
+		"status": "Evaluation Completed",
+		"step": "Record Evaluation",
+		"fields": [
+			("evaluation_start", "Evaluation Start"),
+			("evaluation_end", "Evaluation End"),
+			("technical_person", "Technical Person"),
+			("evaluation_observations", "Evaluation Observations"),
+			("customer_feedback", "Customer Feedback"),
+			("trial_outcome", "Trial Outcome"),
+		],
+	},
+	{
+		"status": "Proposal/Quotation",
+		"step": "Prepare for Quotation",
+		"fields": [
+			("legal_name", "Legal / Registered Name"),
+			("gstin", "GSTIN"),
+			("billing_address", "Billing Address"),
+		],
+	},
+]
+
+
 class CRMDeal(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -99,6 +153,7 @@ class CRMDeal(Document):
 			self.share_with_agent(self.deal_owner)
 			self.assign_agent(self.deal_owner)
 		if self.has_value_changed("status"):
+			self.validate_stage_requirements()
 			add_status_change_log(self)
 			if frappe.db.get_value("CRM Deal Status", self.status, "type") == "Won":
 				self.closed_date = frappe.utils.nowdate()
@@ -127,6 +182,68 @@ class CRMDeal(Document):
 				limit=1,
 			)
 			self.status = first_open[0] if first_open else None
+
+	def validate_stage_requirements(self):
+		"""Gate forward status changes on the data each stage needs.
+
+		Moving a deal forward (to a higher-position status) requires every field of
+		the target stage's gate — and of all earlier gates — to be filled. Moving
+		back to an earlier status, or marking the deal Lost, is never blocked. If the
+		data is already present, the status simply changes.
+		"""
+		if self.is_new() or not self.status:
+			return
+
+		statuses = frappe.get_all("CRM Deal Status", fields=["name", "position", "label"])
+		positions = {s.name: s.position for s in statuses}
+		labels = {s.name: s.label or s.name for s in statuses}
+		new_pos = positions.get(self.status)
+		if new_pos is None:
+			return
+
+		# Never block losing a deal.
+		if frappe.db.get_value("CRM Deal Status", self.status, "type") == "Lost":
+			return
+
+		old_status = frappe.db.get_value("CRM Deal", self.name, "status")
+		old_pos = positions.get(old_status, 0)
+
+		# Only validate forward moves; going back to a previous stage is allowed.
+		if new_pos <= old_pos:
+			return
+
+		def is_filled(fieldname):
+			value = self.get(fieldname)
+			if isinstance(value, str):
+				return bool(value.strip())
+			if isinstance(value, (int, float)):
+				return value != 0
+			return bool(value)
+
+		missing_sections = []
+		for gate in STAGE_GATES:
+			gate_pos = positions.get(gate["status"])
+			if gate_pos is None or gate_pos > new_pos:
+				continue
+			missing = [_(label) for fieldname, label in gate["fields"] if not is_filled(fieldname)]
+			if missing:
+				missing_sections.append((labels.get(gate["status"], gate["status"]), missing))
+
+		if not missing_sections:
+			return
+
+		lines = [
+			"<b>{0}</b>: {1}".format(status_label, ", ".join(fields))
+			for status_label, fields in missing_sections
+		]
+		frappe.throw(
+			_("This deal can't move to <b>{0}</b> until the following details are filled in:").format(
+				labels.get(self.status, self.status)
+			)
+			+ "<br><br>"
+			+ "<br>".join(lines),
+			title=_("Incomplete stage details"),
+		)
 
 	def set_primary_contact(self, contact=None):
 		if not self.contacts:

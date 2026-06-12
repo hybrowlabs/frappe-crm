@@ -368,12 +368,6 @@
     doctype="CRM Deal"
     :document="document"
   />
-  <ReopenDealModal
-    v-if="showReopenDealModal"
-    v-model="showReopenDealModal"
-    :statusLabel="statusLabel(doc.status)"
-    :subtitle="`${title} · ${dealId}`"
-  />
   <CaptureRequirementsModal
     v-if="showCaptureRequirementsModal"
     v-model="showCaptureRequirementsModal"
@@ -480,13 +474,11 @@ import BeakerIcon from '@/components/Icons/BeakerIcon.vue'
 import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
 import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
 import CheckIcon from '@/components/Icons/CheckIcon.vue'
-import RefreshIcon from '@/components/Icons/RefreshIcon.vue'
 import FileTextIcon from '@/components/Icons/FileTextIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
-import ReopenDealModal from '@/components/Modals/ReopenDealModal.vue'
 import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
@@ -701,7 +693,6 @@ const STAGE_CTA = {
   'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
-  Lost: { label: __('Reopen Deal'), icon: RefreshIcon },
 }
 
 const stageCta = computed(() => {
@@ -727,11 +718,6 @@ const STAGE_MODALS = {
 function onStageAction() {
   let status = doc.value.status
 
-  if (getDealStatus(status)?.type === 'Lost') {
-    reopenDeal()
-    return
-  }
-
   // Quotations live in ERPNext — jump straight to the Desk create page,
   // prefilling the custom_deal link back to this deal.
   if (status === 'Proposal/Quotation') {
@@ -747,7 +733,6 @@ function onStageAction() {
   toast(stageCta.value?.label)
 }
 
-const showReopenDealModal = ref(false)
 const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
 const showRecordEvaluationModal = ref(false)
@@ -790,10 +775,6 @@ const stageModals = {
   showRetrialStageModal,
   showProposalStageModal,
   showOrderHandoffModal,
-}
-
-function reopenDeal() {
-  showReopenDealModal.value = true
 }
 
 // Find the next pipeline stage (by position) after the current status.
@@ -1009,13 +990,48 @@ function triggerCall() {
   makeCall(mobile_no)
 }
 
+// A forward move is "single step" when no required stage sits between the current
+// and target status. Retrial is an optional branch, so it may be skipped.
+const SKIPPABLE_STAGES = ['Retrial']
+function isSingleStepForward(current, target) {
+  const ordered = dealStatuses.data || []
+  const positions = Object.fromEntries(ordered.map((s) => [s.name, s.position]))
+  const oldPos = positions[current] ?? 0
+  const newPos = positions[target] ?? 0
+  if (newPos <= oldPos) return false
+  const intermediate = ordered.filter(
+    (s) =>
+      s.position > oldPos &&
+      s.position < newPos &&
+      !SKIPPABLE_STAGES.includes(s.name),
+  )
+  return intermediate.length === 0
+}
+
 async function triggerStatusChange(value) {
-  // Moving into Proposal/Quotation goes through the pre-quotation customer gate.
-  if (value === 'Proposal/Quotation' && doc.value.status !== 'Proposal/Quotation') {
-    pendingProposalStatus.value = value
-    showPreQuotationModal.value = true
-    return
+  const current = doc.value.status
+  const singleStep = isSingleStepForward(current, value)
+
+  // On a single-step forward move, open the stage form (which captures the data
+  // and advances the status itself) instead of changing the status immediately.
+  // Multi-step jumps fall through to a direct change (validated on the backend).
+  if (singleStep) {
+    // Entering Proposal/Quotation runs the pre-quotation customer gate.
+    if (value === 'Proposal/Quotation' && current !== 'Proposal/Quotation') {
+      pendingProposalStatus.value = value
+      showPreQuotationModal.value = true
+      return
+    }
+    // The Proposal stage form doesn't advance the deal, so skip it here.
+    if (current !== 'Proposal/Quotation') {
+      const modal = STAGE_MODALS[current]
+      if (modal && stageModals[modal]) {
+        stageModals[modal].value = true
+        return
+      }
+    }
   }
+
   await triggerOnChange('status', value)
   setLostReason()
 }
