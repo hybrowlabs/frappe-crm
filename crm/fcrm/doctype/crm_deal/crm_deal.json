@@ -21,6 +21,8 @@
   "column_break_kpxa",
   "expected_closure_date",
   "closed_date",
+  "conversion_reason",
+  "close_timeline",
   "requirements_tab",
   "product_selection_section",
   "product_category",
@@ -509,6 +511,18 @@
    "fieldname": "closed_date",
    "fieldtype": "Date",
    "label": "Closed Date"
+  },
+  {
+   "fieldname": "conversion_reason",
+   "fieldtype": "Select",
+   "label": "Conversion Reason",
+   "options": "\nNew product or application — first time enquiry\nExisting customer wants to try a different product\nProblem identified — needs technical recommendation\nTrial requested by customer"
+  },
+  {
+   "fieldname": "close_timeline",
+   "fieldtype": "Select",
+   "label": "Close Timeline",
+   "options": "\nImmediate (<1 month)\nShort (<2 months)\nMedium (3-6 months)"
   },
   {
    "fieldname": "section_break_mwvg",

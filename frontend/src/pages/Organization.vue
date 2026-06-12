@@ -86,6 +86,13 @@
               </div>
               <div class="flex gap-1.5">
                 <Button
+                  variant="solid"
+                  :label="__('New Deal')"
+                  size="sm"
+                  iconLeft="plus"
+                  @click="showNewDealModal = true"
+                />
+                <Button
                   v-if="canDelete"
                   :label="__('Delete')"
                   theme="red"
@@ -175,6 +182,12 @@
     :docname="props.organizationId"
     name="Organizations"
   />
+  <OrgNewDealModal
+    v-if="showNewDealModal"
+    v-model="showNewDealModal"
+    :org="props.organizationId"
+    :subtitle="title"
+  />
 </template>
 
 <script setup>
@@ -190,6 +203,7 @@ import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
+import OrgNewDealModal from '@/components/Modals/OrgNewDealModal.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
@@ -240,6 +254,7 @@ const errorTitle = ref('')
 const errorMessage = ref('')
 
 const showDeleteLinkedDocModal = ref(false)
+const showNewDealModal = ref(false)
 
 const {
   document: organization,

@@ -65,6 +65,13 @@
                 {{ organization.doc.name }}
               </div>
               <div class="flex items-center gap-1.5">
+                <Button
+                  variant="solid"
+                  :label="__('New Deal')"
+                  size="sm"
+                  iconLeft="plus"
+                  @click="showNewDealModal = true"
+                />
                 <Button @click="openWebsite">
                   <FeatherIcon name="link" class="h-4 w-4" />
                 </Button>
@@ -148,9 +155,16 @@
       </template>
     </Tabs>
   </div>
+  <OrgNewDealModal
+    v-if="showNewDealModal"
+    v-model="showNewDealModal"
+    :org="props.organizationId"
+    :subtitle="title"
+  />
 </template>
 
 <script setup>
+import OrgNewDealModal from '@/components/Modals/OrgNewDealModal.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
@@ -203,6 +217,8 @@ const { capture } = useTelemetry()
 
 const route = useRoute()
 const router = useRouter()
+
+const showNewDealModal = ref(false)
 
 const {
   document: organization,
