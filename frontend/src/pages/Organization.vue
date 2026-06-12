@@ -86,24 +86,24 @@
               </div>
               <div class="flex gap-1.5">
                 <Button
-                  variant="solid"
-                  :label="__('New Deal')"
-                  size="sm"
-                  iconLeft="plus"
-                  @click="showNewDealModal = true"
-                />
-                <Button
                   v-if="canDelete"
-                  :label="__('Delete')"
+                  :tooltip="__('Delete')"
                   theme="red"
                   size="sm"
-                  iconLeft="trash-2"
+                  icon="trash-2"
                   @click="deleteOrganization()"
                 />
                 <Button
                   :tooltip="__('Open Website')"
                   icon="link"
                   @click="openWebsite"
+                />
+                <Button
+                  variant="solid"
+                  :label="__('New Deal')"
+                  size="sm"
+                  iconLeft="target"
+                  @click="showNewDealModal = true"
                 />
               </div>
             </div>

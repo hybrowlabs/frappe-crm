@@ -65,23 +65,23 @@
                 {{ organization.doc.name }}
               </div>
               <div class="flex items-center gap-1.5">
-                <Button
-                  variant="solid"
-                  :label="__('New Deal')"
-                  size="sm"
-                  iconLeft="plus"
-                  @click="showNewDealModal = true"
-                />
                 <Button @click="openWebsite">
                   <FeatherIcon name="link" class="h-4 w-4" />
                 </Button>
                 <Button
                   v-if="canDelete"
-                  :label="__('Delete')"
+                  :tooltip="__('Delete')"
                   theme="red"
                   size="sm"
-                  iconLeft="trash-2"
+                  icon="trash-2"
                   @click="deleteOrganization"
+                />
+                <Button
+                  variant="solid"
+                  :label="__('New Deal')"
+                  size="sm"
+                  iconLeft="target"
+                  @click="showNewDealModal = true"
                 />
               </div>
               <ErrorMessage :message="__(error)" />
