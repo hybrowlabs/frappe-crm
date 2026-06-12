@@ -1,105 +1,87 @@
 <template>
-  <Dialog v-model="show" :options="{ size: 'xl' }">
-    <template #body-header>
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h3 class="text-2xl font-semibold leading-6 text-ink-gray-9">
-            {{ __('Convert to Deal') }}
-          </h3>
-        </div>
-        <div class="flex items-center gap-1">
-          <Button
-            v-if="isManager() && !isMobileView"
-            variant="ghost"
-            :tooltip="__('Edit deal\'s mandatory fields layout')"
-            :icon="EditIcon"
-            @click="openQuickEntryModal"
-          />
-          <Button icon="x" variant="ghost" @click="show = false" />
-        </div>
-      </div>
-    </template>
-    <template #body-content>
-      <div class="mb-4 flex items-center gap-2 text-ink-gray-5">
-        <OrganizationsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Organization') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingOrganizationChecked" />
-        </div>
-        <Link
-          v-if="existingOrganizationChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingOrganization"
-          doctype="CRM Organization"
-          @change="(data) => (existingOrganization = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{
-            __(
-              'New organization will be created based on the data in details section',
-            )
-          }}
-        </div>
-      </div>
+  <StageFormDialog
+    v-model="show"
+    :title="__('Convert to Deal')"
+    :subtitle="subtitle"
+    size="xl"
+  >
+    <StageCallout theme="blue" icon="fileText" class="mb-4">
+      {{ __('A') }} <b>{{ __('GST number') }}</b>
+      {{
+        __(
+          'is required to create the customer account and enable quotation & invoicing.',
+        )
+      }}
+    </StageCallout>
 
-      <div class="mb-4 mt-6 flex items-center gap-2 text-ink-gray-5">
-        <ContactsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Contact') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingContactChecked" />
-        </div>
-        <Link
-          v-if="existingContactChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingContact"
-          doctype="Contact"
-          @change="(data) => (existingContact = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{ __("New contact will be created based on the person's details") }}
-        </div>
-      </div>
+    <FieldSelect
+      v-model="gstType"
+      :label="__('GST Registration Type')"
+      required
+      :options="gstTypeOptions"
+    />
 
-      <div v-if="dealTabs.data?.length" class="h-px w-full border-t my-6" />
-
-      <FieldLayout
-        v-if="dealTabs.data?.length"
-        :tabs="dealTabs.data"
-        :data="deal.doc"
-        doctype="CRM Deal"
+    <template v-if="!exempt">
+      <FieldText
+        v-model="gstin"
+        :label="__('GSTIN')"
+        required
+        placeholder="27AABCM1234E1Z5"
+        :help="gstinHelp"
+        :error="errors.gstin"
       />
-      <ErrorMessage class="mt-4" :message="error" />
+      <FieldText
+        v-model="legalName"
+        :label="__('Legal / Registered Name')"
+        required
+        :help="__('As per GST certificate')"
+        :error="errors.legalName"
+      />
+      <StageCallout v-if="valid" theme="green" icon="check" class="mt-1">
+        {{ __('State') }} <b>{{ stateName || stateCode }}</b>
+        {{
+          __(
+            '· Deal territory and tax (CGST/SGST vs IGST) will be set from this GSTIN.',
+          )
+        }}
+      </StageCallout>
     </template>
+    <StageCallout v-else theme="amber" icon="alert" class="mt-1">
+      {{
+        __(
+          'Unregistered — quotation allowed on advance payment only. No input tax credit; credit terms blocked.',
+        )
+      }}
+    </StageCallout>
+
+    <ErrorMessage class="mt-4" :message="error" />
+
     <template #actions>
-      <div class="flex justify-end">
-        <Button :label="__('Convert')" variant="solid" @click="convertToDeal" />
+      <div class="flex items-center justify-between gap-2">
+        <Button :label="__('Cancel')" @click="show = false" />
+        <Button
+          variant="solid"
+          :label="__('Convert & Open Deal')"
+          :loading="converting"
+          @click="convertToDeal"
+        >
+          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
+        </Button>
       </div>
     </template>
-  </Dialog>
+  </StageFormDialog>
 </template>
 <script setup>
-import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
-import EditIcon from '@/components/Icons/EditIcon.vue'
-import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import Link from '@/components/Controls/Link.vue'
+import StageFormDialog from '@/components/StageForms/StageFormDialog.vue'
+import StageCallout from '@/components/StageForms/StageCallout.vue'
+import StageIcon from '@/components/StageForms/StageIcon.vue'
+import FieldSelect from '@/components/StageForms/FieldSelect.vue'
+import FieldText from '@/components/StageForms/FieldText.vue'
 import { useDocument } from '@/data/document'
-import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
-import { statusesStore } from '@/stores/statuses'
-import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
-import { isMobileView } from '@/composables/settings'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { Switch, Dialog, createResource, call } from 'frappe-ui'
-import { ref, computed } from 'vue'
+import { Button, ErrorMessage, call } from 'frappe-ui'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -109,121 +91,113 @@ const props = defineProps({
 const show = defineModel({ type: Boolean })
 
 const router = useRouter()
-
-const { statusOptions, getDealStatus } = statusesStore()
-const { isManager } = usersStore()
 const { user } = sessionStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
-
-const existingContactChecked = ref(false)
-const existingOrganizationChecked = ref(false)
-
-const existingContact = ref('')
-const existingOrganization = ref('')
-const error = ref('')
 const { capture } = useTelemetry()
 
 const { triggerConvertToDeal } = useDocument('CRM Lead', props.lead.name)
 const { document: deal } = useDocument('CRM Deal')
 
+const subtitle = computed(
+  () =>
+    [props.lead.organization, props.lead.lead_name].filter(Boolean).join(' · '),
+)
+
+const gstTypeOptions = [
+  'Registered — Regular',
+  'Registered — Composition',
+  'SEZ / Export',
+  'Unregistered / Composition',
+]
+
+const gstType = ref('Registered — Regular')
+const gstin = ref('')
+const legalName = ref(props.lead.organization || '')
+const error = ref('')
+const converting = ref(false)
+const attempted = ref(false)
+
+watch(show, (val) => {
+  if (val) {
+    gstType.value = 'Registered — Regular'
+    gstin.value = ''
+    legalName.value = props.lead.organization || ''
+    error.value = ''
+    attempted.value = false
+  }
+})
+
+// GSTIN format: 2 digit state + 5 letters + 4 digits + 1 letter + 1 entity + Z + 1 checksum = 15
+const clean = computed(() => gstin.value.toUpperCase().replace(/\s/g, ''))
+const valid = computed(() =>
+  /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/.test(clean.value),
+)
+const stateCode = computed(() => clean.value.slice(0, 2))
+const GST_STATES = {
+  27: 'Maharashtra',
+  24: 'Gujarat',
+  '07': 'Delhi',
+  29: 'Karnataka',
+  33: 'Tamil Nadu',
+  '09': 'Uttar Pradesh',
+  19: 'West Bengal',
+  36: 'Telangana',
+  32: 'Kerala',
+  '08': 'Rajasthan',
+}
+const stateName = computed(() => GST_STATES[stateCode.value])
+const exempt = computed(() => gstType.value === 'Unregistered / Composition')
+
+const gstinHelp = computed(() => {
+  if (!gstin.value)
+    return __('15-character GSTIN — 2-digit state code + 10-char PAN + 3 suffix')
+  if (valid.value)
+    return __('Valid format') + (stateName.value ? ` · ${stateName.value} (${stateCode.value})` : '')
+  return __('{0}/15 characters — check the format', [clean.value.length])
+})
+
+const errors = computed(() => {
+  if (!attempted.value || exempt.value) return {}
+  const e = {}
+  if (!valid.value) e.gstin = __('Enter a valid 15-character GSTIN')
+  if (!legalName.value) e.legalName = __('Required')
+  return e
+})
+
 async function convertToDeal() {
   error.value = ''
+  attempted.value = true
+  if (Object.keys(errors.value).length) return
 
-  if (existingContactChecked.value && !existingContact.value) {
-    error.value = __('Please select an existing contact')
-    return
-  }
-
-  if (existingOrganizationChecked.value && !existingOrganization.value) {
-    error.value = __('Please select an existing organization')
-    return
-  }
-
-  if (!existingContactChecked.value && existingContact.value) {
-    existingContact.value = ''
-  }
-
-  if (!existingOrganizationChecked.value && existingOrganization.value) {
-    existingOrganization.value = ''
+  if (!exempt.value) {
+    deal.doc.gstin = clean.value
+    deal.doc.legal_name = legalName.value
   }
 
   await triggerConvertToDeal?.(props.lead, deal.doc, () => (show.value = false))
 
-  let _deal = await call('crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal', {
-    lead: props.lead.name,
-    deal: deal.doc,
-    existing_contact: existingContact.value,
-    existing_organization: existingOrganization.value,
-  }).catch((err) => {
-    if (err.exc_type == 'MandatoryError') {
-      const errorMessage = err.messages
-        .map((msg) => {
-          let arr = msg.split(': ')
-          return arr[arr.length - 1].trim()
-        })
-        .join(', ')
-
-      if (errorMessage.toLowerCase().includes('required')) {
-        error.value = __(errorMessage)
-      } else {
-        error.value = __('{0} is required', [errorMessage])
-      }
-      return
-    }
+  converting.value = true
+  let newDeal = await call(
+    'crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal',
+    {
+      lead: props.lead.name,
+      deal: deal.doc,
+      existing_contact: '',
+      existing_organization: '',
+    },
+  ).catch((err) => {
     error.value = __('Error converting to deal: {0}', [err.messages?.[0]])
   })
-  if (_deal) {
+  converting.value = false
+
+  if (newDeal) {
     show.value = false
-    existingContactChecked.value = false
-    existingOrganizationChecked.value = false
-    existingContact.value = ''
-    existingOrganization.value = ''
     error.value = ''
     updateOnboardingStep('convert_lead_to_deal', true, false, () => {
-      localStorage.setItem('firstDeal' + user, _deal)
+      localStorage.setItem('firstDeal' + user, newDeal)
     })
     capture('convert_lead_to_deal')
-    router.push({ name: 'Deal', params: { dealId: _deal } })
+    router.push({ name: 'Deal', params: { dealId: newDeal } })
   }
-}
-
-const dealStatuses = computed(() => statusOptions('deal'))
-
-const dealTabs = createResource({
-  url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
-  cache: ['RequiredFields', 'CRM Deal'],
-  params: { doctype: 'CRM Deal', type: 'Required Fields' },
-  auto: true,
-  transform: (_tabs) => {
-    let hasFields = false
-    let parsedTabs = _tabs?.forEach((tab) => {
-      tab.sections?.forEach((section) => {
-        section.columns?.forEach((column) => {
-          column.fields?.forEach((field) => {
-            hasFields = true
-            if (field.fieldname == 'status') {
-              field.fieldtype = 'Select'
-              field.options = dealStatuses.value
-              field.prefix = getDealStatus(deal.doc.status).color
-            }
-
-            if (field.fieldtype === 'Table') {
-              deal.doc[field.fieldname] = []
-            }
-          })
-        })
-      })
-    })
-    return hasFields ? parsedTabs : []
-  },
-})
-
-function openQuickEntryModal() {
-  showQuickEntryModal.value = true
-  quickEntryProps.value = {
-    doctype: 'CRM Deal',
-    onlyRequired: true,
-  }
-  show.value = false
 }
 </script>
