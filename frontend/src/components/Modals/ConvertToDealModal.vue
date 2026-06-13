@@ -167,6 +167,16 @@ const gstTypeOptions = [
   'Unregistered / Composition',
 ]
 
+// Map india_compliance GST Category to our registration-type options.
+const GST_CATEGORY_MAP = {
+  'Registered Regular': 'Registered — Regular',
+  'Registered Composition': 'Registered — Composition',
+  SEZ: 'SEZ / Export',
+  Overseas: 'SEZ / Export',
+  'Deemed Export': 'SEZ / Export',
+  Unregistered: 'Unregistered / Composition',
+}
+
 const gstType = ref('Registered — Regular')
 const gstin = ref('')
 const legalName = ref(props.lead.organization || '')
@@ -256,6 +266,8 @@ async function fetchGstinInfo(value) {
       { gstin: value },
     )
     if (info?.business_name) legalName.value = info.business_name
+    if (info?.gst_category && GST_CATEGORY_MAP[info.gst_category])
+      gstType.value = GST_CATEGORY_MAP[info.gst_category]
     if (info?.permanent_address?.state) fetchedState.value = info.permanent_address.state
     if (info?.permanent_address) fillAddress(billing, info.permanent_address)
     toast.success(__('GST details fetched'))

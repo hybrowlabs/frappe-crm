@@ -65,7 +65,6 @@
   "trial_required",
   "technical_assignment_section",
   "assign_to_tech_team",
-  "tech_team_category",
   "column_break_trial_3",
   "assigned_tech_member",
   "assignment_notes",
@@ -80,6 +79,7 @@
   "performance_baseline",
   "performance_trial",
   "customer_feedback",
+  "evaluation_photos",
   "testimonial_captured",
   "evaluation_outcome_section",
   "manager_reviewed",
@@ -787,12 +787,6 @@
    "label": "Assign to Tech Team?"
   },
   {
-   "fieldname": "tech_team_category",
-   "fieldtype": "Link",
-   "label": "Tech Team Category",
-   "options": "CRM Tech Team"
-  },
-  {
    "fieldname": "column_break_trial_3",
    "fieldtype": "Column Break"
   },
@@ -862,6 +856,12 @@
    "fieldname": "customer_feedback",
    "fieldtype": "Small Text",
    "label": "Customer Feedback"
+  },
+  {
+   "fieldname": "evaluation_photos",
+   "fieldtype": "Table",
+   "label": "Photos / Test Reports",
+   "options": "CRM Image List"
   },
   {
    "default": "0",

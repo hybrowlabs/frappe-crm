@@ -371,6 +371,70 @@ def create_customer_in_erpnext(doc, method):
 
 
 @frappe.whitelist()
+def create_customer_from_deal(deal):
+	"""Create an ERPNext customer for the deal's organization (if not already linked),
+	store it on CRM Organization.erpnext_customer, and link it to the deal's contacts."""
+	if "erpnext" not in frappe.get_installed_apps():
+		return
+
+	doc = frappe.get_doc("CRM Deal", deal)
+
+	if doc.organization:
+		existing = frappe.db.get_value("CRM Organization", doc.organization, "erpnext_customer")
+		if existing:
+			return existing
+		account_name = doc.organization
+		customer_type = "Company"
+		address = get_organization_address(doc.organization)
+	else:
+		account_name = next(
+			(c.full_name for c in doc.contacts if c.is_primary and c.full_name),
+			next((c.full_name for c in doc.contacts if c.full_name), None),
+		)
+		if not account_name:
+			frappe.throw(_("An organization or contact is required to create a customer"))
+		customer_type = "Individual"
+		address = None
+
+	from erpnext.crm.frappe_crm_api import create_customer
+
+	customer_name = create_customer(
+		{
+			"customer_name": account_name,
+			"customer_type": customer_type,
+			"territory": doc.territory,
+			"default_currency": doc.currency,
+			"industry": doc.industry,
+			"website": doc.website,
+			"contacts": json.dumps(get_contacts(doc)),
+			"address": json.dumps(address) if address else None,
+		}
+	)
+
+	if doc.organization:
+		frappe.db.set_value("CRM Organization", doc.organization, "erpnext_customer", customer_name)
+	_link_customer_to_contacts(doc, customer_name)
+	frappe.publish_realtime("crm_customer_created")
+	return customer_name
+
+
+def _link_customer_to_contacts(doc, customer_name):
+	"""Append a Dynamic Link to the new Customer on each contact connected to the deal."""
+	for row in doc.contacts:
+		if not row.contact:
+			continue
+		contact = frappe.get_doc("Contact", row.contact)
+		already_linked = any(
+			link.link_doctype == "Customer" and link.link_name == customer_name
+			for link in contact.links
+		)
+		if already_linked:
+			continue
+		contact.append("links", {"link_doctype": "Customer", "link_name": customer_name})
+		contact.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
 def get_crm_form_script():
 	return """class CRMDeal {
 	onLoad() {

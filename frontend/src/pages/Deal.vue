@@ -46,7 +46,7 @@
       <Button
         v-if="canPrepareQuotation"
         variant="solid"
-        :label="__('Prepare for Quotation')"
+        :label="__('Create Customer')"
         @click="prepareForQuotation"
       >
         <template #prefix><RupeeIcon class="h-4 w-4" /></template>
@@ -719,9 +719,15 @@ function onStageAction() {
   let status = doc.value.status
 
   // Quotations live in ERPNext — jump straight to the Desk create page,
-  // prefilling the custom_deal link back to this deal.
+  // prefilling the custom_deal link back to this deal and the linked customer.
   if (status === 'Proposal/Quotation') {
-    window.open(`/app/quotation/new?custom_deal=${encodeURIComponent(props.dealId)}`, '_blank')
+    const params = new URLSearchParams({ custom_deal: props.dealId })
+    const customer = organization.value?.erpnext_customer
+    if (customer) {
+      params.set('quotation_to', 'Customer')
+      params.set('party_name', customer)
+    }
+    window.open(`/app/quotation/new?${params.toString()}`, '_blank')
     return
   }
 
@@ -748,12 +754,14 @@ const canApproveEvaluation = computed(
     isManager(),
 )
 
-// Once approval isn't required (or is already granted), proceed to the quotation.
+// Once approval isn't required (or is already granted), and the organization has
+// no linked customer yet, offer to create the customer.
 const canPrepareQuotation = computed(
   () =>
     doc.value?.status === 'Evaluation Completed' &&
     (!doc.value?.sales_manager_approval_required ||
-      doc.value?.sales_manager_approved),
+      doc.value?.sales_manager_approved) &&
+    !organization.value?.erpnext_customer,
 )
 
 // Open the same pre-quotation gate that fires when moving into Proposal/Quotation.
@@ -798,6 +806,7 @@ function saveRequirements({ values, advance, status }) {
   document.save.submit(null, {
     onSuccess: () => {
       reload.value = true
+      if (values?.assigned_tech_member) assignees.reload()
       toast.success(__('Requirements saved'))
     },
     onError: (err) => {
@@ -1016,10 +1025,16 @@ async function triggerStatusChange(value) {
   // and advances the status itself) instead of changing the status immediately.
   // Multi-step jumps fall through to a direct change (validated on the backend).
   if (singleStep) {
-    // Entering Proposal/Quotation runs the pre-quotation customer gate.
+    // Entering Proposal/Quotation runs the Create Customer gate, but only when the
+    // organization has no linked customer yet. Otherwise advance directly.
     if (value === 'Proposal/Quotation' && current !== 'Proposal/Quotation') {
-      pendingProposalStatus.value = value
-      showPreQuotationModal.value = true
+      if (!organization.value?.erpnext_customer) {
+        pendingProposalStatus.value = value
+        showPreQuotationModal.value = true
+        return
+      }
+      await triggerOnChange('status', value)
+      setLostReason()
       return
     }
     // The Proposal stage form doesn't advance the deal, so skip it here.
@@ -1043,6 +1058,18 @@ async function confirmPreQuotation(payload) {
   pendingProposalStatus.value = null
   if (!value) return
   if (payload) await createDealAddresses(payload)
+  try {
+    const customer = await call(
+      'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_from_deal',
+      { deal: props.dealId },
+    )
+    // Reflect the new link locally so the Create Customer button hides immediately.
+    if (customer && organizationDocument.value?.doc) {
+      organizationDocument.value.doc.erpnext_customer = customer
+    }
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Error creating customer'))
+  }
   await triggerOnChange('status', value)
   setLostReason()
 }

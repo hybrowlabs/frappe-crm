@@ -20,6 +20,7 @@ class CRMOrganization(Document):
 		annual_revenue: DF.Currency
 		currency: DF.Link | None
 		exchange_rate: DF.Float
+		gstin: DF.Data | None
 		industry: DF.Link | None
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		organization_logo: DF.AttachImage | None

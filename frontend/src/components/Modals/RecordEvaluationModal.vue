@@ -55,11 +55,33 @@
         :rows="2"
         :error="errors.feedback"
       />
-      <!-- Photos / Test Reports: backed by a separate doctype (wired later) -->
       <FieldStatic :label="__('Photos / Test Reports')">
-        <span class="flex items-center gap-2">
-          <span class="cursor-pointer text-ink-blue-3">+ {{ __('Add') }}</span>
-        </span>
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            v-for="url in photos"
+            :key="url"
+            :href="url"
+            target="_blank"
+            class="group relative"
+          >
+            <img :src="url" class="h-14 w-14 rounded object-cover" />
+            <span
+              class="absolute -right-1.5 -top-1.5 hidden h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-surface-gray-7 text-xs text-ink-white group-hover:flex"
+              @click.prevent="removePhoto(url)"
+            >×</span>
+          </a>
+          <input
+            ref="photoInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="onPhotosSelected"
+          />
+          <span class="cursor-pointer text-ink-blue-3" @click="photoInput.click()"
+            >+ {{ __('Add') }}</span
+          >
+        </div>
       </FieldStatic>
       <FieldCheckbox
         :label="__('Testimonial Captured?')"
@@ -205,7 +227,7 @@ import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
-import { Button, toast, createResource, createListResource } from 'frappe-ui'
+import { Button, FileUploadHandler, toast, createResource, createListResource } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -225,6 +247,8 @@ const perfBaseline = ref('')
 const perfTrial = ref('')
 const feedback = ref('')
 const testimonialCaptured = ref(false)
+const photos = ref([])
+const photoInput = ref(null)
 const mgrReviewed = ref('n')
 const custValidation = ref('n')
 const outcome = ref('Successful')
@@ -276,6 +300,7 @@ onMounted(() => {
   perfTrial.value = d.performance_trial || ''
   feedback.value = d.customer_feedback || ''
   testimonialCaptured.value = !!d.testimonial_captured
+  photos.value = (d.evaluation_photos || []).map((p) => p.image).filter(Boolean)
   mgrReviewed.value = d.manager_reviewed ? 'y' : 'n'
   custValidation.value = d.customer_validation_received ? 'y' : 'n'
   outcome.value = d.trial_outcome || 'Successful'
@@ -290,6 +315,23 @@ const gatesUnlocked = computed(
   () => gatesCleared.value && outcome.value === 'Successful',
 )
 
+async function onPhotosSelected(e) {
+  const files = Array.from(e.target.files || [])
+  e.target.value = ''
+  for (const file of files) {
+    try {
+      const data = await new FileUploadHandler().upload(file, {})
+      photos.value.push(data.file_url)
+    } catch (err) {
+      toast.error(__('Error uploading {0}', [file.name]))
+    }
+  }
+}
+
+function removePhoto(url) {
+  photos.value = photos.value.filter((u) => u !== url)
+}
+
 function buildValues() {
   return {
     evaluation_start: start.value || null,
@@ -300,6 +342,7 @@ function buildValues() {
     performance_trial: perfTrial.value || '',
     customer_feedback: feedback.value || '',
     testimonial_captured: testimonialCaptured.value ? 1 : 0,
+    evaluation_photos: photos.value.map((url) => ({ image: url })),
     manager_reviewed: mgrReviewed.value === 'y' ? 1 : 0,
     customer_validation_received: custValidation.value === 'y' ? 1 : 0,
     trial_outcome: outcome.value || null,

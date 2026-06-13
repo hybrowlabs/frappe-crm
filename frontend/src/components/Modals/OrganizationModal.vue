@@ -25,6 +25,15 @@
             />
           </div>
         </div>
+        <div class="mb-4">
+          <FormControl
+            type="text"
+            :label="__('GSTIN')"
+            v-model="organization.doc.gstin"
+            placeholder="27AABCM1234E1Z5"
+          />
+          <p class="mt-1 text-xs text-ink-gray-5">{{ gstinHelp }}</p>
+        </div>
         <FieldLayout
           v-if="tabs.data?.length"
           :tabs="tabs.data"
@@ -57,8 +66,8 @@ import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { call, createResource } from 'frappe-ui'
-import { ref, nextTick, onMounted } from 'vue'
+import { FormControl, call, createResource, toast } from 'frappe-ui'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -81,11 +90,77 @@ const error = ref(null)
 const { document: organization, triggerOnBeforeCreate } =
   useDocument('CRM Organization')
 
+// Auto-fetch name & address from the GSTIN via india_compliance.
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
+const gstinLoading = ref(false)
+let lastFetchedGstin = ''
+const fetchedAddress = ref(null)
+
+const gstinHelp = computed(() =>
+  gstinLoading.value
+    ? __('Fetching GST details…')
+    : __('Enter a valid GSTIN to auto-fill name & address'),
+)
+
+watch(
+  () => organization.doc.gstin,
+  (value) => {
+    const clean = (value || '').toUpperCase().replace(/\s/g, '')
+    if (clean !== value) organization.doc.gstin = clean
+    if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
+    lastFetchedGstin = clean
+    fetchGstinInfo(clean)
+  },
+)
+
+async function fetchGstinInfo(value) {
+  gstinLoading.value = true
+  try {
+    const info = await call(
+      'india_compliance.gst_india.utils.gstin_info.get_gstin_info',
+      { gstin: value },
+    )
+    if (info?.business_name) organization.doc.organization_name = info.business_name
+    if (info?.permanent_address) {
+      fetchedAddress.value = info.permanent_address
+      await createAddressFromGstin()
+    }
+    toast.success(__('GST details fetched'))
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Could not fetch GST details'))
+  } finally {
+    gstinLoading.value = false
+  }
+}
+
+async function createAddressFromGstin() {
+  const addr = fetchedAddress.value
+  const address = await call('frappe.client.insert', {
+    doc: {
+      doctype: 'Address',
+      address_title: organization.doc.organization_name || organization.doc.gstin,
+      address_type: 'Billing',
+      gstin: organization.doc.gstin || '',
+      address_line1: addr.address_line1 || '',
+      address_line2: addr.address_line2 || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.pincode || '',
+      country: addr.country || 'India',
+    },
+  }).catch(() => null)
+  if (address?.name) organization.doc.address = address.name
+}
+
 async function createOrganization() {
   loading.value = true
   error.value = null
 
   await triggerOnBeforeCreate?.()
+
+  if (fetchedAddress.value && !organization.doc.address) {
+    await createAddressFromGstin()
+  }
 
   const doc = await call(
     'frappe.client.insert',

@@ -8,6 +8,13 @@ app_icon_url = "/assets/crm/images/logo.svg"
 app_icon_title = "CRM"
 app_icon_route = "/crm"
 
+# Fixtures
+# ------------------
+fixtures = [
+	"CRM Deal Status",
+	"CRM Lead Status",
+]
+
 # Apps
 # ------------------
 

@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "organization_name",
+  "erpnext_customer",
   "no_of_employees",
   "currency",
   "exchange_rate",
@@ -17,7 +18,16 @@
   "website",
   "territory",
   "industry",
-  "address"
+  "address",
+  "gstin",
+  "account_type",
+  "account_owner",
+  "sales_manager",
+  "region",
+  "credit_terms",
+  "last_order",
+  "health_score",
+  "repeat_revenue"
  ],
  "fields": [
   {
@@ -26,6 +36,13 @@
    "in_standard_filter": 1,
    "label": "Organization Name",
    "unique": 1
+  },
+  {
+   "fieldname": "erpnext_customer",
+   "fieldtype": "Link",
+   "label": "Customer in ERPNext",
+   "options": "Customer",
+   "read_only": 1
   },
   {
    "fieldname": "website",
@@ -85,13 +102,67 @@
    "fieldname": "exchange_rate",
    "fieldtype": "Float",
    "label": "Exchange Rate"
+  },
+  {
+   "fieldname": "gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN"
+  },
+  {
+   "fieldname": "account_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Account Type",
+   "options": "\nCustomer\nDealer"
+  },
+  {
+   "fieldname": "account_owner",
+   "fieldtype": "Link",
+   "label": "Account Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "sales_manager",
+   "fieldtype": "Link",
+   "label": "Sales Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Region"
+  },
+  {
+   "fieldname": "credit_terms",
+   "fieldtype": "Select",
+   "label": "Credit Terms",
+   "options": "\nAdvance\n0 days\n7 days\n15 days\n30 days\n45 days"
+  },
+  {
+   "fieldname": "last_order",
+   "fieldtype": "Date",
+   "label": "Last Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "health_score",
+   "fieldtype": "Float",
+   "label": "Health Score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "repeat_revenue",
+   "fieldtype": "Percent",
+   "label": "Repeat Revenue",
+   "read_only": 1
   }
  ],
  "image_field": "organization_logo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-26 12:51:34.002222",
- "modified_by": "shariq@frappe.io",
+ "modified": "2026-06-13 12:00:00.000000",
+ "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Organization",
  "naming_rule": "By fieldname",

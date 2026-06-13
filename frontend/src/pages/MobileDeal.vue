@@ -72,7 +72,7 @@
       <Button
         v-if="canPrepareQuotation"
         variant="solid"
-        :label="__('Prepare for Quotation')"
+        :label="__('Create Customer')"
         @click="prepareForQuotation"
       >
         <template #prefix><RupeeIcon class="h-4 w-4" /></template>
@@ -521,6 +521,25 @@ const reload = ref(false)
 const showOrganizationModal = ref(false)
 const _organization = ref({})
 
+// The deal's organization's linked ERPNext customer (gates the Create Customer button).
+const orgErpnextCustomer = ref(null)
+watch(
+  () => doc.value.organization,
+  async (org) => {
+    if (!org) {
+      orgErpnextCustomer.value = null
+      return
+    }
+    const res = await call('frappe.client.get_value', {
+      doctype: 'CRM Organization',
+      filters: org,
+      fieldname: 'erpnext_customer',
+    })
+    orgErpnextCustomer.value = res?.erpnext_customer || null
+  },
+  { immediate: true },
+)
+
 // Stage-wise contextual action shown in the header, keyed by status name (PK).
 const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
@@ -570,12 +589,14 @@ const canApproveEvaluation = computed(
     isManager(),
 )
 
-// Once approval isn't required (or is already granted), proceed to the quotation.
+// Once approval isn't required (or is already granted), and the organization has
+// no linked customer yet, offer to create the customer.
 const canPrepareQuotation = computed(
   () =>
     doc.value?.status === 'Evaluation Completed' &&
     (!doc.value?.sales_manager_approval_required ||
-      doc.value?.sales_manager_approved),
+      doc.value?.sales_manager_approved) &&
+    !orgErpnextCustomer.value,
 )
 
 // Open the same pre-quotation gate that fires when moving into Proposal/Quotation.
@@ -604,9 +625,14 @@ function onStageAction() {
 
 
   // Quotations live in ERPNext — jump straight to the Desk create page,
-  // prefilling the custom_deal link back to this deal.
+  // prefilling the custom_deal link back to this deal and the linked customer.
   if (status === 'Proposal/Quotation') {
-    window.open(`/app/quotation/new?custom_deal=${encodeURIComponent(props.dealId)}`, '_blank')
+    const params = new URLSearchParams({ custom_deal: props.dealId })
+    if (orgErpnextCustomer.value) {
+      params.set('quotation_to', 'Customer')
+      params.set('party_name', orgErpnextCustomer.value)
+    }
+    window.open(`/app/quotation/new?${params.toString()}`, '_blank')
     return
   }
 
@@ -917,10 +943,16 @@ async function triggerStatusChange(value) {
   // and advances the status itself) instead of changing the status immediately.
   // Multi-step jumps fall through to a direct change (validated on the backend).
   if (singleStep) {
-    // Entering Proposal/Quotation runs the pre-quotation customer gate.
+    // Entering Proposal/Quotation runs the Create Customer gate, but only when the
+    // organization has no linked customer yet. Otherwise advance directly.
     if (value === 'Proposal/Quotation' && current !== 'Proposal/Quotation') {
-      pendingProposalStatus.value = value
-      showPreQuotationModal.value = true
+      if (!orgErpnextCustomer.value) {
+        pendingProposalStatus.value = value
+        showPreQuotationModal.value = true
+        return
+      }
+      await triggerOnChange('status', value)
+      setLostReason()
       return
     }
     // The Proposal stage form doesn't advance the deal, so skip it here.
@@ -944,6 +976,16 @@ async function confirmPreQuotation(payload) {
   pendingProposalStatus.value = null
   if (!value) return
   if (payload) await createDealAddresses(payload)
+  try {
+    const customer = await call(
+      'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_from_deal',
+      { deal: props.dealId },
+    )
+    // Reflect the new link locally so the Create Customer button hides immediately.
+    if (customer) orgErpnextCustomer.value = customer
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Error creating customer'))
+  }
   await triggerOnChange('status', value)
   setLostReason()
 }

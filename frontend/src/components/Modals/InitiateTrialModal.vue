@@ -106,7 +106,7 @@
       <FieldGrid :cols="2" class="mt-1">
         <FieldSelect
           v-model="techCategory"
-          :label="__('Tech Team Category')"
+          :label="__('Technical Person')"
           required
           :options="techCategoryOptions"
           :error="errors.techCategory"
@@ -224,7 +224,7 @@ onMounted(() => {
   forecast.value = d.forecast_category || ''
   trialRequired.value = d.trial_required ? 'y' : 'n'
   assignTech.value = d.assign_to_tech_team === 0 ? 'n' : 'y'
-  techCategory.value = d.tech_team_category || ''
+  techCategory.value = d.technical_person || ''
   assignNotes.value = d.assignment_notes || ''
 })
 
@@ -245,7 +245,7 @@ function buildValues() {
     forecast_category: forecast.value || null,
     trial_required: trialRequired.value === 'y' ? 1 : 0,
     assign_to_tech_team: assignTech.value === 'y' ? 1 : 0,
-    tech_team_category: techCategory.value || null,
+    technical_person: techCategory.value || null,
     assignment_notes: assignNotes.value || '',
   }
   CRITERIA_FIELDS.forEach(
@@ -288,7 +288,7 @@ async function assignAndNotify() {
   attempted.value = true
   const missing = requiredFields.filter((f) => !f.val()).map((f) => f.label)
   if (techCategoryError()) {
-    missing.push(__('Tech Team Category'))
+    missing.push(__('Technical Person'))
   }
   if (missing.length) {
     toast.error(__('Please fill all required fields: {0}', [missing.join(', ')]))

@@ -49,6 +49,15 @@
             v-if="hasOrganizationSections || hasContactSections"
             class="h-px w-full border-t my-5"
           />
+          <div v-if="!chooseExistingOrganization" class="mb-4">
+            <FormControl
+              type="text"
+              :label="__('GSTIN')"
+              v-model="deal.doc.gstin"
+              placeholder="27AABCM1234E1Z5"
+            />
+            <p class="mt-1 text-xs text-ink-gray-5">{{ gstinHelp }}</p>
+          </div>
           <FieldLayout
             v-if="tabs.data?.length"
             :tabs="tabs.data"
@@ -81,7 +90,7 @@ import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { Switch, createResource } from 'frappe-ui'
+import { FormControl, Switch, createResource, call, toast } from 'frappe-ui'
 import { computed, ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -167,6 +176,77 @@ const tabs = createResource({
 
 const dealStatuses = computed(() => statusOptions('deal'))
 
+// Auto-fetch name & address from the GSTIN via india_compliance.
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
+const gstinLoading = ref(false)
+let lastFetchedGstin = ''
+const fetchedAddress = ref(null)
+
+const gstinHelp = computed(() =>
+  gstinLoading.value
+    ? __('Fetching GST details…')
+    : __('Enter a valid GSTIN to auto-fill name & address'),
+)
+
+watch(
+  () => deal.doc.gstin,
+  (value) => {
+    const clean = (value || '').toUpperCase().replace(/\s/g, '')
+    if (clean !== value) deal.doc.gstin = clean
+    if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
+    lastFetchedGstin = clean
+    fetchGstinInfo(clean)
+  },
+)
+
+async function fetchGstinInfo(value) {
+  gstinLoading.value = true
+  try {
+    const info = await call(
+      'india_compliance.gst_india.utils.gstin_info.get_gstin_info',
+      { gstin: value },
+    )
+    if (info?.business_name) {
+      deal.doc.legal_name = info.business_name
+      deal.doc.organization_name = info.business_name
+    }
+    if (info?.permanent_address) fetchedAddress.value = info.permanent_address
+    toast.success(__('GST details fetched'))
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Could not fetch GST details'))
+  } finally {
+    gstinLoading.value = false
+  }
+}
+
+async function createDealAddress(dealName) {
+  if (!fetchedAddress.value) return
+  const addr = fetchedAddress.value
+  const links = [{ link_doctype: 'CRM Deal', link_name: dealName }]
+  const address = await call('frappe.client.insert', {
+    doc: {
+      doctype: 'Address',
+      address_title: deal.doc.legal_name || deal.doc.organization_name || dealName,
+      address_type: 'Billing',
+      gstin: deal.doc.gstin || '',
+      address_line1: addr.address_line1 || '',
+      address_line2: addr.address_line2 || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.pincode || '',
+      country: addr.country || 'India',
+      links,
+    },
+  }).catch(() => null)
+  if (address?.name) {
+    await call('frappe.client.set_value', {
+      doctype: 'CRM Deal',
+      name: dealName,
+      fieldname: { billing_address: address.name, shipping_address: address.name },
+    }).catch(() => {})
+  }
+}
+
 async function createDeal() {
   if (deal.doc.website && !deal.doc.website.startsWith('http')) {
     deal.doc.website = 'https://' + deal.doc.website
@@ -211,8 +291,9 @@ async function createDeal() {
       }
       isDealCreating.value = true
     },
-    onSuccess(name) {
+    async onSuccess(name) {
       capture('deal_created')
+      await createDealAddress(name)
       isDealCreating.value = false
       show.value = false
       router.push({ name: 'Deal', params: { dealId: name } })

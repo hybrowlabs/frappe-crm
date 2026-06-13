@@ -39,7 +39,7 @@ STAGE_GATES = [
 			("expected_monthly_volume", "Expected Monthly Volume"),
 			("deal_value", "Deal Value"),
 			("forecast_category", "Forecast Category"),
-			("tech_team_category", "Tech Team Category"),
+			("technical_person", "Technical Person"),
 		],
 	},
 	{

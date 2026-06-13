@@ -1,0 +1,122 @@
+[
+ {
+  "color": "blue",
+  "deal_status": "Proposal/Quotation",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Quotation",
+  "modified": "2026-06-13 12:09:23.221820",
+  "name": "Proposal/Quotation",
+  "position": 6,
+  "probability": 50.0,
+  "type": "Ongoing"
+ },
+ {
+  "color": "yellow",
+  "deal_status": "Negotiation",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Negotiation",
+  "modified": "2026-06-13 12:09:23.222157",
+  "name": "Negotiation",
+  "position": 7,
+  "probability": 70.0,
+  "type": "Ongoing"
+ },
+ {
+  "color": "purple",
+  "deal_status": "Ready to Close",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Ready to Close",
+  "modified": "2026-06-13 12:09:23.222521",
+  "name": "Ready to Close",
+  "position": 8,
+  "probability": 90.0,
+  "type": "Ongoing"
+ },
+ {
+  "color": "red",
+  "deal_status": "Lost",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Lost",
+  "modified": "2026-06-13 12:09:23.223195",
+  "name": "Lost",
+  "position": 10,
+  "probability": 0.0,
+  "type": "Lost"
+ },
+ {
+  "color": "gray",
+  "deal_status": "Req. Discussion",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Req. Discussion",
+  "modified": "2026-06-13 12:09:23.203244",
+  "name": "Req. Discussion",
+  "position": 1,
+  "probability": 5.0,
+  "type": "Open"
+ },
+ {
+  "color": "green",
+  "deal_status": "Evaluation Completed",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Evaluation Completed",
+  "modified": "2026-06-13 12:09:23.221475",
+  "name": "Evaluation Completed",
+  "position": 5,
+  "probability": 50.0,
+  "type": "Ongoing"
+ },
+ {
+  "color": "gray",
+  "deal_status": "Qualification",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Qualified",
+  "modified": "2026-06-13 12:09:23.219998",
+  "name": "Qualification",
+  "position": 2,
+  "probability": 10.0,
+  "type": "Open"
+ },
+ {
+  "color": "green",
+  "deal_status": "Won",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Won",
+  "modified": "2026-06-13 12:09:23.222856",
+  "name": "Won",
+  "position": 9,
+  "probability": 100.0,
+  "type": "Won"
+ },
+ {
+  "color": "red",
+  "deal_status": "Retrial",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Retrial",
+  "modified": "2026-06-13 12:09:23.221002",
+  "name": "Retrial",
+  "position": 4,
+  "probability": 30.0,
+  "type": "Ongoing"
+ },
+ {
+  "color": "orange",
+  "deal_status": "Demo/Making",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Tech Evaluation",
+  "modified": "2026-06-13 12:09:23.220570",
+  "name": "Demo/Making",
+  "position": 3,
+  "probability": 25.0,
+  "type": "Ongoing"
+ }
+]

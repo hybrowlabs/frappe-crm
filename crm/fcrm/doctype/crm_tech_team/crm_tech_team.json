@@ -2,7 +2,7 @@
  "actions": [],
  "allow_bulk_edit": 1,
  "allow_rename": 1,
- "autoname": "field:product_category",
+ "autoname": "CRM-TECH-TEAM-.#####",
  "creation": "2026-06-11 14:43:50.515618",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -35,7 +35,7 @@
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Tech Team",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

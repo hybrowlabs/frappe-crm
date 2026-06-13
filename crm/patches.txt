@@ -25,5 +25,6 @@ execute:frappe.db.set_single_value("FCRM Settings", "update_timestamp_on_new_com
 crm.patches.v1_0.add_email_in_default_lead_sources
 crm.patches.v1_0.create_email_account_custom_field
 crm.patches.v1_0.create_default_quick_filters
-crm.patches.v1_0.update_statuses_for_custom_pipeline # 12-06-2026 - 2
-crm.patches.v1_0.seed_product_master_data # 11-06-2026 - 3
+crm.patches.v1_0.seed_product_master_data # 11-06-2026 - 4
+crm.patches.v1_0.seed_deal_data_fields_layout # 13-06-2026 - 2
+crm.patches.v1_0.seed_organization_sidebar_fields_layout # 13-06-2026 - 1

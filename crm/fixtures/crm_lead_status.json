@@ -1,0 +1,79 @@
+[
+ {
+  "color": "gray",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "New",
+  "lead_status": "New",
+  "modified": "2026-06-13 12:09:23.228167",
+  "name": "New",
+  "position": 1,
+  "type": "Open"
+ },
+ {
+  "color": "orange",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Contacted",
+  "lead_status": "Contacted",
+  "modified": "2026-06-13 12:09:23.228721",
+  "name": "Contacted",
+  "position": 2,
+  "type": "Ongoing"
+ },
+ {
+  "color": "blue",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Nurturing",
+  "lead_status": "Nurture",
+  "modified": "2026-06-13 12:09:23.229070",
+  "name": "Nurture",
+  "position": 3,
+  "type": "Ongoing"
+ },
+ {
+  "color": "green",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Qualified",
+  "lead_status": "Qualified",
+  "modified": "2026-06-13 12:09:23.230311",
+  "name": "Qualified",
+  "position": 4,
+  "type": "Won"
+ },
+ {
+  "color": "teal",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Converted",
+  "lead_status": "Converted",
+  "modified": "2026-06-13 12:09:23.229403",
+  "name": "Converted",
+  "position": 5,
+  "type": "Won"
+ },
+ {
+  "color": "red",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Unqualified",
+  "lead_status": "Unqualified",
+  "modified": "2026-06-13 12:09:23.230643",
+  "name": "Unqualified",
+  "position": 6,
+  "type": "Lost"
+ },
+ {
+  "color": "purple",
+  "docstatus": 0,
+  "doctype": "CRM Lead Status",
+  "label": "Not Relevant",
+  "lead_status": "Junk",
+  "modified": "2026-06-13 12:09:23.229963",
+  "name": "Junk",
+  "position": 7,
+  "type": "Lost"
+ }
+]

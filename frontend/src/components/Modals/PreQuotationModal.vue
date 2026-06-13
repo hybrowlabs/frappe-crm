@@ -1,7 +1,7 @@
 <template>
   <StageFormDialog
     v-model="show"
-    :title="__('Prepare for Quotation')"
+    :title="__('Create Customer')"
     :subtitle="subtitle"
     size="2xl"
   >
