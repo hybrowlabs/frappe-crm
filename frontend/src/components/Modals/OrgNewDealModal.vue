@@ -55,17 +55,17 @@
 
     <StageSection
       :title="
-        sub
-          ? __('Pain Points — {0} options for {1}', [painOpts.length, sub])
+        cat
+          ? __('Pain Points — {0} options for {1}', [painOpts.length, cat])
           : __('Pain Points')
       "
       icon="alert"
     >
-      <p v-if="!sub" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('Select a sub-category to load relevant pain points.') }}
+      <p v-if="!cat" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('Select a product category to load relevant pain points.') }}
       </p>
       <p v-else-if="!painOpts.length" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('No pain points mapped to this sub-category yet.') }}
+        {{ __('No pain points mapped to this category yet.') }}
       </p>
       <div v-else class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
         <FieldCheckbox
@@ -189,20 +189,32 @@ function loadVariants(subCat) {
   })
   variantList.reload()
 }
-function loadPains(subCat) {
-  if (!subCat) {
+function loadPains(category) {
+  if (!category) {
     painPointList.data = []
     return
   }
   painPointList.update({
     filters: [
-      ['CRM Product Sub Category Select', 'product_sub_category', '=', subCat],
+      ['CRM Product Category Select', 'product_category', '=', category],
     ],
   })
   painPointList.reload()
 }
 
 // ---- form state ----
+const territory = ref('')
+createResource({
+  url: 'frappe.client.get_value',
+  params: {
+    doctype: 'CRM Organization',
+    filters: props.org,
+    fieldname: 'territory',
+  },
+  auto: true,
+  onSuccess: (d) => (territory.value = d?.territory || ''),
+})
+
 const why = ref('')
 const cat = ref('')
 const sub = ref('')
@@ -230,13 +242,12 @@ function onCategoryChange(v) {
   variantList.data = []
   painPointList.data = []
   loadSubs(v)
+  loadPains(v)
 }
 function onSubChange(v) {
   sub.value = v
   variant.value = ''
-  pains.value = []
   loadVariants(v)
-  loadPains(v)
 }
 function togglePain(p) {
   pains.value = pains.value.includes(p)
@@ -253,6 +264,7 @@ function createDeal() {
     params: {
       doc: {
         organization: props.org,
+        territory: territory.value,
         status: 'Req. Discussion',
         deal_owner: getUser().name,
         conversion_reason: why.value,

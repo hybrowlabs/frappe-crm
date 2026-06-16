@@ -83,7 +83,8 @@
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Territory",
-   "options": "CRM Territory"
+   "options": "CRM Territory",
+   "reqd": 1
   },
   {
    "fieldname": "currency",

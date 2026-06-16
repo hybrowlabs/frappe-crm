@@ -11,6 +11,7 @@
   "is_group",
   "column_break_1",
   "user",
+  "territory",
   "section_break_1",
   "old_parent",
   "column_break_2",
@@ -38,6 +39,13 @@
    "options": "User",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Territory",
+   "options": "CRM Territory"
   },
   {
    "fieldname": "section_break_1",

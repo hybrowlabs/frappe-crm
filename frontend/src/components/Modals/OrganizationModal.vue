@@ -156,6 +156,12 @@ async function createOrganization() {
   loading.value = true
   error.value = null
 
+  if (!organization.doc.gstin) {
+    error.value = __('GSTIN is required')
+    loading.value = false
+    return
+  }
+
   await triggerOnBeforeCreate?.()
 
   if (fetchedAddress.value && !organization.doc.address) {

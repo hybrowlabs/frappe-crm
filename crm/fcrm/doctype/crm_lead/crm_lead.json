@@ -296,7 +296,8 @@
    "fieldname": "territory",
    "fieldtype": "Link",
    "label": "Territory",
-   "options": "CRM Territory"
+   "options": "CRM Territory",
+   "reqd": 1
   },
   {
    "fieldname": "log_tab",

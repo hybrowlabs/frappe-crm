@@ -171,7 +171,7 @@ class CRMDeal(Document):
 		self.apply_sla()
 
 	def validate_status(self):
-		if self.is_new() and not self.status:
+		if self.is_new():
 			# New deals start at the first pipeline stage (lowest position),
 			# which is "Req. Discussion" in this setup.
 			first_open = frappe.get_all(
@@ -181,7 +181,14 @@ class CRMDeal(Document):
 				pluck="name",
 				limit=1,
 			)
-			self.status = first_open[0] if first_open else None
+			first_open = first_open[0] if first_open else None
+			if not self.status:
+				self.status = first_open
+			elif first_open and self.status != first_open:
+				# TODO: allow creating directly in quotation status later.
+				frappe.throw(
+					_("A new deal can only start in {0} status").format(frappe.bold(first_open))
+				)
 
 	def validate_stage_requirements(self):
 		"""Gate forward status changes on the data each stage needs.

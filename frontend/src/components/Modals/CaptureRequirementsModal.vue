@@ -45,17 +45,17 @@
     <!-- Pain Points -->
     <StageSection
       :title="
-        sub
-          ? __('Pain Points — {0} options for {1}', [painOpts.length, sub])
+        cat
+          ? __('Pain Points — {0} options for {1}', [painOpts.length, cat])
           : __('Pain Points')
       "
       icon="alert"
     >
-      <p v-if="!sub" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('Select a sub-category to load relevant pain points.') }}
+      <p v-if="!cat" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('Select a product category to load relevant pain points.') }}
       </p>
       <p v-else-if="!painOpts.length" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('No pain points mapped to this sub-category yet.') }}
+        {{ __('No pain points mapped to this category yet.') }}
       </p>
       <div v-else class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
         <FieldCheckbox
@@ -262,15 +262,15 @@ function loadVariants(subCat) {
   })
   variantList.reload()
 }
-function loadPains(subCat) {
-  if (!subCat) {
+function loadPains(category) {
+  if (!category) {
     painPointList.data = []
     return
   }
-  // filter the parent via its Sub-Category multiselect child table
+  // filter the parent via its Category multiselect child table
   painPointList.update({
     filters: [
-      ['CRM Product Sub Category Select', 'product_sub_category', '=', subCat],
+      ['CRM Product Category Select', 'product_category', '=', category],
     ],
   })
   painPointList.reload()
@@ -314,11 +314,11 @@ onMounted(() => {
   credit.value = !!d.credit_check
 
   // hydrate dependent dropdowns for the already-selected values
-  if (cat.value) loadSubs(cat.value)
-  if (sub.value) {
-    loadVariants(sub.value)
-    loadPains(sub.value)
+  if (cat.value) {
+    loadSubs(cat.value)
+    loadPains(cat.value)
   }
+  if (sub.value) loadVariants(sub.value)
 })
 
 function onCategoryChange(v) {
@@ -329,14 +329,13 @@ function onCategoryChange(v) {
   variantList.data = []
   painPointList.data = []
   loadSubs(v)
+  loadPains(v)
 }
 
 function onSubChange(v) {
   sub.value = v
   variant.value = ''
-  pains.value = []
   loadVariants(v)
-  loadPains(v)
 }
 
 function togglePain(p) {

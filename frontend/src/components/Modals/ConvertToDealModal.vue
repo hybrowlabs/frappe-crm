@@ -5,6 +5,19 @@
     :subtitle="subtitle"
     size="xl"
   >
+    <div class="mb-4 flex items-center gap-3 text-sm text-ink-gray-5">
+      <div>{{ __('Choose Existing Organization') }}</div>
+      <Switch v-model="chooseExistingOrganization" />
+    </div>
+    <Link
+      v-if="chooseExistingOrganization"
+      class="mb-4"
+      :label="__('Organization')"
+      doctype="CRM Organization"
+      v-model="existingOrganization"
+    />
+
+    <template v-if="!chooseExistingOrganization">
     <StageCallout theme="blue" icon="fileText" class="mb-4">
       {{ __('A') }} <b>{{ __('GST number') }}</b>
       {{
@@ -107,6 +120,7 @@
         </FieldGrid>
       </template>
     </StageSection>
+    </template>
 
     <ErrorMessage class="mt-4" :message="error" />
 
@@ -134,10 +148,11 @@ import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
+import Link from '@/components/Controls/Link.vue'
 import { useDocument } from '@/data/document'
 import { sessionStore } from '@/stores/session'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
-import { Button, ErrorMessage, call, toast } from 'frappe-ui'
+import { Button, ErrorMessage, Switch, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -185,6 +200,8 @@ const converting = ref(false)
 const attempted = ref(false)
 const gstinLoading = ref(false)
 const fetchedState = ref('')
+const chooseExistingOrganization = ref(false)
+const existingOrganization = ref('')
 let lastFetchedGstin = ''
 
 const billing = reactive({
@@ -230,6 +247,8 @@ watch(show, (val) => {
     resetAddress(billing)
     resetAddress(shipping)
     sameAsBilling.value = true
+    chooseExistingOrganization.value = false
+    existingOrganization.value = ''
   }
 })
 
@@ -280,6 +299,7 @@ async function fetchGstinInfo(value) {
 
 const errors = computed(() => {
   if (!attempted.value) return {}
+  if (chooseExistingOrganization.value) return {}
   const e = {}
   if (!exempt.value) {
     if (!valid.value) e.gstin = __('Enter a valid 15-character GSTIN')
@@ -299,7 +319,7 @@ async function convertToDeal() {
   attempted.value = true
   if (Object.keys(errors.value).length) return
 
-  if (!exempt.value) {
+  if (!chooseExistingOrganization.value && !exempt.value) {
     deal.doc.gstin = clean.value
     deal.doc.legal_name = legalName.value
   }
@@ -313,7 +333,9 @@ async function convertToDeal() {
       lead: props.lead.name,
       deal: deal.doc,
       existing_contact: '',
-      existing_organization: '',
+      existing_organization: chooseExistingOrganization.value
+        ? existingOrganization.value
+        : '',
     },
   ).catch((err) => {
     error.value = __('Error converting to deal: {0}', [err.messages?.[0]])
@@ -321,7 +343,7 @@ async function convertToDeal() {
   converting.value = false
 
   if (newDeal) {
-    await createDealAddresses(newDeal)
+    if (!chooseExistingOrganization.value) await createDealAddresses(newDeal)
     show.value = false
     error.value = ''
     updateOnboardingStep('convert_lead_to_deal', true, false, () => {

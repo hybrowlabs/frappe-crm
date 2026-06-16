@@ -2,305 +2,350 @@
   {
     "pain_point": "Porosity / Pin Holes",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Shrinkage",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Hardness / Softness",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Fire Scale and Oxidation",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Poor Casting Yield / Metal Recovery",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Brittleness",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Non-Fill Issue",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Extra Metal / Flash",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Metal Loss",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Inclusions",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Slag Issue",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Water Marks",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Stone Breakage",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys",
+    "categories": [
+      "Alloys",
       "Machines"
     ]
   },
   {
     "pain_point": "Tarnish",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Casting Alloys"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Surface Tearing",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Fire Stain (Silver)",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Cracks in Wire Drawing",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Hard Metal Flow During Soldering",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Surface Oxidation",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Colour Mismatch After Polishing",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "High Karat / Melting Loss",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Incorrect Hardness",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Edge Cracking in Rolling",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
     ]
   },
   {
     "pain_point": "Microporosity in Polishing",
     "pain_type": "Technical",
-    "sub_categories": [
-      "Mechanical / Handmade"
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "Delivery Delay",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "Batch Code Mismatch",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "Price Not Competitive",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "MOQ Too High",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "Credit Terms Not Suitable",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ]
+  },
+  {
+    "pain_point": "Spots",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Burning",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Streaks",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Hazy / Cloudy",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Dull",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Colour Inconsistency",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Pitting",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
+    ]
+  },
+  {
+    "pain_point": "Micron Inconsistency",
+    "pain_type": "Technical",
+    "categories": [
+      "Plating"
     ]
   },
   {
     "pain_point": "Water Flow Issue",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Gas Leakage",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Temperature Calibration",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Vacuum & Pressure Issue",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Water Leakage",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Display Errors",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Fire Scale / Oxidation",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Poor Casting Yield",
     "pain_type": "Technical",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "High Spare Parts Cost",
     "pain_type": "Commercial",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "High Annual Maintenance Cost",
     "pain_type": "Commercial",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Metal Loss During Operation",
     "pain_type": "Commercial",
-    "sub_categories": [
+    "categories": [
       "Machines"
     ]
   },
   {
     "pain_point": "Long Downtime / Recovery",
     "pain_type": "Commercial",
-    "sub_categories": [
+    "categories": [
       "Machines"
-    ]
-  },
-  {
-    "pain_point": "Delivery Delay",
-    "pain_type": "Commercial",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
-      "Solder Alloys"
-    ]
-  },
-  {
-    "pain_point": "Batch Code Mismatch",
-    "pain_type": "Commercial",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
-      "Solder Alloys"
-    ]
-  },
-  {
-    "pain_point": "Price Not Competitive",
-    "pain_type": "Commercial",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
-      "Solder Alloys"
-    ]
-  },
-  {
-    "pain_point": "MOQ Too High",
-    "pain_type": "Commercial",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
-      "Solder Alloys"
-    ]
-  },
-  {
-    "pain_point": "Credit Terms Not Suitable",
-    "pain_type": "Commercial",
-    "sub_categories": [
-      "Casting Alloys",
-      "Mechanical / Handmade",
-      "Solder Alloys"
     ]
   }
 ]

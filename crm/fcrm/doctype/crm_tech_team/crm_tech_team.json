@@ -7,10 +7,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "territory",
   "product_category",
   "team_member"
  ],
  "fields": [
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Territory",
+   "options": "CRM Territory",
+   "reqd": 1
+  },
   {
    "fieldname": "product_category",
    "fieldtype": "Link",

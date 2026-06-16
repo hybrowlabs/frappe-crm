@@ -8,7 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "pain_point",
-  "product_sub_categories",
+  "product_categories",
   "pain_type"
  ],
  "fields": [
@@ -21,10 +21,10 @@
    "unique": 1
   },
   {
-   "fieldname": "product_sub_categories",
+   "fieldname": "product_categories",
    "fieldtype": "Table MultiSelect",
-   "label": "Product Sub Categories",
-   "options": "CRM Product Sub Category Select",
+   "label": "Product Categories",
+   "options": "CRM Product Category Select",
    "reqd": 1
   },
   {

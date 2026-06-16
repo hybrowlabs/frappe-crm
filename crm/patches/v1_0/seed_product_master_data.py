@@ -63,11 +63,25 @@ def seed_variants(hierarchy):
 		doc.insert(ignore_permissions=True)
 
 
+def _ensure_categories(doc, categories):
+	"""Append any missing categories to a `product_categories` multiselect.
+
+	Returns True if the doc was modified.
+	"""
+	existing = {row.product_category for row in doc.product_categories}
+	changed = False
+	for category in categories:
+		if category not in existing:
+			doc.append("product_categories", {"product_category": category})
+			changed = True
+	return changed
+
+
 def seed_pain_points(pain_points):
 	for row in pain_points:
 		if frappe.db.exists("CRM Pain Point", row["pain_point"]):
 			doc = frappe.get_doc("CRM Pain Point", row["pain_point"])
-			if _ensure_subcategories(doc, row["sub_categories"]):
+			if _ensure_categories(doc, row["categories"]):
 				doc.save(ignore_permissions=True)
 			continue
 		doc = frappe.get_doc(
@@ -77,7 +91,7 @@ def seed_pain_points(pain_points):
 				"pain_type": row["pain_type"],
 			}
 		)
-		_ensure_subcategories(doc, row["sub_categories"])
+		_ensure_categories(doc, row["categories"])
 		doc.insert(ignore_permissions=True)
 
 
@@ -100,7 +114,7 @@ def execute():
 	seed_sub_categories(hierarchy)
 	seed_variants(hierarchy)
 
-	# 2) Matched pain points (mapped to existing sub-categories)
+	# 2) Matched pain points (mapped to product categories)
 	seed_pain_points(pain_points)
 
 	frappe.db.commit()
