@@ -5,9 +5,15 @@
     :subtitle="subtitle"
     size="xl"
   >
-    <div class="mb-4 flex items-center gap-3 text-sm text-ink-gray-5">
-      <div>{{ __('Choose Existing Organization') }}</div>
-      <Switch v-model="chooseExistingOrganization" />
+    <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="flex items-center gap-3 text-sm text-ink-gray-5">
+        <div>{{ __('Choose Existing Organization') }}</div>
+        <Switch v-model="chooseExistingOrganization" />
+      </div>
+      <div class="flex items-center gap-3 text-sm text-ink-gray-5">
+        <div>{{ __('Choose Existing Contact') }}</div>
+        <Switch v-model="chooseExistingContact" />
+      </div>
     </div>
     <Link
       v-if="chooseExistingOrganization"
@@ -18,15 +24,6 @@
     />
 
     <template v-if="!chooseExistingOrganization">
-    <StageCallout theme="blue" icon="fileText" class="mb-4">
-      {{ __('A') }} <b>{{ __('GST number') }}</b>
-      {{
-        __(
-          'is required to create the customer account and enable quotation & invoicing.',
-        )
-      }}
-    </StageCallout>
-
     <FieldSelect
       v-model="gstType"
       :label="__('GST Registration Type')"
@@ -122,6 +119,15 @@
     </StageSection>
     </template>
 
+    <Link
+      v-if="chooseExistingContact"
+      class="mb-4"
+      :label="__('Contact')"
+      doctype="Contact"
+      :filters="contactLinkFilters"
+      v-model="existingContact"
+    />
+
     <ErrorMessage class="mt-4" :message="error" />
 
     <template #actions>
@@ -202,7 +208,22 @@ const gstinLoading = ref(false)
 const fetchedState = ref('')
 const chooseExistingOrganization = ref(false)
 const existingOrganization = ref('')
+const chooseExistingContact = ref(false)
+const existingContact = ref('')
 let lastFetchedGstin = ''
+
+// the org the deal will use — existing pick, or the one created from the lead
+const dealOrgName = computed(() =>
+  chooseExistingOrganization.value
+    ? existingOrganization.value
+    : props.lead.organization || '',
+)
+
+// contacts of that org, plus contacts not yet linked to any org
+const contactLinkFilters = computed(() => {
+  if (!dealOrgName.value) return {}
+  return { company_name: ['in', [dealOrgName.value, '']] }
+})
 
 const billing = reactive({
   address_line1: '',
@@ -249,6 +270,8 @@ watch(show, (val) => {
     sameAsBilling.value = true
     chooseExistingOrganization.value = false
     existingOrganization.value = ''
+    chooseExistingContact.value = false
+    existingContact.value = ''
   }
 })
 
@@ -332,7 +355,9 @@ async function convertToDeal() {
     {
       lead: props.lead.name,
       deal: deal.doc,
-      existing_contact: '',
+      existing_contact: chooseExistingContact.value
+        ? existingContact.value
+        : '',
       existing_organization: chooseExistingOrganization.value
         ? existingOrganization.value
         : '',
@@ -344,6 +369,8 @@ async function convertToDeal() {
 
   if (newDeal) {
     if (!chooseExistingOrganization.value) await createDealAddresses(newDeal)
+    if (chooseExistingContact.value && existingContact.value)
+      await linkContactToOrg(newDeal)
     show.value = false
     error.value = ''
     updateOnboardingStep('convert_lead_to_deal', true, false, () => {
@@ -351,6 +378,33 @@ async function convertToDeal() {
     })
     capture('convert_lead_to_deal')
     router.push({ name: 'Deal', params: { dealId: newDeal } })
+  }
+}
+
+// if the chosen contact has no organization, link it to the deal's org
+async function linkContactToOrg(dealName) {
+  try {
+    const contact = await call('frappe.client.get_value', {
+      doctype: 'Contact',
+      filters: existingContact.value,
+      fieldname: 'company_name',
+    })
+    if (contact?.company_name) return
+    const dealDoc = await call('frappe.client.get_value', {
+      doctype: 'CRM Deal',
+      filters: dealName,
+      fieldname: 'organization',
+    })
+    const org = dealDoc?.organization
+    if (!org) return
+    await call('frappe.client.set_value', {
+      doctype: 'Contact',
+      name: existingContact.value,
+      fieldname: 'company_name',
+      value: org,
+    })
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Error linking contact to organization'))
   }
 }
 

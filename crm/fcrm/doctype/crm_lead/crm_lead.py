@@ -455,6 +455,9 @@ class CRMLead(Document):
 		if deal:
 			new_deal.update(deal)
 
+		if not new_deal.territory and organization:
+			new_deal.territory = frappe.db.get_value("CRM Organization", organization, "territory")
+
 		new_deal.insert(ignore_permissions=True)
 
 		for user in self.get_assigned_users():

@@ -1,0 +1,22 @@
+[
+  { "operation_impact": "Production downtime due to casting failure", "category": "Alloys" },
+  { "operation_impact": "Increased scrap and metal loss", "category": "Alloys" },
+  { "operation_impact": "High rework and rejection rate", "category": "Alloys" },
+  { "operation_impact": "Delayed order fulfillment to their customers", "category": "Alloys" },
+  { "operation_impact": "Quality complaints from their customers", "category": "Alloys" },
+  { "operation_impact": "Inconsistent output quality batch to batch", "category": "Alloys" },
+  { "operation_impact": "Machine or equipment damage risk", "category": "Alloys" },
+  { "operation_impact": "Rejection of plated pieces", "category": "Plating" },
+  { "operation_impact": "Plating bath instability causing downtime", "category": "Plating" },
+  { "operation_impact": "Inconsistent colour across batch", "category": "Plating" },
+  { "operation_impact": "Increased chemical consumption", "category": "Plating" },
+  { "operation_impact": "Longer processing time per batch", "category": "Plating" },
+  { "operation_impact": "High rework and stripping cost", "category": "Plating" },
+  { "operation_impact": "Unplanned machine downtime", "category": "Machines" },
+  { "operation_impact": "Production schedule disruption", "category": "Machines" },
+  { "operation_impact": "Spare parts unavailability extending downtime", "category": "Machines" },
+  { "operation_impact": "High maintenance and repair cost", "category": "Machines" },
+  { "operation_impact": "Low casting yield per cycle", "category": "Machines" },
+  { "operation_impact": "Operator safety risk", "category": "Machines" },
+  { "operation_impact": "Energy inefficiency", "category": "Machines" }
+]

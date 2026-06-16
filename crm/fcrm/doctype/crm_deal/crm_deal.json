@@ -35,11 +35,7 @@
   "column_break_gtvl",
   "pain_points",
   "operational_impact_section",
-  "production_downtime_due_to_casting_failure",
-  "increased_scrap_and_metal_loss",
-  "column_break_aasi",
-  "high_rework_cost",
-  "delayed_order_fulfillment",
+  "operational_impacts",
   "commercial_context_section",
   "current_supplier",
   "credit_check",
@@ -625,32 +621,10 @@
    "label": "Operational Impact"
   },
   {
-   "default": "0",
-   "fieldname": "production_downtime_due_to_casting_failure",
-   "fieldtype": "Check",
-   "label": "Production downtime due to casting failure"
-  },
-  {
-   "default": "0",
-   "fieldname": "increased_scrap_and_metal_loss",
-   "fieldtype": "Check",
-   "label": "Increased scrap and metal loss"
-  },
-  {
-   "fieldname": "column_break_aasi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "high_rework_cost",
-   "fieldtype": "Check",
-   "label": "High rework cost"
-  },
-  {
-   "default": "0",
-   "fieldname": "delayed_order_fulfillment",
-   "fieldtype": "Check",
-   "label": "Delayed order fulfillment"
+   "fieldname": "operational_impacts",
+   "fieldtype": "Table MultiSelect",
+   "label": "Operational Impacts",
+   "options": "CRM Operation Impact Select"
   },
   {
    "fieldname": "commercial_context_section",

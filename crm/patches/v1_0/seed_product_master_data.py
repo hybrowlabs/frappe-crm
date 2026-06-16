@@ -95,6 +95,21 @@ def seed_pain_points(pain_points):
 		doc.insert(ignore_permissions=True)
 
 
+def seed_operation_impacts(operation_impacts):
+	for row in operation_impacts:
+		if frappe.db.exists(
+			"CRM Operation Impact", {"operation_impact": row["operation_impact"]}
+		):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "CRM Operation Impact",
+				"operation_impact": row["operation_impact"],
+				"product_category": row["category"],
+			}
+		).insert(ignore_permissions=True)
+
+
 def execute():
 	# Bail out gracefully if the masters aren't installed yet.
 	required = (
@@ -102,12 +117,14 @@ def execute():
 		"CRM Product Sub Category",
 		"CRM Product Variant",
 		"CRM Pain Point",
+		"CRM Operation Impact",
 	)
 	if any(not frappe.db.exists("DocType", dt) for dt in required):
 		return
 
 	hierarchy = _load("product_hierarchy.json")
 	pain_points = _load("pain_points_matched.json")
+	operation_impacts = _load("operation_impacts.json")
 
 	# 1) Product hierarchy: Category -> Sub Category -> Variant
 	seed_categories(hierarchy)
@@ -116,5 +133,8 @@ def execute():
 
 	# 2) Matched pain points (mapped to product categories)
 	seed_pain_points(pain_points)
+
+	# 3) Operation impacts (mapped to product categories)
+	seed_operation_impacts(operation_impacts)
 
 	frappe.db.commit()

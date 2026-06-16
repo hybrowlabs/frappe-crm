@@ -88,13 +88,19 @@
 
     <!-- Operational Impact -->
     <StageSection :title="__('Operational Impact')" icon="trendingUp">
-      <div class="grid gap-2">
+      <p v-if="!cat" class="text-p-sm text-ink-gray-5">
+        {{ __('Select a product category to load relevant operational impacts.') }}
+      </p>
+      <p v-else-if="!opImpactOpts.length" class="text-p-sm text-ink-gray-5">
+        {{ __('No operational impacts mapped to this category yet.') }}
+      </p>
+      <div v-else class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
         <FieldCheckbox
-          v-for="o in OP_FIELDS"
-          :key="o.key"
-          :label="__(o.label)"
-          :checked="opImpact[o.key]"
-          @change="opImpact[o.key] = !opImpact[o.key]"
+          v-for="o in opImpactOpts"
+          :key="o.name"
+          :label="o.name"
+          :checked="opImpacts.includes(o.name)"
+          @change="toggleOpImpact(o.name)"
         />
       </div>
     </StageSection>
@@ -116,6 +122,7 @@
             class="form-control"
             :value="decisionMaker"
             doctype="Contact"
+            :filters="contactFilters"
             :placeholder="__('Link to a Contact')"
             @change="(v) => (decisionMaker = v)"
           />
@@ -171,7 +178,7 @@ import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import Link from '@/components/Controls/Link.vue'
 import { Button, createListResource, toast } from 'frappe-ui'
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
   statusLabel: { type: String, default: '' },
@@ -200,17 +207,6 @@ const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
 ]
-// operational-impact fields are fixed checkboxes on CRM Deal
-const OP_FIELDS = [
-  {
-    key: 'production_downtime_due_to_casting_failure',
-    label: 'Production downtime due to casting failure',
-  },
-  { key: 'increased_scrap_and_metal_loss', label: 'Increased scrap and metal loss' },
-  { key: 'high_rework_cost', label: 'High rework cost' },
-  { key: 'delayed_order_fulfillment', label: 'Delayed order fulfillment' },
-]
-
 // ---- live master data ----
 const categoryList = createListResource({
   doctype: 'CRM Product Category',
@@ -240,11 +236,25 @@ const painPointList = createListResource({
   pageLength: 0,
   auto: false,
 })
+const operationImpactList = createListResource({
+  doctype: 'CRM Operation Impact',
+  fields: ['name'],
+  orderBy: 'operation_impact asc',
+  pageLength: 0,
+  auto: false,
+})
+
+// limit Decision Maker to contacts of the deal's organization
+const contactFilters = computed(() => {
+  const org = (props.deal || {}).organization
+  return org ? { company_name: org } : {}
+})
 
 const categories = computed(() => (categoryList.data || []).map((d) => d.name))
 const subs = computed(() => (subCategoryList.data || []).map((d) => d.name))
 const variants = computed(() => (variantList.data || []).map((d) => d.name))
 const painOpts = computed(() => painPointList.data || [])
+const opImpactOpts = computed(() => operationImpactList.data || [])
 
 function loadSubs(category) {
   if (!category) return
@@ -275,6 +285,14 @@ function loadPains(category) {
   })
   painPointList.reload()
 }
+function loadOpImpacts(category) {
+  if (!category) {
+    operationImpactList.data = []
+    return
+  }
+  operationImpactList.update({ filters: { product_category: category } })
+  operationImpactList.reload()
+}
 
 // ---- form state (prefilled from the deal) ----
 const cat = ref('')
@@ -283,7 +301,7 @@ const variant = ref('')
 const pains = ref([])
 const freq = ref('')
 const severity = ref('')
-const opImpact = reactive({})
+const opImpacts = ref([])
 const supplier = ref('')
 const decisionMaker = ref('')
 const credit = ref(false)
@@ -308,7 +326,7 @@ onMounted(() => {
   pains.value = (d.pain_points || []).map((r) => r.pain_point)
   freq.value = d.pain_frequency || ''
   severity.value = d.pain_severity || ''
-  OP_FIELDS.forEach((o) => (opImpact[o.key] = !!d[o.key]))
+  opImpacts.value = (d.operational_impacts || []).map((r) => r.operation_impact)
   supplier.value = d.current_supplier || ''
   decisionMaker.value = d.decision_maker || ''
   credit.value = !!d.credit_check
@@ -317,6 +335,7 @@ onMounted(() => {
   if (cat.value) {
     loadSubs(cat.value)
     loadPains(cat.value)
+    loadOpImpacts(cat.value)
   }
   if (sub.value) loadVariants(sub.value)
 })
@@ -326,10 +345,13 @@ function onCategoryChange(v) {
   sub.value = ''
   variant.value = ''
   pains.value = []
+  opImpacts.value = []
   variantList.data = []
   painPointList.data = []
+  operationImpactList.data = []
   loadSubs(v)
   loadPains(v)
+  loadOpImpacts(v)
 }
 
 function onSubChange(v) {
@@ -344,6 +366,12 @@ function togglePain(p) {
     : [...pains.value, p]
 }
 
+function toggleOpImpact(o) {
+  opImpacts.value = opImpacts.value.includes(o)
+    ? opImpacts.value.filter((x) => x !== o)
+    : [...opImpacts.value, o]
+}
+
 function buildValues() {
   const values = {
     product_category: cat.value || null,
@@ -352,11 +380,11 @@ function buildValues() {
     pain_points: pains.value.map((p) => ({ pain_point: p })),
     pain_frequency: freq.value || '',
     pain_severity: severity.value || '',
+    operational_impacts: opImpacts.value.map((o) => ({ operation_impact: o })),
     current_supplier: supplier.value || '',
     decision_maker: decisionMaker.value || null,
     credit_check: credit.value ? 1 : 0,
   }
-  OP_FIELDS.forEach((o) => (values[o.key] = opImpact[o.key] ? 1 : 0))
   return values
 }
 
