@@ -77,6 +77,12 @@
                   @click="deleteOrganization"
                 />
                 <Button
+                  :label="__('Repeat Order')"
+                  size="sm"
+                  iconLeft="refresh-cw"
+                  @click="showRepeatOrderModal = true"
+                />
+                <Button
                   variant="solid"
                   :label="__('New Deal')"
                   size="sm"
@@ -161,10 +167,17 @@
     :org="props.organizationId"
     :subtitle="title"
   />
+  <RepeatOrderModal
+    v-if="showRepeatOrderModal"
+    v-model="showRepeatOrderModal"
+    :org="props.organizationId"
+    :subtitle="title"
+  />
 </template>
 
 <script setup>
 import OrgNewDealModal from '@/components/Modals/OrgNewDealModal.vue'
+import RepeatOrderModal from '@/components/Modals/RepeatOrderModal.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
@@ -219,6 +232,7 @@ const route = useRoute()
 const router = useRouter()
 
 const showNewDealModal = ref(false)
+const showRepeatOrderModal = ref(false)
 
 const {
   document: organization,

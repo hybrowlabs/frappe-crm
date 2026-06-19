@@ -13,6 +13,7 @@
   "next_step",
   "column_break_ijan",
   "status",
+  "repeat_deal",
   "deal_owner",
   "section_break_jgpm",
   "probability",
@@ -227,6 +228,13 @@
    "options": "CRM Deal Status",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "repeat_deal",
+   "fieldtype": "Check",
+   "label": "Repeat Deal",
+   "read_only": 1
   },
   {
    "fieldname": "contacts",

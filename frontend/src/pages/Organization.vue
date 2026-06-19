@@ -99,6 +99,12 @@
                   @click="openWebsite"
                 />
                 <Button
+                  :label="__('Repeat Order')"
+                  size="sm"
+                  iconLeft="refresh-cw"
+                  @click="showRepeatOrderModal = true"
+                />
+                <Button
                   variant="solid"
                   :label="__('New Deal')"
                   size="sm"
@@ -188,6 +194,12 @@
     :org="props.organizationId"
     :subtitle="title"
   />
+  <RepeatOrderModal
+    v-if="showRepeatOrderModal"
+    v-model="showRepeatOrderModal"
+    :org="props.organizationId"
+    :subtitle="title"
+  />
 </template>
 
 <script setup>
@@ -204,6 +216,7 @@ import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import OrgNewDealModal from '@/components/Modals/OrgNewDealModal.vue'
+import RepeatOrderModal from '@/components/Modals/RepeatOrderModal.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
@@ -255,6 +268,7 @@ const errorMessage = ref('')
 
 const showDeleteLinkedDocModal = ref(false)
 const showNewDealModal = ref(false)
+const showRepeatOrderModal = ref(false)
 
 const {
   document: organization,

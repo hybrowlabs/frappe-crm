@@ -398,13 +398,19 @@ def create_customer_from_deal(deal):
 
 	from erpnext.crm.frappe_crm_api import create_customer
 
+	# CRM Territory / CRM Industry names may not exist as ERPNext Territory /
+	# Industry Type masters; blank them out so the Customer insert doesn't fail
+	# on a link validation.
+	territory = doc.territory if doc.territory and frappe.db.exists("Territory", doc.territory) else ""
+	industry = doc.industry if doc.industry and frappe.db.exists("Industry Type", doc.industry) else ""
+
 	customer_name = create_customer(
 		{
 			"customer_name": account_name,
 			"customer_type": customer_type,
-			"territory": doc.territory,
+			"territory": territory,
 			"default_currency": doc.currency,
-			"industry": doc.industry,
+			"industry": industry,
 			"website": doc.website,
 			"contacts": json.dumps(get_contacts(doc)),
 			"address": json.dumps(address) if address else None,

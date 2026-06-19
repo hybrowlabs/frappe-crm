@@ -56,6 +56,7 @@ require_type_annotated_api_methods = True
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
+doctype_js = {"Quotation": "public/js/quotation.js"}
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -186,6 +187,10 @@ doc_events = {
 	"User": {
 		"before_validate": ["crm.api.live_demo.validate_user"],
 		"validate_reset_password": ["crm.api.live_demo.validate_reset_password"],
+	},
+	"Sales Order": {
+		"on_submit": ["crm.api.sales_order.update_previous_order_items"],
+		"on_cancel": ["crm.api.sales_order.reduce_previous_order_items"],
 	},
 }
 

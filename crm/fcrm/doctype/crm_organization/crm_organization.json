@@ -27,7 +27,8 @@
   "credit_terms",
   "last_order",
   "health_score",
-  "repeat_revenue"
+  "repeat_revenue",
+  "previous_order_items"
  ],
  "fields": [
   {
@@ -156,6 +157,13 @@
    "fieldname": "repeat_revenue",
    "fieldtype": "Percent",
    "label": "Repeat Revenue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_order_items",
+   "fieldtype": "Table",
+   "label": "Previous Order Items",
+   "options": "CRM Previous Order Items",
    "read_only": 1
   }
  ],

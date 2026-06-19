@@ -172,6 +172,10 @@ class CRMDeal(Document):
 
 	def validate_status(self):
 		if self.is_new():
+			# Repeat deals are created directly at the quotation stage, so they
+			# skip the "must start at the first stage" rule.
+			if self.repeat_deal:
+				return
 			# New deals start at the first pipeline stage (lowest position),
 			# which is "Req. Discussion" in this setup.
 			first_open = frappe.get_all(
@@ -198,7 +202,12 @@ class CRMDeal(Document):
 		back to an earlier status, or marking the deal Lost, is never blocked. If the
 		data is already present, the status simply changes.
 		"""
-		if self.is_new() or not self.status:
+		if not self.status:
+			return
+		# Regular new deals start at stage 1 (nothing to gate yet); repeat deals are
+		# created at the quotation stage, so their quotation-and-later gates are
+		# verified even on insert.
+		if self.is_new() and not self.repeat_deal:
 			return
 
 		statuses = frappe.get_all("CRM Deal Status", fields=["name", "position", "label"])
@@ -227,10 +236,17 @@ class CRMDeal(Document):
 				return value != 0
 			return bool(value)
 
+		# Repeat deals start at the quotation stage; only the data the earlier
+		# stages (before Proposal/Quotation) would collect is skipped. The
+		# quotation gate and any later gates are still enforced.
+		quotation_pos = positions.get("Proposal/Quotation")
+
 		missing_sections = []
 		for gate in STAGE_GATES:
 			gate_pos = positions.get(gate["status"])
 			if gate_pos is None or gate_pos > new_pos:
+				continue
+			if self.repeat_deal and quotation_pos and gate_pos < quotation_pos:
 				continue
 			missing = [_(label) for fieldname, label in gate["fields"] if not is_filled(fieldname)]
 			if missing:
@@ -611,3 +627,29 @@ def create_deal(doc: dict):
 
 	deal.insert(ignore_permissions=True)
 	return deal.name
+
+
+@frappe.whitelist()
+def get_trialed_products(organization: str):
+	"""Distinct product selections from an organization's deals that reached the
+	trial evaluation stage or later (excluding Lost) — i.e. already-trialed
+	products eligible for a repeat order."""
+	eval_pos = frappe.db.get_value("CRM Deal Status", "Evaluation Completed", "position")
+	if not eval_pos:
+		return []
+
+	trialed_statuses = frappe.get_all(
+		"CRM Deal Status",
+		filters={"position": [">=", eval_pos], "type": ["!=", "Lost"]},
+		pluck="name",
+	)
+	if not trialed_statuses:
+		return []
+
+	rows = frappe.get_all(
+		"CRM Deal",
+		filters={"organization": organization, "status": ["in", trialed_statuses]},
+		fields=["product_category", "product_sub_category", "product_variant"],
+		distinct=True,
+	)
+	return [r for r in rows if r.get("product_category")]
