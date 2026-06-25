@@ -721,7 +721,10 @@ function onStageAction() {
   // Quotations live in ERPNext — jump straight to the Desk create page,
   // prefilling the custom_deal link back to this deal and the linked customer.
   if (status === 'Proposal/Quotation') {
-    const params = new URLSearchParams({ custom_deal: props.dealId })
+    const params = new URLSearchParams({
+      custom_deal: props.dealId,
+      custom_created_from_crm: 1,
+    })
     const customer = organization.value?.erpnext_customer
     if (customer) {
       params.set('quotation_to', 'Customer')

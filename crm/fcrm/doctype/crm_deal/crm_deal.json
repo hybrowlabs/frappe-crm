@@ -160,7 +160,8 @@
    "fieldtype": "Link",
    "in_standard_filter": 1,
    "label": "Organization",
-   "options": "CRM Organization"
+   "options": "CRM Organization",
+   "reqd": 1
   },
   {
    "fieldname": "probability",

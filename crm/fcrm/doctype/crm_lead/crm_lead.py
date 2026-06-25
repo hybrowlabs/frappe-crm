@@ -321,12 +321,16 @@ class CRMLead(Document):
 
 		return contact.name
 
-	def create_organization(self, existing_organization=None):
-		if not self.organization and not existing_organization:
+	def create_organization(self, existing_organization=None, fallback_name=None):
+		# Organization is mandatory on the deal. Use the lead's organization, else
+		# fall back to the GST legal name captured during conversion, so an org is
+		# always created.
+		org_name = self.organization or fallback_name
+		if not org_name and not existing_organization:
 			return
 
 		existing_organization = existing_organization or frappe.db.exists(
-			"CRM Organization", {"organization_name": self.organization}
+			"CRM Organization", {"organization_name": org_name}
 		)
 		if existing_organization:
 			self.db_set("organization", existing_organization)
@@ -335,7 +339,7 @@ class CRMLead(Document):
 		organization = frappe.new_doc("CRM Organization")
 		organization.update(
 			{
-				"organization_name": self.organization,
+				"organization_name": org_name,
 				"website": self.website,
 				"territory": self.territory,
 				"industry": self.industry,
@@ -598,6 +602,13 @@ def convert_to_deal(
 	if lead.sla and frappe.db.exists("CRM Communication Status", "Replied"):
 		lead.db_set("communication_status", "Replied")
 	contact = lead.create_contact(existing_contact, False)
-	organization = lead.create_organization(existing_organization)
+	# Fall back to the GST legal name (captured in the convert modal) so an
+	# organization is always created — Organization is mandatory on the deal.
+	# Territory is mandatory on CRM Organization too, so carry the territory from
+	# the convert modal (deal payload) when the lead itself has none.
+	legal_name = deal.get("legal_name") if isinstance(deal, dict) else None
+	if isinstance(deal, dict) and deal.get("territory") and not lead.territory:
+		lead.territory = deal.get("territory")
+	organization = lead.create_organization(existing_organization, fallback_name=legal_name)
 	_deal = lead.create_deal(contact, organization, deal)
 	return _deal

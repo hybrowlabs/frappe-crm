@@ -336,9 +336,11 @@ const errors = computed(() => {
   // Territory is mandatory on the deal — required here regardless of the org choice.
   if (!territory.value) e.territory = __('Required')
   if (chooseExistingOrganization.value) return e
+  // Organization is mandatory on the deal, so the legal/organization name is
+  // always required when creating a new organization (even GST-exempt).
+  if (!legalName.value) e.legalName = __('Required')
   if (!exempt.value) {
     if (!valid.value) e.gstin = __('Enter a valid 15-character GSTIN')
-    if (!legalName.value) e.legalName = __('Required')
   }
   if (!billing.address_line1) e.billingLine1 = __('Required')
   if (!billing.city) e.billingCity = __('Required')
@@ -357,9 +359,10 @@ async function convertToDeal() {
   // Territory is mandatory on the deal; carry the modal's value through.
   deal.doc.territory = territory.value
 
-  if (!chooseExistingOrganization.value && !exempt.value) {
-    deal.doc.gstin = clean.value
+  if (!chooseExistingOrganization.value) {
+    // Always carry the org name so the backend always creates an organization.
     deal.doc.legal_name = legalName.value
+    if (!exempt.value) deal.doc.gstin = clean.value
   }
 
   await triggerConvertToDeal?.(props.lead, deal.doc, () => (show.value = false))
