@@ -42,8 +42,7 @@
    "fieldname": "erpnext_customer",
    "fieldtype": "Link",
    "label": "Customer in ERPNext",
-   "options": "Customer",
-   "read_only": 1
+   "options": "Customer"
   },
   {
    "fieldname": "website",

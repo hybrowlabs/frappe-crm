@@ -16,6 +16,21 @@ def get_previous_order_items(deal):
 	)
 
 
+@frappe.whitelist()
+def get_previous_order_items_for_customer(customer):
+	"""Item codes previously ordered by the CRM Organization linked to this
+	ERPNext customer — for prefilling a repeat-order Quotation that has no deal."""
+	organization = frappe.db.get_value("CRM Organization", {"erpnext_customer": customer}, "name")
+	if not organization:
+		return []
+
+	return frappe.get_all(
+		"CRM Previous Order Items",
+		filters={"parent": organization, "parenttype": "CRM Organization"},
+		pluck="item_code",
+	)
+
+
 def update_previous_order_items(doc, method=None):
 	"""On Sales Order submit, record/increment ordered item quantities on the
 	linked CRM Organization (matched via the order's ERPNext Customer)."""

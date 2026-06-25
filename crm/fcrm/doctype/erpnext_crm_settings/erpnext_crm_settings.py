@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import json
+from urllib.parse import quote
 
 import frappe
 from frappe import _
@@ -218,6 +219,54 @@ def get_quotation_url(crm_deal: str, organization: str | None = None):
 	# Filter out None values and build query string
 	query_string = "&".join(f"{key}={value}" for key, value in params.items() if value is not None)
 
+	return f"{base_url}?{query_string}"
+
+
+def _repeat_order_items(organization: str):
+	return frappe.get_all(
+		"CRM Previous Order Items",
+		filters={"parent": organization, "parenttype": "CRM Organization"},
+		fields=["item_code", "quantity"],
+	)
+
+
+@frappe.whitelist()
+def get_repeat_order_preview(organization: str):
+	"""What a repeat order for this organization would prefill: the linked
+	ERPNext customer and its previously-ordered items. Custom code — does not
+	depend on ERPNext CRM Settings."""
+	customer = frappe.db.get_value("CRM Organization", organization, "erpnext_customer")
+	return {"customer": customer, "items": _repeat_order_items(organization) if customer else []}
+
+
+@frappe.whitelist()
+def get_repeat_order_quotation_url(organization: str):
+	"""Build the new-Quotation form URL for a repeat order, prefilled (via query
+	params) with the organization's ERPNext customer and the 'Created from CRM'
+	flag. The items child table is prefilled client-side by quotation.js. No CRM
+	Deal is attached. Custom code — does not depend on ERPNext CRM Settings."""
+	if not _is_erpnext_installed():
+		frappe.throw(_("ERPNext is not installed"))
+
+	customer = frappe.db.get_value("CRM Organization", organization, "erpnext_customer")
+	if not customer:
+		frappe.throw(_("No ERPNext Customer is linked to this organization yet. Create the customer first."))
+
+	if not _repeat_order_items(organization):
+		frappe.throw(_("No previously-ordered items found for this organization to repeat."))
+
+	company = frappe.db.get_single_value("ERPNext CRM Settings", "erpnext_company") or frappe.defaults.get_global_default(
+		"company"
+	)
+
+	base_url = f"{get_url_to_list('Quotation')}/new"
+	params = {
+		"quotation_to": "Customer",
+		"party_name": customer,
+		"company": company,
+		"custom_created_from_crm": 1,
+	}
+	query_string = "&".join(f"{key}={quote(str(value))}" for key, value in params.items() if value is not None)
 	return f"{base_url}?{query_string}"
 
 

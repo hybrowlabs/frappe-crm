@@ -84,7 +84,7 @@
                   <ErrorMessage :message="__(error)" />
                 </div>
               </div>
-              <div class="flex gap-1.5">
+              <div class="flex w-full gap-1.5">
                 <Button
                   v-if="canDelete"
                   :tooltip="__('Delete')"
@@ -98,19 +98,25 @@
                   icon="link"
                   @click="openWebsite"
                 />
-                <Button
-                  :label="__('Repeat Order')"
-                  size="sm"
-                  iconLeft="refresh-cw"
-                  @click="showRepeatOrderModal = true"
-                />
-                <Button
-                  variant="solid"
-                  :label="__('New Deal')"
-                  size="sm"
-                  iconLeft="target"
-                  @click="showNewDealModal = true"
-                />
+                <div class="ml-auto flex gap-1.5">
+                  <Button
+                    v-if="
+                      organization.doc?.erpnext_customer &&
+                      organization.doc?.previous_order_items?.length
+                    "
+                    :label="__('Repeat Order')"
+                    size="sm"
+                    iconLeft="refresh-cw"
+                    @click="showRepeatOrderModal = true"
+                  />
+                  <Button
+                    variant="solid"
+                    :label="__('New Deal')"
+                    size="sm"
+                    iconLeft="target"
+                    @click="showNewDealModal = true"
+                  />
+                </div>
               </div>
             </div>
           </template>
@@ -168,6 +174,14 @@
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
+        <ListView
+          v-if="tab.label === 'Order Items' && rows.length"
+          class="mt-4 px-3 sm:px-5"
+          :rows="rows"
+          :columns="columns"
+          :options="{ selectable: false, showTooltip: false }"
+          row-key="name"
+        />
         <EmptyState
           v-if="!rows.length"
           :icon="tab.icon"
@@ -214,6 +228,7 @@ import WebsiteIcon from '@/components/Icons/WebsiteIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
+import PackageIcon from '@/components/Icons/PackageIcon.vue'
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import OrgNewDealModal from '@/components/Modals/OrgNewDealModal.vue'
 import RepeatOrderModal from '@/components/Modals/RepeatOrderModal.vue'
@@ -238,6 +253,7 @@ import {
   FileUploader,
   Dropdown,
   Tabs,
+  ListView,
   createListResource,
   usePageMeta,
   createResource,
@@ -410,6 +426,11 @@ const tabs = [
     icon: ContactsIcon,
     count: computed(() => contacts.data?.length),
   },
+  {
+    label: 'Order Items',
+    icon: PackageIcon,
+    count: computed(() => organization.doc?.previous_order_items?.length || 0),
+  },
 ]
 
 const deals = createListResource({
@@ -457,6 +478,10 @@ const contacts = createListResource({
 })
 
 const rows = computed(() => {
+  if (tabIndex.value === 2) {
+    return (organization.doc?.previous_order_items || []).map(getOrderItemRowObject)
+  }
+
   let list = !tabIndex.value ? deals : contacts
 
   if (!list.data) return []
@@ -469,6 +494,7 @@ const rows = computed(() => {
 const { getFormattedCurrency } = getMeta('CRM Deal')
 
 const columns = computed(() => {
+  if (tabIndex.value === 2) return orderItemColumns
   return tabIndex.value === 0 ? dealColumns : contactColumns
 })
 
@@ -517,6 +543,28 @@ function getContactRowObject(contact) {
     },
   }
 }
+
+function getOrderItemRowObject(item) {
+  return {
+    name: item.name,
+    item_code: item.item_code,
+    quantity: item.quantity,
+  }
+}
+
+const orderItemColumns = [
+  {
+    label: __('Item Code'),
+    key: 'item_code',
+    width: 2,
+  },
+  {
+    label: __('Quantity'),
+    key: 'quantity',
+    align: 'right',
+    width: 1,
+  },
+]
 
 const dealColumns = [
   {

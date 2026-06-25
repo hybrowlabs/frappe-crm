@@ -64,7 +64,7 @@
               <div class="truncate text-lg font-medium text-ink-gray-9">
                 {{ organization.doc.name }}
               </div>
-              <div class="flex items-center gap-1.5">
+              <div class="flex w-full items-center gap-1.5">
                 <Button @click="openWebsite">
                   <FeatherIcon name="link" class="h-4 w-4" />
                 </Button>
@@ -76,19 +76,25 @@
                   icon="trash-2"
                   @click="deleteOrganization"
                 />
-                <Button
-                  :label="__('Repeat Order')"
-                  size="sm"
-                  iconLeft="refresh-cw"
-                  @click="showRepeatOrderModal = true"
-                />
-                <Button
-                  variant="solid"
-                  :label="__('New Deal')"
-                  size="sm"
-                  iconLeft="target"
-                  @click="showNewDealModal = true"
-                />
+                <div class="ml-auto flex items-center gap-1.5">
+                  <Button
+                    v-if="
+                      organization.doc?.erpnext_customer &&
+                      organization.doc?.previous_order_items?.length
+                    "
+                    :label="__('Repeat Order')"
+                    size="sm"
+                    iconLeft="refresh-cw"
+                    @click="showRepeatOrderModal = true"
+                  />
+                  <Button
+                    variant="solid"
+                    :label="__('New Deal')"
+                    size="sm"
+                    iconLeft="target"
+                    @click="showNewDealModal = true"
+                  />
+                </div>
               </div>
               <ErrorMessage :message="__(error)" />
             </div>
@@ -149,6 +155,14 @@
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
+        <ListView
+          v-if="tab.name === 'Order Items' && rows.length"
+          class="mt-4 px-3 sm:px-5"
+          :rows="rows"
+          :columns="columns"
+          :options="{ selectable: false, showTooltip: false }"
+          row-key="name"
+        />
         <div
           v-if="!rows.length && tab.name !== 'Details'"
           class="grid flex-1 place-items-center text-xl font-medium text-ink-gray-4"
@@ -187,6 +201,7 @@ import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
+import PackageIcon from '@/components/Icons/PackageIcon.vue'
 import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
 import { getMeta } from '@/stores/meta'
@@ -206,6 +221,7 @@ import {
   FileUploader,
   Dropdown,
   Tabs,
+  ListView,
   call,
   createListResource,
   usePageMeta,
@@ -381,6 +397,12 @@ const tabs = [
     icon: h(ContactsIcon, { class: 'h-4 w-4' }),
     count: computed(() => contacts.data?.length),
   },
+  {
+    name: 'Order Items',
+    label: __('Order Items'),
+    icon: h(PackageIcon, { class: 'h-4 w-4' }),
+    count: computed(() => organization.doc?.previous_order_items?.length || 0),
+  },
 ]
 
 const deals = createListResource({
@@ -427,20 +449,29 @@ const contacts = createListResource({
   auto: true,
 })
 
+const activeTabName = computed(() => tabs[tabIndex.value]?.name)
+
 const rows = computed(() => {
-  let list = !tabIndex.value ? deals : contacts
+  if (activeTabName.value === 'Order Items') {
+    return (organization.doc?.previous_order_items || []).map(getOrderItemRowObject)
+  }
+
+  let list = activeTabName.value === 'Contacts' ? contacts : deals
 
   if (!list.data) return []
 
   return list.data.map((row) => {
-    return !tabIndex.value ? getDealRowObject(row) : getContactRowObject(row)
+    return activeTabName.value === 'Contacts'
+      ? getContactRowObject(row)
+      : getDealRowObject(row)
   })
 })
 
 const { getFormattedCurrency } = getMeta('CRM Deal')
 
 const columns = computed(() => {
-  return tabIndex.value === 0 ? dealColumns : contactColumns
+  if (activeTabName.value === 'Order Items') return orderItemColumns
+  return activeTabName.value === 'Contacts' ? contactColumns : dealColumns
 })
 
 function getDealRowObject(deal) {
@@ -488,6 +519,28 @@ function getContactRowObject(contact) {
     },
   }
 }
+
+function getOrderItemRowObject(item) {
+  return {
+    name: item.name,
+    item_code: item.item_code,
+    quantity: item.quantity,
+  }
+}
+
+const orderItemColumns = [
+  {
+    label: __('Item Code'),
+    key: 'item_code',
+    width: 2,
+  },
+  {
+    label: __('Quantity'),
+    key: 'quantity',
+    align: 'right',
+    width: 1,
+  },
+]
 
 const dealColumns = [
   {

@@ -21,6 +21,7 @@ SECTIONS = [
 		"label": "Account",
 		"name": "account_section",
 		"fields": [
+			"erpnext_customer",
 			"gstin",
 			"account_type",
 			"account_owner",
