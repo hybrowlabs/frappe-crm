@@ -430,10 +430,33 @@ def create_customer_from_deal(deal):
 
 	doc = frappe.get_doc("CRM Deal", deal)
 
+	# Reuse a customer already linked to the organization.
 	if doc.organization:
 		existing = frappe.db.get_value("CRM Organization", doc.organization, "erpnext_customer")
 		if existing:
 			return existing
+
+	# Reuse an existing ERPNext Customer that has the same GSTIN (use the first one
+	# if several match) instead of creating a duplicate for the same GST entity.
+	if doc.gstin:
+		gstin_matches = frappe.get_all(
+			"Customer",
+			filters={"gstin": doc.gstin},
+			pluck="name",
+			order_by="creation asc",
+			limit=1,
+		)
+		if gstin_matches:
+			customer_name = gstin_matches[0]
+			if doc.organization:
+				frappe.db.set_value(
+					"CRM Organization", doc.organization, "erpnext_customer", customer_name
+				)
+			_link_customer_to_contacts(doc, customer_name)
+			frappe.publish_realtime("crm_customer_created")
+			return customer_name
+
+	if doc.organization:
 		account_name = doc.organization
 		customer_type = "Company"
 		address = get_organization_address(doc.organization)
@@ -455,18 +478,30 @@ def create_customer_from_deal(deal):
 	territory = doc.territory if doc.territory and frappe.db.exists("Territory", doc.territory) else ""
 	industry = doc.industry if doc.industry and frappe.db.exists("Industry Type", doc.industry) else ""
 
-	customer_name = create_customer(
-		{
-			"customer_name": account_name,
-			"customer_type": customer_type,
-			"territory": territory,
-			"default_currency": doc.currency,
-			"industry": industry,
-			"website": doc.website,
-			"contacts": json.dumps(get_contacts(doc)),
-			"address": json.dumps(address) if address else None,
-		}
-	)
+	customer_data = {
+		"customer_name": account_name,
+		"customer_type": customer_type,
+		"territory": territory,
+		"default_currency": doc.currency,
+		"industry": industry,
+		"website": doc.website,
+		"contacts": json.dumps(get_contacts(doc)),
+		"address": json.dumps(address) if address else None,
+	}
+	# Stamp the GSTIN on the customer so it carries the GST identity (and so a later
+	# deal with the same GSTIN reuses this customer instead of creating a duplicate).
+	# Derive the GST category from the GSTIN itself (Regular / UIN / Tax Deductor /
+	# Overseas, …) rather than assuming Regular.
+	if doc.gstin:
+		customer_data["gstin"] = doc.gstin
+		try:
+			from india_compliance.gst_india.utils import guess_gst_category
+
+			customer_data["gst_category"] = guess_gst_category(doc.gstin, "India")
+		except Exception:
+			customer_data["gst_category"] = "Registered Regular"
+
+	customer_name = create_customer(customer_data)
 
 	if doc.organization:
 		frappe.db.set_value("CRM Organization", doc.organization, "erpnext_customer", customer_name)
