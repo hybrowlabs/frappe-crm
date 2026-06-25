@@ -601,14 +601,20 @@ def convert_to_deal(
 	lead.db_set("converted", 1)
 	if lead.sla and frappe.db.exists("CRM Communication Status", "Replied"):
 		lead.db_set("communication_status", "Replied")
-	contact = lead.create_contact(existing_contact, False)
-	# Fall back to the GST legal name (captured in the convert modal) so an
-	# organization is always created — Organization is mandatory on the deal.
-	# Territory is mandatory on CRM Organization too, so carry the territory from
-	# the convert modal (deal payload) when the lead itself has none.
+	# Create the organization FIRST so the auto-created contact can be linked to
+	# it: the org's contact list filters Contact.company_name == organization, so
+	# the contact must carry the org name. Organization is mandatory on the deal,
+	# so fall back to the GST legal name (captured in the convert modal). Territory
+	# is mandatory on CRM Organization too, so carry the modal's territory when the
+	# lead itself has none.
 	legal_name = deal.get("legal_name") if isinstance(deal, dict) else None
 	if isinstance(deal, dict) and deal.get("territory") and not lead.territory:
 		lead.territory = deal.get("territory")
 	organization = lead.create_organization(existing_organization, fallback_name=legal_name)
+	# Carry the org onto the lead so the connected contact's company_name is set to
+	# it and the contact shows up in the organization's contact list.
+	if organization and not lead.organization:
+		lead.organization = organization
+	contact = lead.create_contact(existing_contact, False)
 	_deal = lead.create_deal(contact, organization, deal)
 	return _deal

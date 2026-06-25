@@ -135,7 +135,8 @@
    "fieldname": "mobile_no",
    "fieldtype": "Data",
    "label": "Mobile No.",
-   "options": "Phone"
+   "options": "Phone",
+   "reqd": 1
   },
   {
    "fieldname": "phone",

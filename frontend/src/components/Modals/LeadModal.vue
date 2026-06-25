@@ -135,6 +135,10 @@ async function createNewLead() {
           error.value = __('Territory is mandatory')
           return error.value
         }
+        if (!lead.doc.mobile_no) {
+          error.value = __('Mobile No. is mandatory')
+          return error.value
+        }
         if (lead.doc.annual_revenue) {
           if (typeof lead.doc.annual_revenue === 'string') {
             lead.doc.annual_revenue = lead.doc.annual_revenue.replace(/,/g, '')
