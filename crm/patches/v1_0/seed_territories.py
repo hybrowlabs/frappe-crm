@@ -19,17 +19,17 @@ TERRITORIES = [
 
 
 def execute():
-	if not frappe.db.exists("DocType", "CRM Territory"):
+	if not frappe.db.exists("DocType", "Territory"):
 		return
 
-	parent = frappe.db.get_value("CRM Territory", {"is_group": 1}, "name")
+	parent = frappe.db.get_value("Territory", {"is_group": 1}, "name")
 
 	for territory in TERRITORIES:
-		if frappe.db.exists("CRM Territory", territory):
+		if frappe.db.exists("Territory", territory):
 			continue
 		frappe.get_doc(
 			{
-				"doctype": "CRM Territory",
+				"doctype": "Territory",
 				"territory_name": territory,
 				"parent_crm_territory": parent,
 			}

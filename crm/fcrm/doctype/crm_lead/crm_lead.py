@@ -99,6 +99,10 @@ class CRMLead(Document):
 				self.share_with_agent(self.lead_owner)
 			self.assign_agent(self.lead_owner)
 
+		from crm.api.sales_manager import auto_assign_by_territory
+
+		auto_assign_by_territory(self)
+
 	def before_save(self):
 		self.apply_sla()
 

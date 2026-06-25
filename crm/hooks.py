@@ -13,6 +13,7 @@ app_icon_route = "/crm"
 fixtures = [
 	"CRM Deal Status",
 	"CRM Lead Status",
+	{"dt": "UOM", "filters": [["uom_name", "in", ["Pieces", "Nos", "Gram", "Kg", "Millilitre", "Litre"]]]},
 ]
 
 # Apps
@@ -178,11 +179,6 @@ doc_events = {
 	"WhatsApp Message": {
 		"validate": ["crm.api.whatsapp.validate"],
 		"on_update": ["crm.api.whatsapp.on_update"],
-	},
-	"CRM Deal": {
-		"on_update": [
-			"crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_in_erpnext"
-		],
 	},
 	"User": {
 		"before_validate": ["crm.api.live_demo.validate_user"],

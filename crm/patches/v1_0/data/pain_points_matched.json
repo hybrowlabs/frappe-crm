@@ -347,5 +347,14 @@
     "categories": [
       "Machines"
     ]
+  },
+  {
+    "pain_point": "Other",
+    "pain_type": "Technical",
+    "categories": [
+      "Alloys",
+      "Plating",
+      "Machines"
+    ]
   }
 ]

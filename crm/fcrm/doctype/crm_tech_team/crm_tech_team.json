@@ -9,7 +9,8 @@
  "field_order": [
   "territory",
   "product_category",
-  "team_member"
+  "team_member",
+  "active"
  ],
  "fields": [
   {
@@ -17,7 +18,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Territory",
-   "options": "CRM Territory",
+   "options": "Territory",
    "reqd": 1
   },
   {
@@ -35,6 +36,13 @@
    "label": "Team Member",
    "options": "User",
    "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
   }
  ],
  "grid_page_length": 50,

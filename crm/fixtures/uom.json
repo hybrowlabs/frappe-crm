@@ -1,0 +1,44 @@
+[
+ {
+  "doctype": "UOM",
+  "name": "Pieces",
+  "uom_name": "Pieces",
+  "enabled": 1,
+  "must_be_whole_number": 1
+ },
+ {
+  "doctype": "UOM",
+  "name": "Nos",
+  "uom_name": "Nos",
+  "enabled": 1,
+  "must_be_whole_number": 1
+ },
+ {
+  "doctype": "UOM",
+  "name": "Gram",
+  "uom_name": "Gram",
+  "enabled": 1,
+  "must_be_whole_number": 0
+ },
+ {
+  "doctype": "UOM",
+  "name": "Kg",
+  "uom_name": "Kg",
+  "enabled": 1,
+  "must_be_whole_number": 0
+ },
+ {
+  "doctype": "UOM",
+  "name": "Millilitre",
+  "uom_name": "Millilitre",
+  "enabled": 1,
+  "must_be_whole_number": 0
+ },
+ {
+  "doctype": "UOM",
+  "name": "Litre",
+  "uom_name": "Litre",
+  "enabled": 1,
+  "must_be_whole_number": 0
+ }
+]

@@ -42,23 +42,34 @@ def assign_to_user(doctype, name, user, description):
 
 
 @frappe.whitelist()
-def get_tech_teams():
-	"""Tech Team options for selection — value is the record name, label reads
-	as 'Product Category — Member First Name' (as in the prototype)."""
+def get_tech_teams(territory=None, product_category=None):
+	"""Tech Team options for selection — value is the record name, label is the
+	member's full name. Optionally scoped to a deal's territory and product
+	category."""
+	filters = {"active": 1}
+	if territory:
+		filters["territory"] = territory
+	if product_category:
+		filters["product_category"] = product_category
 	rows = frappe.get_all(
 		"CRM Tech Team",
+		filters=filters,
 		fields=["name", "product_category", "team_member"],
 		order_by="product_category asc",
 	)
 	options = []
 	for r in rows:
-		first_name, full_name = frappe.db.get_value(
-			"User", r.team_member, ["first_name", "full_name"]
-		) or (r.team_member, r.team_member)
+		enabled, full_name = frappe.db.get_value(
+			"User", r.team_member, ["enabled", "full_name"]
+		) or (0, None)
+		# auto-skip entries whose linked user has been disabled — the User
+		# record is the live source of truth, so no sync hook is needed.
+		if not enabled:
+			continue
 		options.append(
 			{
 				"value": r.name,
-				"label": f"{r.product_category} — {first_name}",
+				"label": full_name or r.team_member,
 				"full_name": full_name or r.team_member,
 			}
 		)

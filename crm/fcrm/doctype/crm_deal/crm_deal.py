@@ -118,6 +118,8 @@ class CRMDeal(Document):
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
 		organization: DF.Link | None
 		organization_name: DF.Data | None
+		other_operational_impact: DF.Data | None
+		other_pain_point: DF.Data | None
 		pain_frequency: DF.Literal["", "Every Production Cycle", "Weekly", "Monthly", "Occasional"]
 		pain_points: DF.TableMultiSelect[CRMPainPointSelect]
 		pain_severity: DF.Literal["", "Critical", "High", "Medium", "Low"]
@@ -128,6 +130,7 @@ class CRMDeal(Document):
 		product_variant: DF.Link | None
 		production_downtime_due_to_casting_failure: DF.Check
 		products: DF.Table[CRMProducts]
+		requirement_note: DF.SmallText | None
 		response_by: DF.Datetime | None
 		rolling_responses: DF.Table[CRMRollingResponseTime]
 		salutation: DF.Link | None
@@ -167,8 +170,25 @@ class CRMDeal(Document):
 				self.share_with_agent(self.deal_owner)
 			self.assign_agent(self.deal_owner)
 
+		from crm.api.sales_manager import auto_assign_by_territory
+
+		auto_assign_by_territory(self)
+
 	def before_save(self):
 		self.apply_sla()
+
+	def on_update(self):
+		from crm.api.sales_manager import (
+			notify_roles_on_status_change,
+			notify_sales_manager_on_approval,
+		)
+		from crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings import (
+			create_customer_in_erpnext,
+		)
+
+		create_customer_in_erpnext(self, "on_update")
+		notify_sales_manager_on_approval(self)
+		notify_roles_on_status_change(self)
 
 	def validate_status(self):
 		if self.is_new():

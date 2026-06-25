@@ -16,20 +16,20 @@
           v-model="start"
           type="date"
           :label="__('Evaluation Start')"
-          required
+          readonly
           :error="errors.start"
         />
         <FieldText
           v-model="end"
           type="date"
           :label="__('Evaluation End')"
-          required
-          :error="errors.end"
+          readonly
         />
         <FieldSelect
           v-model="techPerson"
           :label="__('Technical Person')"
           required
+          disabled
           :options="techPersonOptions"
           :error="errors.techPerson"
         />
@@ -70,15 +70,9 @@
               @click.prevent="removePhoto(url)"
             >×</span>
           </a>
-          <input
-            ref="photoInput"
-            type="file"
-            accept="image/*"
-            multiple
-            class="hidden"
-            @change="onPhotosSelected"
-          />
-          <span class="cursor-pointer text-ink-blue-3" @click="photoInput.click()"
+          <span
+            class="cursor-pointer text-ink-blue-3"
+            @click="showPhotoUploader = true"
             >+ {{ __('Add') }}</span
           >
         </div>
@@ -213,6 +207,14 @@
       </div>
     </template>
   </StageFormDialog>
+
+  <FilesUploader
+    v-if="deal?.name"
+    v-model="showPhotoUploader"
+    doctype="CRM Deal"
+    :docname="deal.name"
+    @after="onPhotosUploaded"
+  />
 </template>
 
 <script setup>
@@ -227,7 +229,8 @@ import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
-import { Button, FileUploadHandler, toast, createResource, createListResource } from 'frappe-ui'
+import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
+import { Button, toast, createResource, createListResource } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -239,6 +242,13 @@ const props = defineProps({
 const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save', 'lab'])
 
+// local YYYY-MM-DD for the date input
+function today() {
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 const start = ref('')
 const end = ref('')
 const techPerson = ref('')
@@ -248,7 +258,7 @@ const perfTrial = ref('')
 const feedback = ref('')
 const testimonialCaptured = ref(false)
 const photos = ref([])
-const photoInput = ref(null)
+const showPhotoUploader = ref(false)
 const mgrReviewed = ref('n')
 const custValidation = ref('n')
 const outcome = ref('Successful')
@@ -292,8 +302,9 @@ const lostReasonOptions = computed(() => [
 
 onMounted(() => {
   const d = props.deal || {}
-  start.value = d.evaluation_start || ''
-  end.value = d.evaluation_end || ''
+  start.value = d.evaluation_start || today()
+  // End is always the current date and is not editable here.
+  end.value = today()
   techPerson.value = d.technical_person || ''
   observations.value = d.evaluation_observations || ''
   perfBaseline.value = d.performance_baseline || ''
@@ -315,15 +326,10 @@ const gatesUnlocked = computed(
   () => gatesCleared.value && outcome.value === 'Successful',
 )
 
-async function onPhotosSelected(e) {
-  const files = Array.from(e.target.files || [])
-  e.target.value = ''
-  for (const file of files) {
-    try {
-      const data = await new FileUploadHandler().upload(file, {})
-      photos.value.push(data.file_url)
-    } catch (err) {
-      toast.error(__('Error uploading {0}', [file.name]))
+function onPhotosUploaded(files) {
+  for (const f of files || []) {
+    if (f?.file_url && !photos.value.includes(f.file_url)) {
+      photos.value.push(f.file_url)
     }
   }
 }

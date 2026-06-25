@@ -57,7 +57,7 @@
       <p v-else-if="!painOpts.length" class="mb-3 text-p-sm text-ink-gray-5">
         {{ __('No pain points mapped to this category yet.') }}
       </p>
-      <div v-else class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
+      <div v-if="cat" class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
         <FieldCheckbox
           v-for="p in painOpts"
           :key="p.name"
@@ -65,6 +65,18 @@
           :checked="pains.includes(p.name)"
           @change="togglePain(p.name)"
         />
+      </div>
+      <FieldText
+        v-if="otherPainSelected"
+        v-model="otherPainPoint"
+        :label="__('Other Pain Point')"
+        required
+        :placeholder="__('Enter other pain point')"
+        :error="errors.otherPainPoint"
+        class="mb-3"
+      />
+      <div v-if="errors.pains" class="mb-3 text-xs text-ink-red-3">
+        {{ errors.pains }}
       </div>
       <FieldGrid :cols="2">
         <FieldSelect
@@ -94,7 +106,7 @@
       <p v-else-if="!opImpactOpts.length" class="text-p-sm text-ink-gray-5">
         {{ __('No operational impacts mapped to this category yet.') }}
       </p>
-      <div v-else class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+      <div v-if="cat" class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
         <FieldCheckbox
           v-for="o in opImpactOpts"
           :key="o.name"
@@ -102,6 +114,23 @@
           :checked="opImpacts.includes(o.name)"
           @change="toggleOpImpact(o.name)"
         />
+        <FieldCheckbox
+          :label="__('Other')"
+          :checked="otherOperationalImpactSelected"
+          @change="toggleOtherOperationalImpact"
+        />
+      </div>
+      <FieldText
+        v-if="otherOperationalImpactSelected"
+        v-model="otherOperationalImpact"
+        :label="__('Other Operational Impact')"
+        required
+        :placeholder="__('Enter other operational impact')"
+        :error="errors.otherOperationalImpact"
+        class="mt-3"
+      />
+      <div v-if="errors.opImpacts" class="mt-1 text-xs text-ink-red-3">
+        {{ errors.opImpacts }}
       </div>
     </StageSection>
 
@@ -150,6 +179,15 @@
       <StageCallout v-else theme="gray" icon="clock">
         {{ __('Credit assessment not yet started.') }}
       </StageCallout>
+      <div class="my-3.5 h-px bg-outline-gray-2" />
+      <FieldTextarea
+        v-model="requirementNote"
+        :label="__('Requirement Note')"
+        required
+        :rows="2"
+        :placeholder="__('Add requirement note')"
+        :error="errors.requirementNote"
+      />
     </StageSection>
 
     <template #actions>
@@ -176,6 +214,8 @@ import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
+import FieldText from '@/components/StageForms/FieldText.vue'
+import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import Link from '@/components/Controls/Link.vue'
 import { Button, createListResource, toast } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
@@ -196,6 +236,7 @@ const REQUIRED_FIELDS = [
   { key: 'variant', label: __('Variant') },
   { key: 'freq', label: __('Pain Frequency') },
   { key: 'severity', label: __('Pain Severity') },
+  { key: 'requirementNote', label: __('Requirement Note') },
   { key: 'decisionMaker', label: __('Decision Maker') },
 ]
 
@@ -207,6 +248,7 @@ const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
 ]
+const OTHER_PAIN_POINT = 'Other'
 // ---- live master data ----
 const categoryList = createListResource({
   doctype: 'CRM Product Category',
@@ -255,6 +297,7 @@ const subs = computed(() => (subCategoryList.data || []).map((d) => d.name))
 const variants = computed(() => (variantList.data || []).map((d) => d.name))
 const painOpts = computed(() => painPointList.data || [])
 const opImpactOpts = computed(() => operationImpactList.data || [])
+const otherPainSelected = computed(() => pains.value.includes(OTHER_PAIN_POINT))
 
 function loadSubs(category) {
   if (!category) return
@@ -299,21 +342,48 @@ const cat = ref('')
 const sub = ref('')
 const variant = ref('')
 const pains = ref([])
+const otherPainPoint = ref('')
 const freq = ref('')
 const severity = ref('')
 const opImpacts = ref([])
+const otherOperationalImpactSelected = ref(false)
+const otherOperationalImpact = ref('')
+const requirementNote = ref('')
 const supplier = ref('')
 const decisionMaker = ref('')
 const credit = ref(false)
 
 // validation — errors only surface after a qualify attempt, then clear live
 const attempted = ref(false)
-const fieldValues = { cat, sub, variant, freq, severity, decisionMaker }
+const fieldValues = {
+  cat,
+  sub,
+  variant,
+  freq,
+  severity,
+  requirementNote,
+  decisionMaker,
+}
 const errors = computed(() => {
   if (!attempted.value) return {}
   const e = {}
   for (const f of REQUIRED_FIELDS) {
     if (!fieldValues[f.key].value) e[f.key] = __('Required')
+  }
+  if (otherPainSelected.value && !otherPainPoint.value.trim()) {
+    e.otherPainPoint = __('Required')
+  }
+  if (!pains.value.length) {
+    e.pains = __('Select at least one pain point')
+  }
+  if (!opImpacts.value.length && !otherOperationalImpactSelected.value) {
+    e.opImpacts = __('Select at least one operational impact')
+  }
+  if (
+    otherOperationalImpactSelected.value &&
+    !otherOperationalImpact.value.trim()
+  ) {
+    e.otherOperationalImpact = __('Required')
   }
   return e
 })
@@ -324,9 +394,16 @@ onMounted(() => {
   sub.value = d.product_sub_category || ''
   variant.value = d.product_variant || ''
   pains.value = (d.pain_points || []).map((r) => r.pain_point)
+  otherPainPoint.value = d.other_pain_point || ''
+  if (otherPainPoint.value && !pains.value.includes(OTHER_PAIN_POINT)) {
+    pains.value = [...pains.value, OTHER_PAIN_POINT]
+  }
   freq.value = d.pain_frequency || ''
   severity.value = d.pain_severity || ''
   opImpacts.value = (d.operational_impacts || []).map((r) => r.operation_impact)
+  otherOperationalImpact.value = d.other_operational_impact || ''
+  otherOperationalImpactSelected.value = !!otherOperationalImpact.value
+  requirementNote.value = d.requirement_note || ''
   supplier.value = d.current_supplier || ''
   decisionMaker.value = d.decision_maker || ''
   credit.value = !!d.credit_check
@@ -345,7 +422,11 @@ function onCategoryChange(v) {
   sub.value = ''
   variant.value = ''
   pains.value = []
+  otherPainPoint.value = ''
   opImpacts.value = []
+  otherOperationalImpactSelected.value = false
+  otherOperationalImpact.value = ''
+  requirementNote.value = ''
   variantList.data = []
   painPointList.data = []
   operationImpactList.data = []
@@ -361,9 +442,12 @@ function onSubChange(v) {
 }
 
 function togglePain(p) {
-  pains.value = pains.value.includes(p)
-    ? pains.value.filter((x) => x !== p)
-    : [...pains.value, p]
+  if (pains.value.includes(p)) {
+    pains.value = pains.value.filter((x) => x !== p)
+    if (p === OTHER_PAIN_POINT) otherPainPoint.value = ''
+    return
+  }
+  pains.value = [...pains.value, p]
 }
 
 function toggleOpImpact(o) {
@@ -372,15 +456,25 @@ function toggleOpImpact(o) {
     : [...opImpacts.value, o]
 }
 
+function toggleOtherOperationalImpact() {
+  otherOperationalImpactSelected.value = !otherOperationalImpactSelected.value
+  if (!otherOperationalImpactSelected.value) otherOperationalImpact.value = ''
+}
+
 function buildValues() {
   const values = {
     product_category: cat.value || null,
     product_sub_category: sub.value || null,
     product_variant: variant.value || null,
     pain_points: pains.value.map((p) => ({ pain_point: p })),
+    other_pain_point: otherPainSelected.value ? otherPainPoint.value.trim() : '',
     pain_frequency: freq.value || '',
     pain_severity: severity.value || '',
     operational_impacts: opImpacts.value.map((o) => ({ operation_impact: o })),
+    other_operational_impact: otherOperationalImpactSelected.value
+      ? otherOperationalImpact.value.trim()
+      : '',
+    requirement_note: requirementNote.value.trim(),
     current_supplier: supplier.value || '',
     decision_maker: decisionMaker.value || null,
     credit_check: credit.value ? 1 : 0,
@@ -398,6 +492,24 @@ function saveDraft() {
 function markReadyToQualify() {
   attempted.value = true
   const missing = REQUIRED_FIELDS.filter((f) => !fieldValues[f.key].value)
+  if (!pains.value.length) {
+    missing.push({ key: 'pains', label: __('Pain Point') })
+  }
+  if (otherPainSelected.value && !otherPainPoint.value.trim()) {
+    missing.push({ key: 'otherPainPoint', label: __('Other Pain Point') })
+  }
+  if (!opImpacts.value.length && !otherOperationalImpactSelected.value) {
+    missing.push({ key: 'opImpacts', label: __('Operational Impact') })
+  }
+  if (
+    otherOperationalImpactSelected.value &&
+    !otherOperationalImpact.value.trim()
+  ) {
+    missing.push({
+      key: 'otherOperationalImpact',
+      label: __('Other Operational Impact'),
+    })
+  }
   if (missing.length) {
     toast.error(
       __('Please fill all required fields: {0}', [

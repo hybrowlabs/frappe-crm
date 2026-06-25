@@ -45,7 +45,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Territory",
-   "options": "CRM Territory"
+   "options": "Territory"
   },
   {
    "fieldname": "section_break_1",

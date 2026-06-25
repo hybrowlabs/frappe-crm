@@ -38,16 +38,21 @@
       />
       <div class="mb-1.5 text-sm text-ink-gray-5">
         {{ __('Decision Criteria (multi-select)') }}
+        <span class="text-ink-red-3">*</span>
       </div>
-      <div class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+      <div class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
         <FieldCheckbox
           v-for="c in criteriaOptions"
           :key="c"
           :label="c"
           :checked="criteria.includes(c)"
-          @change="toggle(criteria, c)"
+          @change="toggleCriteria(c)"
         />
       </div>
+      <div v-if="errors.criteria" class="mt-1 text-xs text-ink-red-3">
+        {{ errors.criteria }}
+      </div>
+      <div class="mb-3.5" />
       <FieldCheckbox
         :label="__('Trial Required Before Decision')"
         :checked="trialBeforeDecision"
@@ -62,26 +67,42 @@
           :options="timelineOptions"
           :error="errors.timeline"
         />
-        <FieldText
-          v-model="volume"
-          type="number"
-          :label="__('Expected Monthly Volume (KG)')"
-          required
-          :error="errors.volume"
-        />
-        <FieldText
-          v-model="dealValue"
-          type="number"
-          :label="__('Deal Value (INR)')"
-          required
-          :error="errors.dealValue"
-        />
         <FieldSelect
           v-model="forecast"
           :label="__('Forecast Category')"
           required
           :options="forecastOptions"
           :error="errors.forecast"
+        />
+        <FieldText
+          v-model="volume"
+          type="number"
+          :label="__('Expected Monthly Volume')"
+          required
+          :error="errors.volume"
+        />
+        <div>
+          <div class="mb-1.5 text-sm text-ink-gray-5">
+            {{ __('Unit') }} <span class="text-ink-red-3">*</span>
+          </div>
+          <Link
+            class="form-control"
+            :value="volumeUom"
+            doctype="UOM"
+            :filters="uomFilters"
+            :placeholder="__('Select unit')"
+            @change="(v) => (volumeUom = v)"
+          />
+          <div v-if="errors.volumeUom" class="mt-1 text-xs text-ink-red-3">
+            {{ errors.volumeUom }}
+          </div>
+        </div>
+        <FieldText
+          v-model="dealValue"
+          type="number"
+          :label="__('Deal Value (INR)')"
+          required
+          :error="errors.dealValue"
         />
       </FieldGrid>
     </StageSection>
@@ -112,6 +133,15 @@
           :error="errors.techCategory"
           :help="__('Auto-routed by category × region')"
         />
+        <FieldText
+          v-model="evalStart"
+          type="date"
+          :label="__('Trial Start Date')"
+          :required="trialRequired === 'y'"
+          :error="errors.evalStart"
+        />
+      </FieldGrid>
+      <FieldGrid :cols="2" class="mt-1">
         <FieldText v-model="assignNotes" :label="__('Assignment Notes')" />
       </FieldGrid>
     </StageSection>
@@ -142,6 +172,7 @@ import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
+import Link from '@/components/Controls/Link.vue'
 import { Button, call, createResource, toast } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
@@ -160,11 +191,13 @@ const criteria = ref([])
 const trialBeforeDecision = ref(false)
 const timeline = ref('')
 const volume = ref('')
+const volumeUom = ref('')
 const dealValue = ref('')
 const forecast = ref('')
 const trialRequired = ref('y')
 const assignTech = ref('y')
 const techCategory = ref('')
+const evalStart = ref('')
 const assignNotes = ref('')
 const assigning = ref(false)
 
@@ -198,6 +231,10 @@ const yesNoOptions = [
 // "Category — Member First Name" (as in the prototype), value is the record name.
 const techTeamResource = createResource({
   url: 'crm.api.tech_team.get_tech_teams',
+  params: {
+    territory: props.deal?.territory,
+    product_category: props.deal?.product_category,
+  },
   auto: true,
 })
 const techCategoryOptions = computed(() => techTeamResource.data || [])
@@ -212,6 +249,17 @@ const productSummary = computed(() => {
     .join(' → ')
 })
 
+// Allowed units per product category (UOM master names, seeded via fixture).
+const UOM_BY_CATEGORY = {
+  Alloys: ['Gram', 'Kg'],
+  Plating: ['Millilitre', 'Litre', 'Pieces'],
+  Machines: ['Pieces', 'Nos'],
+}
+const uomFilters = computed(() => {
+  const allowed = UOM_BY_CATEGORY[props.deal?.product_category]
+  return allowed ? { name: ['in', allowed] } : {}
+})
+
 onMounted(() => {
   const d = props.deal || {}
   oppType.value = d.opportunity_type || 'New Business'
@@ -220,18 +268,20 @@ onMounted(() => {
   trialBeforeDecision.value = !!d.trial_required_before_decision
   timeline.value = d.decision_timeline || ''
   volume.value = d.expected_monthly_volume ? String(d.expected_monthly_volume) : ''
+  volumeUom.value = d.expected_monthly_volume_uom || ''
   dealValue.value = d.deal_value ? String(d.deal_value) : ''
   forecast.value = d.forecast_category || ''
-  trialRequired.value = d.trial_required ? 'y' : 'n'
+  trialRequired.value = d.trial_required === 0 ? 'n' : 'y'
   assignTech.value = d.assign_to_tech_team === 0 ? 'n' : 'y'
   techCategory.value = d.technical_person || ''
+  evalStart.value = d.evaluation_start || ''
   assignNotes.value = d.assignment_notes || ''
 })
 
-function toggle(list, item) {
-  const i = list.value.indexOf(item)
-  if (i === -1) list.value = [...list.value, item]
-  else list.value = list.value.filter((x) => x !== item)
+function toggleCriteria(item) {
+  if (criteria.value.includes(item))
+    criteria.value = criteria.value.filter((x) => x !== item)
+  else criteria.value = [...criteria.value, item]
 }
 
 function buildValues() {
@@ -241,11 +291,13 @@ function buildValues() {
     trial_required_before_decision: trialBeforeDecision.value ? 1 : 0,
     decision_timeline: timeline.value || null,
     expected_monthly_volume: parseFloat(volume.value) || 0,
+    expected_monthly_volume_uom: volumeUom.value || null,
     deal_value: parseFloat(dealValue.value) || 0,
     forecast_category: forecast.value || null,
     trial_required: trialRequired.value === 'y' ? 1 : 0,
     assign_to_tech_team: assignTech.value === 'y' ? 1 : 0,
     technical_person: techCategory.value || null,
+    evaluation_start: evalStart.value || null,
     assignment_notes: assignNotes.value || '',
   }
   CRITERIA_FIELDS.forEach(
@@ -264,10 +316,13 @@ const attempted = ref(false)
 const requiredFields = [
   { key: 'oppType', label: __('Opportunity Type'), val: () => oppType.value },
   { key: 'dmInvolved', label: __('Decision Maker Involved?'), val: () => dmInvolved.value },
+  { key: 'criteria', label: __('Decision Criteria'), val: () => criteria.value.length },
   { key: 'timeline', label: __('Decision Timeline'), val: () => timeline.value },
   { key: 'volume', label: __('Expected Monthly Volume'), val: () => volume.value },
+  { key: 'volumeUom', label: __('Unit'), val: () => volumeUom.value },
   { key: 'dealValue', label: __('Deal Value'), val: () => dealValue.value },
   { key: 'forecast', label: __('Forecast Category'), val: () => forecast.value },
+  { key: 'evalStart', label: __('Trial Start Date'), val: () => trialRequired.value !== 'y' || evalStart.value },
 ]
 function techCategoryError() {
   if (!techCategory.value) return __('Required')

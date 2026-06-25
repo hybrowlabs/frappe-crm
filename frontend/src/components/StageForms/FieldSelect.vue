@@ -7,6 +7,7 @@
       type="select"
       :modelValue="modelValue"
       :options="normalizedOptions"
+      :disabled="disabled"
       :class="error ? 'rounded [&_select]:!border-outline-red-2' : ''"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
@@ -24,6 +25,7 @@ const props = defineProps({
   modelValue: { type: [String, Number], default: '' },
   options: { type: Array, default: () => [] },
   required: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
   help: { type: String, default: '' },
   placeholder: { type: String, default: '' },
   error: { type: String, default: '' },

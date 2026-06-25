@@ -199,6 +199,7 @@ def get_quotation_url(crm_deal: str, organization: str | None = None):
 			"company": erpnext_crm_settings.erpnext_company,
 			"contact_person": contact,
 			"customer_address": address_name,
+			"custom_created_from_crm": 1,
 		}
 	else:
 		site_url = erpnext_crm_settings.get("erpnext_site_url")
@@ -211,6 +212,7 @@ def get_quotation_url(crm_deal: str, organization: str | None = None):
 			"company": erpnext_crm_settings.erpnext_company,
 			"contact_person": contact,
 			"customer_address": address_name,
+			"custom_created_from_crm": 1,
 		}
 
 	# Filter out None values and build query string
