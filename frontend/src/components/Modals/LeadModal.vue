@@ -129,6 +129,12 @@ async function createNewLead() {
           error.value = __('First Name is mandatory')
           return error.value
         }
+        // Territory is optional at the doctype level (so Lead import can omit it)
+        // but required when creating a lead manually from this modal.
+        if (!lead.doc.territory) {
+          error.value = __('Territory is mandatory')
+          return error.value
+        }
         if (lead.doc.annual_revenue) {
           if (typeof lead.doc.annual_revenue === 'string') {
             lead.doc.annual_revenue = lead.doc.annual_revenue.replace(/,/g, '')

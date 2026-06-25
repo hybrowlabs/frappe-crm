@@ -5,7 +5,6 @@ import json
 
 import frappe
 from frappe import _
-from frappe.desk.form.assign_to import add as assign
 from frappe.model.document import Document
 from frappe.utils import has_gravatar, validate_email_address
 
@@ -175,7 +174,9 @@ class CRMLead(Document):
 					# the agent is already set as an assignee
 					return
 
-		assign({"assign_to": [agent], "doctype": "CRM Lead", "name": self.name}, ignore_permissions=True)
+		from crm.utils import assign_to_agent
+
+		assign_to_agent("CRM Lead", self.name, agent)
 
 	def share_with_agent(self, agent):
 		if not agent:

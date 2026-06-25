@@ -15,6 +15,15 @@
         <Switch v-model="chooseExistingContact" />
       </div>
     </div>
+    <div class="mb-4">
+      <Link
+        :label="__('Territory') + ' *'"
+        doctype="Territory"
+        v-model="territory"
+      />
+      <ErrorMessage v-if="errors.territory" class="mt-1" :message="errors.territory" />
+    </div>
+
     <Link
       v-if="chooseExistingOrganization"
       class="mb-4"
@@ -206,6 +215,7 @@ const converting = ref(false)
 const attempted = ref(false)
 const gstinLoading = ref(false)
 const fetchedState = ref('')
+const territory = ref(props.lead.territory || '')
 const chooseExistingOrganization = ref(false)
 const existingOrganization = ref('')
 const chooseExistingContact = ref(false)
@@ -322,8 +332,10 @@ async function fetchGstinInfo(value) {
 
 const errors = computed(() => {
   if (!attempted.value) return {}
-  if (chooseExistingOrganization.value) return {}
   const e = {}
+  // Territory is mandatory on the deal — required here regardless of the org choice.
+  if (!territory.value) e.territory = __('Required')
+  if (chooseExistingOrganization.value) return e
   if (!exempt.value) {
     if (!valid.value) e.gstin = __('Enter a valid 15-character GSTIN')
     if (!legalName.value) e.legalName = __('Required')
@@ -341,6 +353,9 @@ async function convertToDeal() {
   error.value = ''
   attempted.value = true
   if (Object.keys(errors.value).length) return
+
+  // Territory is mandatory on the deal; carry the modal's value through.
+  deal.doc.territory = territory.value
 
   if (!chooseExistingOrganization.value && !exempt.value) {
     deal.doc.gstin = clean.value

@@ -296,8 +296,7 @@
    "fieldname": "territory",
    "fieldtype": "Link",
    "label": "Territory",
-   "options": "Territory",
-   "reqd": 1
+   "options": "Territory"
   },
   {
    "fieldname": "log_tab",

@@ -1,4 +1,5 @@
 import functools
+import inspect
 
 import frappe
 import phonenumbers
@@ -6,9 +7,25 @@ import requests
 from frappe import _
 from frappe.core.doctype.comment.comment import Comment
 from frappe.core.doctype.communication.communication import Communication
+from frappe.desk.form.assign_to import add as _assign_add
 from frappe.utils import floor, now
 from phonenumbers import NumberParseException
 from phonenumbers import PhoneNumberFormat as PNF
+
+# Frappe's assign_to.add() only accepts the `ignore_permissions` kwarg on newer
+# framework versions. Detect support once so assignment works across versions
+# (older builds — e.g. on some deployments — raise TypeError on the kwarg).
+_ASSIGN_ADD_HAS_IGNORE_PERMS = "ignore_permissions" in inspect.signature(_assign_add).parameters
+
+
+def assign_to_agent(doctype: str, name: str, agent: str):
+	"""Assign a document to an agent, bypassing permissions where the installed
+	Frappe supports it, falling back gracefully where it does not."""
+	args = {"assign_to": [agent], "doctype": doctype, "name": name}
+	if _ASSIGN_ADD_HAS_IGNORE_PERMS:
+		_assign_add(args, ignore_permissions=True)
+	else:
+		_assign_add(args)
 
 
 def parse_phone_number(phone_number: str, default_country: str = "IN"):
