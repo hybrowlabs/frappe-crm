@@ -431,16 +431,22 @@ def _use_existing_customer(doc, customer_name):
 
 
 @frappe.whitelist()
-def create_customer_from_deal(deal, customer=None):
+def create_customer_from_deal(deal, customer=None, currency=None, gstin=None):
 	"""Create an ERPNext customer for the deal's organization (if not already linked),
 	store it on CRM Organization.erpnext_customer, and link it to the deal's contacts.
 
 	If ``customer`` is given (the user picked an existing customer in the Create
-	Customer modal), that customer is used as-is instead of creating a new one."""
+	Customer modal), that customer is used as-is instead of creating a new one.
+
+	``currency`` (entered in the Create Customer modal) becomes the customer's
+	default currency. ``gstin`` (also from the modal) is stamped on the customer;
+	it's passed explicitly because the deal isn't saved yet when this runs."""
 	if "erpnext" not in frappe.get_installed_apps():
 		return
 
 	doc = frappe.get_doc("CRM Deal", deal)
+	# The modal passes the GSTIN directly since the deal hasn't been saved with it yet.
+	gstin = gstin or doc.gstin
 
 	# An existing customer was explicitly chosen in the modal — use it directly.
 	if customer and frappe.db.exists("Customer", customer):
@@ -454,10 +460,10 @@ def create_customer_from_deal(deal, customer=None):
 
 	# Reuse an existing ERPNext Customer that has the same GSTIN (use the first one
 	# if several match) instead of creating a duplicate for the same GST entity.
-	if doc.gstin:
+	if gstin:
 		gstin_matches = frappe.get_all(
 			"Customer",
-			filters={"gstin": doc.gstin},
+			filters={"gstin": gstin},
 			pluck="name",
 			order_by="creation asc",
 			limit=1,
@@ -491,22 +497,29 @@ def create_customer_from_deal(deal, customer=None):
 		"customer_name": account_name,
 		"customer_type": customer_type,
 		"territory": territory,
-		"default_currency": doc.currency,
+		"default_currency": currency or doc.currency,
 		"industry": industry,
 		"website": doc.website,
 		"contacts": json.dumps(get_contacts(doc)),
 		"address": json.dumps(address) if address else None,
 	}
+	# Set a credit limit of 1 for every company (required by the staging
+	# customer-validation rule that every customer must have a credit limit).
+	companies = frappe.get_all("Company", pluck="name")
+	if companies:
+		customer_data["credit_limits"] = [
+			{"company": company, "credit_limit": 1} for company in companies
+		]
 	# Stamp the GSTIN on the customer so it carries the GST identity (and so a later
 	# deal with the same GSTIN reuses this customer instead of creating a duplicate).
 	# Derive the GST category from the GSTIN itself (Regular / UIN / Tax Deductor /
 	# Overseas, …) rather than assuming Regular.
-	if doc.gstin:
-		customer_data["gstin"] = doc.gstin
+	if gstin:
+		customer_data["gstin"] = gstin
 		try:
 			from india_compliance.gst_india.utils import guess_gst_category
 
-			customer_data["gst_category"] = guess_gst_category(doc.gstin, "India")
+			customer_data["gst_category"] = guess_gst_category(gstin, "India")
 		except Exception:
 			customer_data["gst_category"] = "Registered Regular"
 

@@ -1070,7 +1070,12 @@ async function confirmPreQuotation(payload) {
     try {
       const customer = await call(
         'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_from_deal',
-        { deal: props.dealId, customer: payload?.existingCustomer || undefined },
+        {
+          deal: props.dealId,
+          customer: payload?.existingCustomer || undefined,
+          currency: payload?.currency || undefined,
+          gstin: payload?.gstin || undefined,
+        },
       )
       // Reflect the new link locally so the Create Customer button hides immediately.
       if (customer && organizationDocument.value?.doc) {

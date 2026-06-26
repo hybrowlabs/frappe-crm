@@ -59,6 +59,13 @@
             :error="errors.gstin"
           />
         </FieldGrid>
+        <Link
+          :label="__('Currency') + ' *'"
+          doctype="Currency"
+          :value="currency"
+          @change="currency = $event"
+        />
+        <ErrorMessage v-if="errors.currency" class="mt-1" :message="errors.currency" />
       </template>
     </StageSection>
 
@@ -174,6 +181,7 @@ const emit = defineEmits(['confirm'])
 
 const legalName = ref(props.deal.legal_name || props.org || '')
 const gstin = ref(props.deal.gstin || '')
+const currency = ref(props.deal.currency || 'INR')
 // Use-existing-customer option + selector.
 const chooseExistingCustomer = ref(false)
 const existingCustomer = ref('')
@@ -299,6 +307,7 @@ const errors = computed(() => {
   }
   if (!legalName.value) e.legalName = __('Required')
   if (!gstin.value) e.gstin = __('Required')
+  if (!currency.value) e.currency = __('Required')
   if (!billing.address_line1) e.billingLine1 = __('Required')
   if (!billing.city) e.billingCity = __('Required')
   if (!sameAsBilling.value) {
@@ -319,6 +328,7 @@ function proceed() {
     emit('confirm', {
       legalName: legalName.value,
       gstin: gstin.value,
+      currency: currency.value,
       billing: { ...billing },
       sameAsBilling: sameAsBilling.value,
       shipping: sameAsBilling.value ? { ...billing } : { ...shipping },
