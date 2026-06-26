@@ -351,6 +351,7 @@ const defaultTemplateFields = [
   'mobile_no',
   'phone',
   'organization',
+  'territory',
   'website',
   'source',
   'sub_source',
@@ -486,12 +487,108 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
+// --- Minimal CSV parse/serialize (handles quoted fields, commas, newlines) ---
+function parseCSV(text) {
+  let rows = []
+  let row = []
+  let field = ''
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    let c = text[i]
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"'
+          i++
+        } else {
+          inQuotes = false
+        }
+      } else {
+        field += c
+      }
+    } else if (c === '"') {
+      inQuotes = true
+    } else if (c === ',') {
+      row.push(field)
+      field = ''
+    } else if (c === '\n') {
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+    } else if (c !== '\r') {
+      field += c
+    }
+  }
+  if (field.length || row.length) {
+    row.push(field)
+    rows.push(row)
+  }
+  return rows
+}
+
+function toCSV(rows) {
+  let esc = (v) => {
+    let s = v == null ? '' : String(v)
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+  }
+  return rows.map((r) => r.map(esc).join(',')).join('\n') + '\n'
+}
+
+// Resolve the Territory column to real Territory names (or blank) before upload,
+// so an unknown/messy value can never block the whole import. Only CSV files can
+// be cleaned in the browser; XLSX is uploaded as-is. Resolution runs server-side
+// and ignores the importing user's permissions, so it works without Territory
+// access.
+async function cleanTerritoryColumn(file) {
+  let ext = '.' + file.name.split('.').pop().toLowerCase()
+  if (ext !== '.csv') return file
+  let rows = parseCSV(await file.text())
+  if (rows.length < 2) return file
+  let header = rows[0]
+  let norm = (h) =>
+    String(h)
+      .trim()
+      .toLowerCase()
+      .replace(/\s*\(.*\)\s*$/, '')
+  let ti = header.findIndex((h) => norm(h) === 'territory')
+  if (ti === -1) return file
+
+  let dataRows = rows.slice(1)
+  let rawValues = [
+    ...new Set(dataRows.map((r) => (r[ti] ?? '').trim()).filter(Boolean)),
+  ]
+  if (!rawValues.length) return file
+
+  let map
+  try {
+    map = await call(
+      'crm.fcrm.doctype.crm_lead.crm_lead.resolve_territory_values',
+      { values: rawValues },
+    )
+  } catch {
+    // Resolution failed — upload the original file untouched.
+    return file
+  }
+
+  for (let r of dataRows) {
+    let raw = (r[ti] ?? '').trim()
+    r[ti] = raw ? (map[raw] ?? '') : ''
+  }
+  return new File([toCSV([header, ...dataRows])], file.name, {
+    type: 'text/csv',
+  })
+}
+
 async function startImport() {
   if (!uploadedFile.value) return
   isImporting.value = true
   importError.value = null
 
   try {
+    // Clean the Territory column so unknown values don't block the import.
+    let fileToUpload = await cleanTerritoryColumn(uploadedFile.value)
+
     // 1. Create a Data Import record for CRM Lead
     let doc = await call('frappe.client.insert', {
       doc: {
@@ -504,8 +601,8 @@ async function startImport() {
 
     // 2. Upload the file and attach it to the Data Import doc
     let uploader = new FilesUploadHandler()
-    let fileDoc = await uploader.upload(uploadedFile.value, {
-      fileObj: uploadedFile.value,
+    let fileDoc = await uploader.upload(fileToUpload, {
+      fileObj: fileToUpload,
       private: true,
       doctype: 'Data Import',
       docname: doc.name,

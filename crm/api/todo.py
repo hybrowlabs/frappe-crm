@@ -62,6 +62,49 @@ def notify_assigned_user(doc, is_cancelled=False):
 		}
 	)
 
+	# Email the assignee when a lead is assigned to them (auto-by-territory, manual,
+	# or import), so the assignment isn't missed outside the CRM. Never let an email
+	# failure block the assignment / lead creation.
+	if not is_cancelled and doc.reference_type == "CRM Lead":
+		try:
+			send_lead_assignment_email(doc.allocated_to, _doc, owner)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Lead assignment email failed")
+
+
+def send_lead_assignment_email(recipient_user, lead, assigned_by):
+	"""Send the assignee a branded email that a lead was assigned to them. Skips
+	self-assignment (no point emailing yourself)."""
+	if not recipient_user or recipient_user == frappe.session.user:
+		return
+	recipient = frappe.db.get_value("User", recipient_user, "email") or recipient_user
+	if not recipient:
+		return
+
+	lead_url = frappe.utils.get_url(f"/crm/leads/{lead.name}")
+	assigned_by = frappe.utils.escape_html(assigned_by or "")
+	lead_title = frappe.utils.escape_html(lead.get("lead_name") or lead.name)
+
+	content = f"""
+	<div style="background:#f4f5f6;padding:32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+		<table role="presentation" align="center" cellpadding="0" cellspacing="0" width="480" style="max-width:480px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e8eaed;">
+			<tr><td style="padding:32px 32px 28px 32px;text-align:center;">
+				<h1 style="font-size:20px;line-height:1.35;color:#1f272e;margin:0 0 10px 0;">{_('A new lead has been assigned to you')}</h1>
+				<p style="font-size:15px;color:#6b7280;margin:0 0 24px 0;">{_('{0} assigned the lead {1} to you.').format(assigned_by, f'<span style="color:#1f272e;font-weight:600;">{lead_title}</span>')}</p>
+				<a href="{lead_url}" style="display:inline-block;background:#1f272e;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:11px 24px;border-radius:8px;">{_('Open the Lead')} &rarr;</a>
+			</td></tr>
+		</table>
+	</div>
+	"""
+
+	frappe.sendmail(
+		recipients=[recipient],
+		subject=_("A lead has been assigned to you: {0}").format(lead.get("lead_name") or lead.name),
+		content=content,
+		reference_doctype="CRM Lead",
+		reference_name=lead.name,
+	)
+
 
 def get_notification_text(owner, doc, reference_doc, is_cancelled=False):
 	name = doc.reference_name

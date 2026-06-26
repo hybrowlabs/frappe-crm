@@ -73,7 +73,25 @@ class CRMLead(Document):
 	# end: auto-generated types
 
 	def before_validate(self):
+		self.resolve_territory()
 		self.set_sla()
+
+	def resolve_territory(self):
+		"""Resolve a possibly free-form territory (e.g. from a CSV import) to a real
+		Territory record so a Link mismatch never errors the row. An exact match is
+		kept; otherwise the single closest match is used. If it's ambiguous (several
+		equally-good matches) or nothing is close enough, the territory is cleared so
+		the import still succeeds without it."""
+		value = (self.territory or "").strip()
+		if not value:
+			self.territory = None
+			return
+		existing = frappe.db.exists("Territory", value)
+		if existing:
+			# Canonicalise to the stored name (handles case differences).
+			self.territory = existing
+			return
+		self.territory = _best_territory_match(value)
 
 	def before_insert(self):
 		if frappe.flags.in_import:
@@ -589,6 +607,65 @@ class CRMLead(Document):
 			"title_field": "lead_name",
 			"kanban_fields": '["organization", "email", "mobile_no", "_assign", "modified"]',
 		}
+
+
+@frappe.whitelist()
+def resolve_territory_values(values):
+	"""Resolve a batch of free-form territory strings (e.g. an import's Territory
+	column) to real Territory names. Returns {raw_value: resolved_name_or_""}.
+
+	Territory is read via ``frappe.db.exists`` / ``frappe.get_all`` (both ignore
+	user permissions), so this works for an importing user who has no read access
+	to Territory — the cleaned values are either an existing Territory name or
+	blank, which the importer accepts without a 'missing' warning."""
+	if isinstance(values, str):
+		values = frappe.parse_json(values)
+
+	resolved = {}
+	for raw in values or []:
+		key = raw if raw is not None else ""
+		if key in resolved:
+			continue
+		value = (raw or "").strip()
+		if not value:
+			resolved[key] = ""
+			continue
+		existing = frappe.db.exists("Territory", value)
+		resolved[key] = existing or (_best_territory_match(value) or "")
+	return resolved
+
+
+def _best_territory_match(value, threshold=0.75):
+	"""Return the single closest Territory name to ``value``, or None when the
+	match is ambiguous (a tie between several) or nothing clears ``threshold``."""
+	from difflib import SequenceMatcher
+
+	target = (value or "").strip().lower()
+	if not target:
+		return None
+
+	names = frappe.get_all("Territory", pluck="name")
+
+	# Prefer a case-insensitive exact match; only use it if it's unambiguous.
+	ci_matches = [n for n in names if n.lower() == target]
+	if len(ci_matches) == 1:
+		return ci_matches[0]
+	if len(ci_matches) > 1:
+		return None
+
+	best_score = 0.0
+	best_matches = []
+	for name in names:
+		score = SequenceMatcher(None, target, name.lower()).ratio()
+		if score > best_score + 1e-9:
+			best_score = score
+			best_matches = [name]
+		elif abs(score - best_score) <= 1e-9:
+			best_matches.append(name)
+
+	if best_score >= threshold and len(best_matches) == 1:
+		return best_matches[0]
+	return None
 
 
 @frappe.whitelist()
