@@ -1060,18 +1060,25 @@ async function confirmPreQuotation(payload) {
   let value = pendingProposalStatus.value
   pendingProposalStatus.value = null
   if (!value) return
-  if (payload) await createDealAddresses(payload)
-  try {
-    const customer = await call(
-      'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_from_deal',
-      { deal: props.dealId },
-    )
-    // Reflect the new link locally so the Create Customer button hides immediately.
-    if (customer && organizationDocument.value?.doc) {
-      organizationDocument.value.doc.erpnext_customer = customer
+  // Skip: advance to the next stage without creating/linking any customer.
+  if (!payload?.skip) {
+    // For a chosen existing customer we skip address creation; otherwise build the
+    // billing/shipping addresses from the entered details.
+    if (payload && !payload.existingCustomer) {
+      await createDealAddresses(payload)
     }
-  } catch (err) {
-    toast.error(err.messages?.[0] || __('Error creating customer'))
+    try {
+      const customer = await call(
+        'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.create_customer_from_deal',
+        { deal: props.dealId, customer: payload?.existingCustomer || undefined },
+      )
+      // Reflect the new link locally so the Create Customer button hides immediately.
+      if (customer && organizationDocument.value?.doc) {
+        organizationDocument.value.doc.erpnext_customer = customer
+      }
+    } catch (err) {
+      toast.error(err.messages?.[0] || __('Error creating customer'))
+    }
   }
   await triggerOnChange('status', value)
   setLostReason()
@@ -1080,7 +1087,6 @@ async function confirmPreQuotation(payload) {
 async function createDealAddresses(payload) {
   doc.value.legal_name = payload.legalName
   doc.value.gstin = payload.gstin
-  doc.value.freight_terms = payload.freight_terms
   const addressTitle = payload.legalName || title.value || props.dealId
   const links = [{ link_doctype: 'CRM Deal', link_name: props.dealId }]
   try {

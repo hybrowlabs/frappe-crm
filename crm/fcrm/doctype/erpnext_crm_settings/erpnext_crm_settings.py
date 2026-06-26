@@ -421,14 +421,30 @@ def create_customer_in_erpnext(doc, method):
 		frappe.publish_realtime("crm_customer_created")
 
 
+def _use_existing_customer(doc, customer_name):
+	"""Link an existing ERPNext Customer to the deal's org + contacts and return it."""
+	if doc.organization:
+		frappe.db.set_value("CRM Organization", doc.organization, "erpnext_customer", customer_name)
+	_link_customer_to_contacts(doc, customer_name)
+	frappe.publish_realtime("crm_customer_created")
+	return customer_name
+
+
 @frappe.whitelist()
-def create_customer_from_deal(deal):
+def create_customer_from_deal(deal, customer=None):
 	"""Create an ERPNext customer for the deal's organization (if not already linked),
-	store it on CRM Organization.erpnext_customer, and link it to the deal's contacts."""
+	store it on CRM Organization.erpnext_customer, and link it to the deal's contacts.
+
+	If ``customer`` is given (the user picked an existing customer in the Create
+	Customer modal), that customer is used as-is instead of creating a new one."""
 	if "erpnext" not in frappe.get_installed_apps():
 		return
 
 	doc = frappe.get_doc("CRM Deal", deal)
+
+	# An existing customer was explicitly chosen in the modal — use it directly.
+	if customer and frappe.db.exists("Customer", customer):
+		return _use_existing_customer(doc, customer)
 
 	# Reuse a customer already linked to the organization.
 	if doc.organization:
@@ -447,14 +463,7 @@ def create_customer_from_deal(deal):
 			limit=1,
 		)
 		if gstin_matches:
-			customer_name = gstin_matches[0]
-			if doc.organization:
-				frappe.db.set_value(
-					"CRM Organization", doc.organization, "erpnext_customer", customer_name
-				)
-			_link_customer_to_contacts(doc, customer_name)
-			frappe.publish_realtime("crm_customer_created")
-			return customer_name
+			return _use_existing_customer(doc, gstin_matches[0])
 
 	if doc.organization:
 		account_name = doc.organization

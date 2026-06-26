@@ -295,8 +295,21 @@ const contactFilters = computed(() => {
 const categories = computed(() => (categoryList.data || []).map((d) => d.name))
 const subs = computed(() => (subCategoryList.data || []).map((d) => d.name))
 const variants = computed(() => (variantList.data || []).map((d) => d.name))
-const painOpts = computed(() => painPointList.data || [])
-const opImpactOpts = computed(() => operationImpactList.data || [])
+// Keep the catch-all "Other" option pinned to the end of the list, regardless of
+// the alphabetical order the master data comes back in.
+function otherLast(list) {
+  return [...(list || [])].sort((a, b) => {
+    const ao = a.name === OTHER_PAIN_POINT
+    const bo = b.name === OTHER_PAIN_POINT
+    return ao === bo ? 0 : ao ? 1 : -1
+  })
+}
+const painOpts = computed(() => otherLast(painPointList.data))
+// Operational impact has its own dedicated "Other" checkbox rendered last, so
+// drop any "Other" coming from the master data to avoid a duplicate.
+const opImpactOpts = computed(() =>
+  (operationImpactList.data || []).filter((d) => d.name !== OTHER_PAIN_POINT),
+)
 const otherPainSelected = computed(() => pains.value.includes(OTHER_PAIN_POINT))
 
 function loadSubs(category) {

@@ -6,39 +6,67 @@
     size="2xl"
   >
     <StageSection :title="__('Customer')" icon="building">
-      <StageCallout
-        :theme="customerExists ? 'green' : 'amber'"
-        :icon="customerExists ? 'check' : 'alert'"
-        class="mb-3"
-      >
-        <template v-if="customerExists">
-          {{ __('Customer') }} <b>{{ org }}</b>
-          {{ __('already exists in ERPNext — its master will be used.') }}
-        </template>
-        <template v-else>
-          {{ __('No ERPNext customer yet — one will be') }}
-          <b>{{ __('created') }}</b>
-          {{ __('from these details before the quotation.') }}
-        </template>
-      </StageCallout>
-      <FieldGrid :cols="2">
-        <FieldText
-          v-model="legalName"
-          :label="__('Legal / Registered Name')"
-          required
-          :error="errors.legalName"
+      <div class="mb-3 flex items-center justify-between">
+        <div class="text-base text-ink-gray-7">
+          {{ __('Use an existing customer') }}
+        </div>
+        <Switch v-model="chooseExistingCustomer" />
+      </div>
+
+      <template v-if="chooseExistingCustomer">
+        <Link
+          :label="__('Customer') + ' *'"
+          doctype="Customer"
+          :value="existingCustomer"
+          @change="existingCustomer = $event"
         />
-        <FieldText
-          v-model="gstin"
-          :label="__('GSTIN')"
-          required
-          :help="gstinHelp"
-          :error="errors.gstin"
-        />
-      </FieldGrid>
+        <ErrorMessage v-if="errors.existingCustomer" class="mt-1" :message="errors.existingCustomer" />
+        <div class="mt-1 text-sm text-ink-gray-5">
+          {{ gstinMatched
+            ? __('Auto-selected by GSTIN. Change if needed.')
+            : __('Pick the ERPNext customer to use for this quotation.') }}
+        </div>
+      </template>
+
+      <template v-else>
+        <StageCallout
+          :theme="customerExists ? 'green' : 'amber'"
+          :icon="customerExists ? 'check' : 'alert'"
+          class="mb-3"
+        >
+          <template v-if="customerExists">
+            {{ __('Customer') }} <b>{{ org }}</b>
+            {{ __('already exists in ERPNext — its master will be used.') }}
+          </template>
+          <template v-else>
+            {{ __('No ERPNext customer yet — one will be') }}
+            <b>{{ __('created') }}</b>
+            {{ __('from these details before the quotation.') }}
+          </template>
+        </StageCallout>
+        <FieldGrid :cols="2">
+          <FieldText
+            v-model="legalName"
+            :label="__('Legal / Registered Name')"
+            required
+            :error="errors.legalName"
+          />
+          <FieldText
+            v-model="gstin"
+            :label="__('GSTIN')"
+            required
+            :help="gstinHelp"
+            :error="errors.gstin"
+          />
+        </FieldGrid>
+      </template>
     </StageSection>
 
-    <StageSection :title="__('Billing Address')" icon="building">
+    <StageSection
+      v-if="!chooseExistingCustomer"
+      :title="__('Billing Address')"
+      icon="building"
+    >
       <FieldText
         v-model="billing.address_line1"
         :label="__('Address Line 1')"
@@ -61,7 +89,11 @@
       </FieldGrid>
     </StageSection>
 
-    <StageSection :title="__('Shipping & Freight')" icon="package">
+    <StageSection
+      v-if="!chooseExistingCustomer"
+      :title="__('Shipping Address')"
+      icon="package"
+    >
       <FieldCheckbox
         :label="__('Shipping address same as billing')"
         :checked="sameAsBilling"
@@ -90,30 +122,29 @@
           <FieldText v-model="shipping.country" :label="__('Country')" />
         </FieldGrid>
       </template>
-      <FieldRadioGroup
-        v-model="freight"
-        :label="__('Freight')"
-        required
-        inline
-        :options="freightOptions"
-        class="mt-3"
-      />
     </StageSection>
 
     <template #actions>
       <div class="flex items-center justify-between gap-2">
         <Button :label="__('Cancel')" @click="show = false" />
-        <Button
-          variant="solid"
-          :label="
-            customerExists
-              ? __('Proceed to Quotation')
-              : __('Create Customer & Proceed')
-          "
-          @click="proceed"
-        >
-          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            v-if="!customerExists"
+            :label="__('Skip customer creation')"
+            @click="skip"
+          />
+          <Button
+            variant="solid"
+            :label="
+              customerExists
+                ? __('Proceed to Quotation')
+                : __('Create Customer & Proceed')
+            "
+            @click="proceed"
+          >
+            <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
+          </Button>
+        </div>
       </div>
     </template>
   </StageFormDialog>
@@ -127,8 +158,8 @@ import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
-import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
-import { Button, call, toast } from 'frappe-ui'
+import Link from '@/components/Controls/Link.vue'
+import { Button, ErrorMessage, Switch, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 
 const props = defineProps({
@@ -143,6 +174,10 @@ const emit = defineEmits(['confirm'])
 
 const legalName = ref(props.deal.legal_name || props.org || '')
 const gstin = ref(props.deal.gstin || '')
+// Use-existing-customer option + selector.
+const chooseExistingCustomer = ref(false)
+const existingCustomer = ref('')
+const gstinMatched = ref(false)
 const billing = reactive({
   address_line1: '',
   address_line2: '',
@@ -160,8 +195,6 @@ const shipping = reactive({
   pincode: '',
   country: 'India',
 })
-const freight = ref(props.deal.freight_terms || 'To Pay')
-
 function fillAddress(target, addr) {
   target.address_line1 = addr.address_line1 || ''
   target.address_line2 = addr.address_line2 || ''
@@ -189,13 +222,33 @@ onMounted(async () => {
     })
     fillAddress(shipping, addr)
   }
+  // If the deal already carries a GSTIN, try to auto-select a matching customer.
+  if (gstin.value) lookupCustomerByGstin(gstin.value)
 })
 
-const freightOptions = [
-  { label: __('To Pay (customer pays carrier)'), value: 'To Pay' },
-  { label: __('Charged (added to invoice)'), value: 'Charged' },
-  { label: __('Paid upfront'), value: 'Paid Upfront' },
-]
+// Find an existing ERPNext customer with this GSTIN and pre-select it.
+async function lookupCustomerByGstin(value) {
+  const clean = (value || '').toUpperCase().replace(/\s/g, '')
+  if (!GSTIN_REGEX.test(clean)) return
+  try {
+    const rows = await call('frappe.client.get_list', {
+      doctype: 'Customer',
+      filters: { gstin: clean },
+      fields: ['name'],
+      limit_page_length: 1,
+      order_by: 'creation asc',
+    })
+    if (rows && rows.length) {
+      existingCustomer.value = rows[0].name
+      chooseExistingCustomer.value = true
+      gstinMatched.value = true
+    } else {
+      gstinMatched.value = false
+    }
+  } catch (e) {
+    // non-fatal: user can still pick manually
+  }
+}
 
 // Auto-fetch legal name + billing address from the GSTIN via india_compliance.
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
@@ -214,7 +267,8 @@ watch(gstin, (value) => {
   if (clean !== value) gstin.value = clean
   if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
   lastFetchedGstin = clean
-  fetchGstinInfo(clean)
+  lookupCustomerByGstin(clean)
+  if (!chooseExistingCustomer.value) fetchGstinInfo(clean)
 })
 
 async function fetchGstinInfo(value) {
@@ -238,6 +292,11 @@ const attempted = ref(false)
 const errors = computed(() => {
   if (!attempted.value) return {}
   const e = {}
+  // Using an existing customer — only the selector is required.
+  if (chooseExistingCustomer.value) {
+    if (!existingCustomer.value) e.existingCustomer = __('Required')
+    return e
+  }
   if (!legalName.value) e.legalName = __('Required')
   if (!gstin.value) e.gstin = __('Required')
   if (!billing.address_line1) e.billingLine1 = __('Required')
@@ -252,14 +311,25 @@ const errors = computed(() => {
 function proceed() {
   attempted.value = true
   if (Object.keys(errors.value).length) return
-  emit('confirm', {
-    legalName: legalName.value,
-    gstin: gstin.value,
-    billing: { ...billing },
-    sameAsBilling: sameAsBilling.value,
-    shipping: sameAsBilling.value ? { ...billing } : { ...shipping },
-    freight_terms: freight.value,
-  })
+  if (chooseExistingCustomer.value) {
+    emit('confirm', {
+      existingCustomer: existingCustomer.value,
+    })
+  } else {
+    emit('confirm', {
+      legalName: legalName.value,
+      gstin: gstin.value,
+      billing: { ...billing },
+      sameAsBilling: sameAsBilling.value,
+      shipping: sameAsBilling.value ? { ...billing } : { ...shipping },
+    })
+  }
+  show.value = false
+}
+
+// Skip customer creation entirely and advance to the next stage without a customer.
+function skip() {
+  emit('confirm', { skip: true })
   show.value = false
 }
 </script>
