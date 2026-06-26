@@ -102,6 +102,15 @@ class CRMLead(Document):
 
 		auto_assign_by_territory(self)
 
+	def on_update(self):
+		# If a territory is added/changed later and the lead still isn't assigned to
+		# anyone, auto-assign it to a sales person resolved from the territory.
+		# (auto_assign_by_territory is a no-op when an open assignment already exists.)
+		if not self.is_new() and self.has_value_changed("territory") and self.territory:
+			from crm.api.sales_manager import auto_assign_by_territory
+
+			auto_assign_by_territory(self)
+
 	def before_save(self):
 		self.apply_sla()
 
