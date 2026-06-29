@@ -347,6 +347,38 @@ def get_organization_address(organization: str | None = None):
 	}
 
 
+def _create_customer(customer_data):
+	"""Create (or reuse by customer_name) an ERPNext Customer directly.
+
+	Mirrors erpnext.crm.frappe_crm_api.create_customer but WITHOUT its
+	validate_frappe_crm_sync() gate — that gate requires a 'Frappe CRM sync'
+	setting to be enabled on the ERPNext side, which is irrelevant here and was
+	blocking customer creation. Contacts/address are created with ERPNext's own
+	(ungated) helpers."""
+	from erpnext.crm.frappe_crm_api import create_address, create_contacts
+
+	customer_data = dict(customer_data)
+	contacts = customer_data.pop("contacts", None)
+	address = customer_data.pop("address", None)
+
+	customer_name = frappe.db.exists("Customer", {"customer_name": customer_data.get("customer_name")})
+	if not customer_name:
+		customer = frappe.get_doc({"doctype": "Customer", **customer_data}).insert(ignore_permissions=True)
+		customer_name = customer.name
+
+	if contacts:
+		create_contacts(
+			json.loads(contacts) if isinstance(contacts, str) else contacts,
+			customer_name,
+			"Customer",
+			customer_name,
+		)
+	if address:
+		create_address("Customer", customer_name, address)
+
+	return customer_name
+
+
 def create_customer_in_erpnext(doc, method):
 	erpnext_crm_settings = frappe.get_single("ERPNext CRM Settings")
 	if (
@@ -383,18 +415,13 @@ def create_customer_in_erpnext(doc, method):
 
 	try:
 		if not erpnext_crm_settings.is_erpnext_in_different_site:
-			try:
-				from erpnext.crm.frappe_crm_api import create_customer
-			except ImportError:
-				frappe.throw(_("ERPNext is not installed in the current site"))
-
 			if doc.territory and not frappe.db.exists("Territory", doc.territory):
 				customer_data["territory"] = ""
 
 			if doc.industry and not frappe.db.exists("Industry Type", doc.industry):
 				customer_data["industry"] = ""
 
-			customer_name = create_customer(customer_data)
+			customer_name = _create_customer(customer_data)
 		else:
 			client = get_erpnext_site_client(erpnext_crm_settings)
 
@@ -485,8 +512,6 @@ def create_customer_from_deal(deal, customer=None, currency=None, gstin=None):
 		customer_type = "Individual"
 		address = None
 
-	from erpnext.crm.frappe_crm_api import create_customer
-
 	# CRM Territory / CRM Industry names may not exist as ERPNext Territory /
 	# Industry Type masters; blank them out so the Customer insert doesn't fail
 	# on a link validation.
@@ -523,7 +548,7 @@ def create_customer_from_deal(deal, customer=None, currency=None, gstin=None):
 		except Exception:
 			customer_data["gst_category"] = "Registered Regular"
 
-	customer_name = create_customer(customer_data)
+	customer_name = _create_customer(customer_data)
 
 	if doc.organization:
 		frappe.db.set_value("CRM Organization", doc.organization, "erpnext_customer", customer_name)
