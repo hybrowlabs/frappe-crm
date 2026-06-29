@@ -136,11 +136,6 @@
         <Button :label="__('Cancel')" @click="show = false" />
         <div class="flex items-center gap-2">
           <Button
-            v-if="!customerExists"
-            :label="__('Skip customer creation')"
-            @click="skip"
-          />
-          <Button
             variant="solid"
             :label="
               customerExists
@@ -334,12 +329,6 @@ function proceed() {
       shipping: sameAsBilling.value ? { ...billing } : { ...shipping },
     })
   }
-  show.value = false
-}
-
-// Skip customer creation entirely and advance to the next stage without a customer.
-function skip() {
-  emit('confirm', { skip: true })
   show.value = false
 }
 </script>

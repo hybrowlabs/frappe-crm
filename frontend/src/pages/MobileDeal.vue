@@ -77,6 +77,14 @@
       >
         <template #prefix><RupeeIcon class="h-4 w-4" /></template>
       </Button>
+      <Button
+        v-if="canProceedToQuotation"
+        variant="solid"
+        :label="__('Proceed to Quotation')"
+        @click="prepareForQuotation"
+      >
+        <template #prefix><RupeeIcon class="h-4 w-4" /></template>
+      </Button>
       <CustomActions
         v-if="document._actions?.length"
         :actions="document._actions"
@@ -597,6 +605,16 @@ const canPrepareQuotation = computed(
     (!doc.value?.sales_manager_approval_required ||
       doc.value?.sales_manager_approved) &&
     !orgErpnextCustomer.value,
+)
+
+// When a customer already exists, the Create Customer button is hidden — offer a
+// direct "Proceed to Quotation" instead (moves to the Proposal/Quotation stage).
+const canProceedToQuotation = computed(
+  () =>
+    doc.value?.status === 'Evaluation Completed' &&
+    (!doc.value?.sales_manager_approval_required ||
+      doc.value?.sales_manager_approved) &&
+    !!orgErpnextCustomer.value,
 )
 
 // Open the same pre-quotation gate that fires when moving into Proposal/Quotation.

@@ -128,7 +128,7 @@
         <FieldSelect
           v-model="techCategory"
           :label="__('Technical Person')"
-          required
+          :required="assignTech === 'y'"
           :options="techCategoryOptions"
           :error="errors.techCategory"
           :help="__('Auto-routed by category × region')"
@@ -325,6 +325,8 @@ const requiredFields = [
   { key: 'evalStart', label: __('Trial Start Date'), val: () => trialRequired.value !== 'y' || evalStart.value },
 ]
 function techCategoryError() {
+  // Technical Person is only required when assigning to the tech team.
+  if (assignTech.value !== 'y') return ''
   if (!techCategory.value) return __('Required')
   if (!techCategoryValues.value.includes(techCategory.value))
     return __('Select a configured Tech Team category')
@@ -369,7 +371,13 @@ async function assignAndNotify() {
     assigning.value = false
   }
 
-  emit('save', { values, advance: true })
+  // No trial required → skip the trial/evaluation stages and go straight to
+  // Evaluation Completed. Otherwise advance to the next stage as usual.
+  emit('save', {
+    values,
+    advance: true,
+    status: trialRequired.value === 'y' ? undefined : 'Evaluation Completed',
+  })
   show.value = false
 }
 </script>

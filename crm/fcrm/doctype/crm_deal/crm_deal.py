@@ -267,7 +267,16 @@ class CRMDeal(Document):
 				continue
 			if self.repeat_deal and quotation_pos and gate_pos < quotation_pos:
 				continue
-			missing = [_(label) for fieldname, label in gate["fields"] if not is_filled(fieldname)]
+			# No trial required → the evaluation isn't recorded, so its gate doesn't apply.
+			if gate["status"] == "Evaluation Completed" and not self.trial_required:
+				continue
+			missing = []
+			for fieldname, label in gate["fields"]:
+				# Technical Person is only needed when the deal is assigned to the tech team.
+				if fieldname == "technical_person" and not self.assign_to_tech_team:
+					continue
+				if not is_filled(fieldname):
+					missing.append(_(label))
 			if missing:
 				missing_sections.append((labels.get(gate["status"], gate["status"]), missing))
 

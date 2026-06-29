@@ -166,8 +166,9 @@
     <template #actions>
       <div class="flex w-full flex-wrap items-center gap-2 gap-y-2">
         <Button :label="__('Save Draft')" @click="saveDraft" />
+        <!-- Hidden for now (will be needed later); original condition: outcome === 'Successful' -->
         <Button
-          v-if="outcome === 'Successful'"
+          v-if="false"
           :label="__('Create Service Request')"
         >
           <template #prefix><StageIcon name="headphones" class="h-4 w-4" /></template>
