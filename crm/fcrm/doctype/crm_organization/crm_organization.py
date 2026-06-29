@@ -31,6 +31,20 @@ class CRMOrganization(Document):
 
 	def validate(self):
 		self.update_exchange_rate()
+		self.refetch_previous_order_items()
+
+	def refetch_previous_order_items(self):
+		"""When the linked ERPNext customer changes, rebuild the previously-ordered
+		items from that customer's submitted Sales Orders (cleared if unlinked)."""
+		if not self.has_value_changed("erpnext_customer"):
+			return
+
+		from crm.api.sales_order import get_ordered_items_for_customer
+
+		totals = get_ordered_items_for_customer(self.get("erpnext_customer"))
+		self.set("previous_order_items", [])
+		for item_code, quantity in totals.items():
+			self.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
 
 	def update_exchange_rate(self):
 		if self.has_value_changed("currency") or not self.exchange_rate:

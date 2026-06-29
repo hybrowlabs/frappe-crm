@@ -78,10 +78,6 @@
                 />
                 <div class="ml-auto flex items-center gap-1.5">
                   <Button
-                    v-if="
-                      organization.doc?.erpnext_customer &&
-                      organization.doc?.previous_order_items?.length
-                    "
                     :label="__('Repeat Order')"
                     size="sm"
                     iconLeft="refresh-cw"

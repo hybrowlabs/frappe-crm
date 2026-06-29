@@ -42,9 +42,8 @@
         <Button :label="__('Cancel')" @click="show = false" />
         <Button
           variant="solid"
-          :label="__('Submit & Create Quotation')"
+          :label="__('Create Quotation')"
           :loading="creating"
-          :disabled="!canSubmit"
           @click="createQuotation"
         >
           <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
@@ -60,7 +59,7 @@ import StageSection from '@/components/StageForms/StageSection.vue'
 import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
 import { Button, createResource, toast } from 'frappe-ui'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   org: { type: String, default: '' },
@@ -78,14 +77,9 @@ createResource({
   onSuccess: (d) => (preview.value = d || {}),
 })
 
-const canSubmit = computed(
-  () => !!preview.value.customer && !!preview.value.items?.length,
-)
-
 const creating = ref(false)
 
 function createQuotation() {
-  if (!canSubmit.value) return
   creating.value = true
   createResource({
     url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_repeat_order_quotation_url',

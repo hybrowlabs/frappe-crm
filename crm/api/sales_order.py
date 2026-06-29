@@ -31,58 +31,59 @@ def get_previous_order_items_for_customer(customer):
 	)
 
 
-def update_previous_order_items(doc, method=None):
-	"""On Sales Order submit, record/increment ordered item quantities on the
-	linked CRM Organization (matched via the order's ERPNext Customer)."""
-	if not doc.customer:
+def get_ordered_items_for_customer(customer):
+	"""Aggregate item_code -> total quantity across all submitted Sales Orders of
+	the given ERPNext customer. Used to (re)build a CRM Organization's previously
+	ordered items. Returns {} if there's no customer or ERPNext/Sales Order isn't
+	available."""
+	if not customer or not frappe.db.exists("DocType", "Sales Order"):
+		return {}
+
+	orders = frappe.get_all("Sales Order", filters={"customer": customer, "docstatus": 1}, pluck="name")
+	if not orders:
+		return {}
+
+	rows = frappe.get_all(
+		"Sales Order Item",
+		filters={"parent": ["in", orders], "parenttype": "Sales Order"},
+		fields=["item_code", "qty"],
+	)
+	totals = {}
+	for r in rows:
+		if not r.item_code or not r.qty:
+			continue
+		totals[r.item_code] = totals.get(r.item_code, 0) + r.qty
+	return totals
+
+
+def rebuild_previous_order_items(customer):
+	"""Rebuild the linked CRM Organization's previously-ordered items from the
+	authoritative aggregate of the customer's submitted Sales Orders, rather than
+	incrementally adding/removing. Keeps the data correct regardless of edits,
+	amendments, or out-of-order submit/cancel."""
+	if not customer:
 		return
 
-	organization = frappe.db.get_value(
-		"CRM Organization", {"erpnext_customer": doc.customer}, "name"
-	)
+	organization = frappe.db.get_value("CRM Organization", {"erpnext_customer": customer}, "name")
 	if not organization:
 		return
 
+	totals = get_ordered_items_for_customer(customer)
 	org = frappe.get_doc("CRM Organization", organization)
-	existing = {row.item_code: row for row in org.previous_order_items}
-
-	for item in doc.items:
-		if not item.item_code or not item.qty:
-			continue
-		if item.item_code in existing:
-			existing[item.item_code].quantity += item.qty
-		else:
-			org.append(
-				"previous_order_items",
-				{"item_code": item.item_code, "quantity": item.qty},
-			)
+	org.set("previous_order_items", [])
+	for item_code, quantity in totals.items():
+		org.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
 
 	org.save(ignore_permissions=True)
+
+
+def update_previous_order_items(doc, method=None):
+	"""On Sales Order submit, recompute the linked CRM Organization's previously
+	ordered items from all of the customer's submitted Sales Orders."""
+	rebuild_previous_order_items(doc.customer)
 
 
 def reduce_previous_order_items(doc, method=None):
-	"""On Sales Order cancel, subtract the order's quantities back out of the
-	linked CRM Organization's recorded items (dropping rows that hit zero)."""
-	if not doc.customer:
-		return
-
-	organization = frappe.db.get_value(
-		"CRM Organization", {"erpnext_customer": doc.customer}, "name"
-	)
-	if not organization:
-		return
-
-	org = frappe.get_doc("CRM Organization", organization)
-	existing = {row.item_code: row for row in org.previous_order_items}
-
-	for item in doc.items:
-		if not item.item_code or not item.qty:
-			continue
-		row = existing.get(item.item_code)
-		if not row:
-			continue
-		row.quantity -= item.qty
-		if row.quantity <= 0:
-			org.previous_order_items.remove(row)
-
-	org.save(ignore_permissions=True)
+	"""On Sales Order cancel, recompute the linked CRM Organization's previously
+	ordered items from the customer's remaining submitted Sales Orders."""
+	rebuild_previous_order_items(doc.customer)

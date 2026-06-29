@@ -252,8 +252,8 @@ def get_repeat_order_quotation_url(organization: str):
 	if not customer:
 		frappe.throw(_("No ERPNext Customer is linked to this organization yet. Create the customer first."))
 
-	if not _repeat_order_items(organization):
-		frappe.throw(_("No previously-ordered items found for this organization to repeat."))
+	# Previously-ordered items are optional — the quotation opens with the customer
+	# prefilled (and any items prefilled client-side); the user can add items manually.
 
 	company = frappe.db.get_single_value("ERPNext CRM Settings", "erpnext_company") or frappe.defaults.get_global_default(
 		"company"
