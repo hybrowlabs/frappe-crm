@@ -491,6 +491,12 @@ class CRMLead(Document):
 		if deal:
 			new_deal.update(deal)
 
+		# The incoming deal payload may carry an empty contacts table (the modal's new
+		# deal doc does), which would overwrite the converted lead's contact — re-link
+		# it when that happens.
+		if contact and not new_deal.get("contacts"):
+			new_deal.append("contacts", {"contact": contact})
+
 		if not new_deal.territory and organization:
 			new_deal.territory = frappe.db.get_value("CRM Organization", organization, "territory")
 

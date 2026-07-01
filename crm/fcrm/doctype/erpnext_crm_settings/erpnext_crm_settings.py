@@ -509,6 +509,22 @@ def _use_existing_customer(doc, customer_name):
 	return customer_name
 
 
+def _update_org_from_deal(doc):
+	"""Fill the deal's linked organization with the deal's data, only where the org's
+	field is currently empty. Done before the customer is created/connected."""
+	if not doc.organization:
+		return
+	fields = ["website", "territory", "currency", "exchange_rate", "annual_revenue", "industry"]
+	org = frappe.get_doc("CRM Organization", doc.organization)
+	changed = False
+	for fieldname in fields:
+		if not org.get(fieldname) and doc.get(fieldname):
+			org.set(fieldname, doc.get(fieldname))
+			changed = True
+	if changed:
+		org.save(ignore_permissions=True)
+
+
 @frappe.whitelist()
 def create_customer_from_deal(deal, customer=None, currency=None, gstin=None):
 	"""Create an ERPNext customer for the deal's organization (if not already linked),
@@ -526,6 +542,9 @@ def create_customer_from_deal(deal, customer=None, currency=None, gstin=None):
 	doc = frappe.get_doc("CRM Deal", deal)
 	# The modal passes the GSTIN directly since the deal hasn't been saved with it yet.
 	gstin = gstin or doc.gstin
+
+	# First, update the organization with the deal's data.
+	_update_org_from_deal(doc)
 
 	# An existing customer was explicitly chosen in the modal — use it directly.
 	if customer and frappe.db.exists("Customer", customer):
