@@ -114,7 +114,7 @@ def _user_from_sales_person(sales_person):
 	return None
 
 
-def _sales_person_from_user(user):
+def sales_person_from_user(user):
 	"""Reverse-map a CRM User to its Sales Person record (via custom_email_id or
 	the linked Employee's user_id)."""
 	if not user:
@@ -136,7 +136,11 @@ def _deal_sales_person_user(doc):
 	"""The deal's sales person = the earliest open ToDo assignee that isn't the tech
 	member. (At insert the territory sales person is assigned first, so the earliest
 	non-tech assignee is the sales person.)"""
+	# The tech member is sourced from the deal's linked CRM Tech Team (technical_person);
+	# fall back to it so the exclusion holds even when assigned_tech_member isn't set.
 	tech_user = doc.get("assigned_tech_member")
+	if not tech_user and doc.get("technical_person"):
+		tech_user = frappe.db.get_value("CRM Tech Team", doc.technical_person, "team_member")
 	todos = frappe.get_all(
 		"ToDo",
 		filters={"reference_type": "CRM Deal", "reference_name": doc.name, "status": "Open"},
@@ -161,7 +165,7 @@ def notify_roles_on_status_change(doc, method=None):
 	sales_user = _deal_sales_person_user(doc)
 	manager_user = None
 	if sales_user:
-		sales_person = _sales_person_from_user(sales_user)
+		sales_person = sales_person_from_user(sales_user)
 		if sales_person:
 			parent = frappe.db.get_value("Sales Person", sales_person, "parent_sales_person")
 			manager_user = _user_from_sales_person(parent)

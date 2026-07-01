@@ -29,9 +29,23 @@
           {{ __('Customer') }}:
           <span class="font-medium">{{ preview.customer }}</span>
         </p>
-        <ul class="list-disc pl-5">
-          <li v-for="it in preview.items" :key="it.item_code">
-            {{ it.item_code }} × {{ it.quantity || 1 }}
+        <p class="mb-2 text-ink-gray-5">
+          {{ __('Select the items to include in the quotation.') }}
+        </p>
+        <ul class="space-y-2">
+          <li
+            v-for="it in preview.items"
+            :key="it.item_code"
+            class="flex items-start gap-2"
+          >
+            <FieldCheckbox
+              :checked="selected.includes(it.item_code)"
+              @change="toggleItem(it.item_code)"
+            />
+            <div class="leading-tight">
+              <div class="font-medium">{{ it.item_name }}</div>
+              <div class="text-ink-gray-5">{{ it.item_code }}</div>
+            </div>
           </li>
         </ul>
       </div>
@@ -58,6 +72,7 @@ import StageFormDialog from '@/components/StageForms/StageFormDialog.vue'
 import StageSection from '@/components/StageForms/StageSection.vue'
 import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
+import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import { Button, createResource, toast } from 'frappe-ui'
 import { ref } from 'vue'
 
@@ -70,12 +85,23 @@ const show = defineModel({ type: Boolean })
 
 // ---- preview of what the repeat order will prefill ----
 const preview = ref({})
+// Item codes the user has ticked to include in the quotation (all selected by default).
+const selected = ref([])
 createResource({
   url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_repeat_order_preview',
   params: { organization: props.org },
   auto: true,
-  onSuccess: (d) => (preview.value = d || {}),
+  onSuccess: (d) => {
+    preview.value = d || {}
+    selected.value = (preview.value.items || []).map((it) => it.item_code)
+  },
 })
+
+function toggleItem(itemCode) {
+  const i = selected.value.indexOf(itemCode)
+  if (i === -1) selected.value.push(itemCode)
+  else selected.value.splice(i, 1)
+}
 
 const creating = ref(false)
 
@@ -83,7 +109,7 @@ function createQuotation() {
   creating.value = true
   createResource({
     url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_repeat_order_quotation_url',
-    params: { organization: props.org },
+    params: { organization: props.org, items: JSON.stringify(selected.value) },
     auto: true,
     onSuccess(url) {
       creating.value = false

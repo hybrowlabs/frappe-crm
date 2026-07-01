@@ -183,6 +183,46 @@ def get_customer_link(crm_deal: str):
 		)
 
 
+def _sales_person_for_deal(crm_deal):
+	"""The Sales Person (matched by email) for the user the deal is assigned to — the
+	assigned tech member, which is sourced from the deal's linked CRM Tech Team
+	(technical_person). Returns None if there's no assignee or no matching Sales
+	Person, in which case custom_sale_by is simply left blank. custom_sale_by is a
+	server-only field, so this only takes effect where that field exists."""
+	try:
+		from crm.api.sales_manager import sales_person_from_user
+
+		doc = frappe.get_cached_doc("CRM Deal", crm_deal)
+		user = doc.get("assigned_tech_member")
+		if not user and doc.get("technical_person"):
+			user = frappe.db.get_value("CRM Tech Team", doc.technical_person, "team_member")
+		return sales_person_from_user(user) if user else None
+	except Exception:
+		return None
+
+
+def _sales_person_for_user(user):
+	"""The Sales Person (matched by email) for a CRM user — used for repeat orders,
+	which have no deal, so the current user stands in. None if no email match."""
+	try:
+		from crm.api.sales_manager import sales_person_from_user
+
+		return sales_person_from_user(user)
+	except Exception:
+		return None
+
+
+@frappe.whitelist()
+def get_quotation_sales_person(crm_deal: str | None = None):
+	"""Sales Person (matched by email) to prefill on a CRM-created Quotation's
+	custom_sale_by field, resolved on the new-quotation page: from the deal's
+	assignee when a deal is given, otherwise (repeat order) from the current user.
+	Returns "" when nothing matches, so the field is simply left blank."""
+	if crm_deal:
+		return _sales_person_for_deal(crm_deal) or ""
+	return _sales_person_for_user(frappe.session.user) or ""
+
+
 @frappe.whitelist()
 def get_quotation_url(crm_deal: str, organization: str | None = None):
 	erpnext_crm_settings = _get_enabled_settings()
@@ -233,18 +273,23 @@ def _repeat_order_items(organization: str):
 @frappe.whitelist()
 def get_repeat_order_preview(organization: str):
 	"""What a repeat order for this organization would prefill: the linked
-	ERPNext customer and its previously-ordered items. Custom code — does not
-	depend on ERPNext CRM Settings."""
+	ERPNext customer and its previously-ordered items (item code + name). Custom
+	code — does not depend on ERPNext CRM Settings."""
 	customer = frappe.db.get_value("CRM Organization", organization, "erpnext_customer")
-	return {"customer": customer, "items": _repeat_order_items(organization) if customer else []}
+	items = _repeat_order_items(organization) if customer else []
+	for it in items:
+		it["item_name"] = frappe.db.get_value("Item", it["item_code"], "item_name") or it["item_code"]
+	return {"customer": customer, "items": items}
 
 
 @frappe.whitelist()
-def get_repeat_order_quotation_url(organization: str):
+def get_repeat_order_quotation_url(organization: str, items: str | None = None):
 	"""Build the new-Quotation form URL for a repeat order, prefilled (via query
 	params) with the organization's ERPNext customer and the 'Created from CRM'
-	flag. The items child table is prefilled client-side by quotation.js. No CRM
-	Deal is attached. Custom code — does not depend on ERPNext CRM Settings."""
+	flag. The items child table is prefilled client-side by quotation.js — from the
+	explicit ``items`` selection (JSON list of item codes) when given, else from all
+	previously-ordered items. No CRM Deal is attached. Custom code — does not depend
+	on ERPNext CRM Settings."""
 	if not _is_erpnext_installed():
 		frappe.throw(_("ERPNext is not installed"))
 
@@ -266,6 +311,13 @@ def get_repeat_order_quotation_url(organization: str):
 		"company": company,
 		"custom_created_from_crm": 1,
 	}
+	# Pass the user-selected item codes on the (hidden) custom_crm_items field so
+	# quotation.js prefills only those. It must be a real field — a bare query param
+	# is dropped when Frappe rewrites the new-doc URL. Left out when nothing was
+	# selected, in which case quotation.js falls back to all items.
+	selected = json.loads(items) if items else None
+	if selected:
+		params["custom_crm_items"] = json.dumps(selected)
 	query_string = "&".join(f"{key}={quote(str(value))}" for key, value in params.items() if value is not None)
 	return f"{base_url}?{query_string}"
 
