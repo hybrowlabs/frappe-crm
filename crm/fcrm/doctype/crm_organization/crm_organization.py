@@ -101,3 +101,29 @@ class CRMOrganization(Document):
 			"modified",
 		]
 		return {"columns": columns, "rows": rows}
+
+
+def sync_customers_to_crm_orgs():
+	"""Daily: create a CRM Organization for every ERPNext Customer not already
+	linked to one, keeping the customer connected via erpnext_customer."""
+	linked = set(
+		frappe.get_all(
+			"CRM Organization",
+			filters={"erpnext_customer": ["is", "set"]},
+			pluck="erpnext_customer",
+		)
+	)
+	for customer in frappe.get_all("Customer", fields=["name", "customer_name", "territory"]):
+		if customer.name in linked:
+			continue
+		try:
+			org = frappe.new_doc("CRM Organization")
+			org.organization_name = customer.customer_name or customer.name
+			org.erpnext_customer = customer.name
+			if customer.territory:
+				org.territory = customer.territory
+			org.insert(ignore_permissions=True)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(frappe.get_traceback(), f"Customer sync to CRM Org failed: {customer.name}")

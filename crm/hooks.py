@@ -188,12 +188,16 @@ doc_events = {
 		"on_submit": ["crm.api.sales_order.update_previous_order_items"],
 		"on_cancel": ["crm.api.sales_order.reduce_previous_order_items"],
 	},
+	"Quotation": {
+		"after_insert": ["crm.api.sales_order.add_quotation_items_to_previous_order_items"],
+	},
 }
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
+	"daily": ["crm.fcrm.doctype.crm_organization.crm_organization.sync_customers_to_crm_orgs"],
 	"daily_long": ["crm.lead_syncing.background_sync.sync_leads_from_sources_daily"],
 	"hourly_long": ["crm.lead_syncing.background_sync.sync_leads_from_sources_hourly"],
 	"monthly_long": ["crm.lead_syncing.background_sync.sync_leads_from_sources_monthly"],

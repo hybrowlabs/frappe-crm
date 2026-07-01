@@ -29,9 +29,15 @@
           {{ __('Customer') }}:
           <span class="font-medium">{{ preview.customer }}</span>
         </p>
-        <p class="mb-2 text-ink-gray-5">
-          {{ __('Select the items to include in the quotation.') }}
-        </p>
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-ink-gray-5">
+            {{ __('Select the items to include in the quotation.') }}
+          </span>
+          <div class="flex items-center gap-2">
+            <Button :label="__('Select all')" @click="selectAll" />
+            <Button :label="__('Unselect all')" @click="unselectAll" />
+          </div>
+        </div>
         <ul class="space-y-2">
           <li
             v-for="it in preview.items"
@@ -85,7 +91,7 @@ const show = defineModel({ type: Boolean })
 
 // ---- preview of what the repeat order will prefill ----
 const preview = ref({})
-// Item codes the user has ticked to include in the quotation (all selected by default).
+// Item codes the user has ticked to include in the quotation (none selected by default).
 const selected = ref([])
 createResource({
   url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_repeat_order_preview',
@@ -93,7 +99,6 @@ createResource({
   auto: true,
   onSuccess: (d) => {
     preview.value = d || {}
-    selected.value = (preview.value.items || []).map((it) => it.item_code)
   },
 })
 
@@ -101,6 +106,14 @@ function toggleItem(itemCode) {
   const i = selected.value.indexOf(itemCode)
   if (i === -1) selected.value.push(itemCode)
   else selected.value.splice(i, 1)
+}
+
+function selectAll() {
+  selected.value = (preview.value.items || []).map((it) => it.item_code)
+}
+
+function unselectAll() {
+  selected.value = []
 }
 
 const creating = ref(false)

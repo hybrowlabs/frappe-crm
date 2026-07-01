@@ -70,9 +70,15 @@ def rebuild_previous_order_items(customer):
 
 	totals = get_ordered_items_for_customer(customer)
 	org = frappe.get_doc("CRM Organization", organization)
-	org.set("previous_order_items", [])
+	# Update quantities from the Sales Order aggregate but never drop an item that's
+	# already listed — items no longer in any Sales Order are kept with quantity 0.
+	existing = set()
+	for row in org.previous_order_items:
+		row.quantity = totals.get(row.item_code, 0)
+		existing.add(row.item_code)
 	for item_code, quantity in totals.items():
-		org.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
+		if item_code not in existing:
+			org.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
 
 	org.save(ignore_permissions=True)
 
@@ -87,3 +93,29 @@ def reduce_previous_order_items(doc, method=None):
 	"""On Sales Order cancel, recompute the linked CRM Organization's previously
 	ordered items from the customer's remaining submitted Sales Orders."""
 	rebuild_previous_order_items(doc.customer)
+
+
+def add_quotation_items_to_previous_order_items(doc, method=None):
+	"""On Quotation create, add its items to the linked CRM Organization's previously
+	ordered items with quantity 0 if not already present. Quantities stay driven by
+	Sales Orders; this only grows the item catalogue."""
+	organization = None
+	if doc.quotation_to == "Customer" and doc.party_name:
+		organization = frappe.db.get_value(
+			"CRM Organization", {"erpnext_customer": doc.party_name}, "name"
+		)
+	elif doc.get("custom_deal"):
+		organization = frappe.db.get_value("CRM Deal", doc.custom_deal, "organization")
+	if not organization:
+		return
+
+	org = frappe.get_doc("CRM Organization", organization)
+	existing = {row.item_code for row in org.previous_order_items}
+	added = False
+	for item in doc.items:
+		if item.item_code and item.item_code not in existing:
+			org.append("previous_order_items", {"item_code": item.item_code, "quantity": 0})
+			existing.add(item.item_code)
+			added = True
+	if added:
+		org.save(ignore_permissions=True)
