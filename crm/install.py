@@ -31,7 +31,22 @@ def after_install(force=False):
 	create_default_manager_dashboard(force)
 	create_assignment_rule_custom_fields()
 	add_assignment_rule_property_setters()
+	add_precious_alloys_roles()
 	frappe.db.commit()
+
+
+# Precious Alloys role dashboards are gated to these business roles. Salesperson
+# and Sales Manager reuse the stock CRM roles (Sales User / Sales Manager); these
+# four have no stock equivalent and are created here (idempotently).
+PRECIOUS_ALLOYS_ROLES = ("CEO", "Technical Head", "Technical Person", "Marketing Team")
+
+
+def add_precious_alloys_roles():
+	for role_name in PRECIOUS_ALLOYS_ROLES:
+		if not frappe.db.exists("Role", role_name):
+			frappe.get_doc(
+				{"doctype": "Role", "role_name": role_name, "desk_access": 1}
+			).insert(ignore_permissions=True)
 
 
 def add_default_lead_statuses():
@@ -457,7 +472,7 @@ def add_default_quick_filters():
 		"CRM Lead": ["lead_name", "email", "organization", "status", "source"],
 		"CRM Deal": ["organization", "status", "probability", "email"],
 		"Contact": ["status", "email_id", "phone"],
-		"CRM Organization": ["organization_name", "no_of_employees", "territory", "industry"],
+		"CRM Organization": ["organization_name", "gstin", "territory", "industry"],
 		"CRM Task": ["title", "priority", "assigned_to", "status", "due_date"],
 		"CRM Call Log": ["telephony_medium", "type", "status", "from", "to"],
 	}

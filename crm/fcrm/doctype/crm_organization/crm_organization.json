@@ -26,6 +26,8 @@
   "region",
   "credit_terms",
   "last_order",
+  "ordering_below_average",
+  "declining_order_value",
   "health_score",
   "repeat_revenue",
   "previous_order_items"
@@ -144,6 +146,20 @@
    "fieldname": "last_order",
    "fieldtype": "Date",
    "label": "Last Order",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ordering_below_average",
+   "fieldtype": "Check",
+   "label": "Ordering Below Average",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "declining_order_value",
+   "fieldtype": "Check",
+   "label": "Declining Order Value",
    "read_only": 1
   },
   {

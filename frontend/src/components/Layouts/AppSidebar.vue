@@ -155,6 +155,12 @@
 <script setup>
 import BrushCleaningIcon from '~icons/lucide/brush-cleaning'
 import LucideLayoutDashboard from '~icons/lucide/layout-dashboard'
+import LucideCrown from '~icons/lucide/crown'
+import LucideLineChart from '~icons/lucide/line-chart'
+import LucideRepeat from '~icons/lucide/repeat'
+import LucideFlaskConical from '~icons/lucide/flask-conical'
+import LucideCircleUser from '~icons/lucide/circle-user'
+import LucideMegaphone from '~icons/lucide/megaphone'
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import InviteIcon from '@/components/Icons/InviteIcon.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
@@ -223,6 +229,41 @@ const links = [
     label: 'Dashboard',
     icon: LucideLayoutDashboard,
     to: 'Dashboard',
+  },
+  {
+    label: 'CEO Dashboard',
+    icon: LucideCrown,
+    to: 'CEODashboard',
+    condition: () => isCEO(),
+  },
+  {
+    label: 'Sales Manager',
+    icon: LucideLineChart,
+    to: 'SalesManagerDashboard',
+    condition: () => isManager(),
+  },
+  {
+    label: 'Repeat Business',
+    icon: LucideRepeat,
+    to: 'RepeatBusinessDashboard',
+    condition: () => isManager() || isCEO(),
+  },
+  {
+    label: 'Technical Pre-Sale',
+    icon: LucideFlaskConical,
+    to: 'TechnicalPresaleDashboard',
+    condition: () => isTechnical(),
+  },
+  {
+    label: 'My Dashboard',
+    icon: LucideCircleUser,
+    to: 'MyDashboard',
+  },
+  {
+    label: 'Marketing',
+    icon: LucideMegaphone,
+    to: 'MarketingDashboard',
+    condition: () => isMarketing(),
   },
   {
     label: 'Leads',
@@ -330,7 +371,7 @@ function getIcon(routeName, icon) {
 
 // onboarding
 const { user } = sessionStore()
-const { users, isManager } = usersStore()
+const { users, isManager, isAdmin, isCEO, isTechnical, isMarketing } = usersStore()
 const { isOnboardingStepsCompleted, setUp } = useOnboarding('frappecrm')
 
 async function getFirstLead() {

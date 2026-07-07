@@ -6,6 +6,7 @@
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between gap-2 overflow-x-auto">
         <div class="flex gap-2">
+          <slot name="prefix-filters" />
           <Filter
             v-model="list"
             :doctype="doctype"
@@ -134,6 +135,7 @@
       class="flex flex-1 items-center overflow-x-auto -ml-1 h-9"
       orientation="horizontal"
     >
+      <slot name="prefix-filters" />
       <div
         v-for="filter in quickFilterList"
         :key="filter.fieldname"
@@ -1313,6 +1315,7 @@ function likeDoc({ name, liked }) {
 
 defineExpose({
   applyFilter,
+  updateFilter,
   applyLikeFilter,
   likeDoc,
   updateKanbanSettings,

@@ -57,6 +57,25 @@ export const usersStore = defineStore('crm-users', () => {
     return getUser(email).role === 'Sales Manager' || isAdmin(email)
   }
 
+  // Precious Alloys business roles (full Frappe role membership, not the single
+  // collapsed CRM role). Backend get_users returns each user's `roles` array.
+  function hasRole(role, email) {
+    const roles = getUser(email).roles
+    return Array.isArray(roles) && roles.includes(role)
+  }
+
+  function isCEO(email) {
+    return hasRole('CEO', email) || isAdmin(email)
+  }
+
+  function isTechnical(email) {
+    return hasRole('Technical Person', email) || hasRole('Technical Head', email) || isAdmin(email)
+  }
+
+  function isMarketing(email) {
+    return hasRole('Marketing Team', email) || isCEO(email)
+  }
+
   function isWebsiteUser(email) {
     return getUser(email).user_type === 'Website User'
   }
@@ -89,6 +108,10 @@ export const usersStore = defineStore('crm-users', () => {
     getUser,
     isAdmin,
     isManager,
+    hasRole,
+    isCEO,
+    isTechnical,
+    isMarketing,
     isSalesUser,
     isTelephonyAgent,
     getUserRole,

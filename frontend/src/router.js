@@ -19,6 +19,36 @@ const routes = [
     component: () => import('@/pages/Dashboard.vue'),
   },
   {
+    path: '/ceo-dashboard',
+    name: 'CEODashboard',
+    component: () => import('@/pages/CEODashboard.vue'),
+  },
+  {
+    path: '/sales-manager-dashboard',
+    name: 'SalesManagerDashboard',
+    component: () => import('@/pages/SalesManagerDashboard.vue'),
+  },
+  {
+    path: '/repeat-business-dashboard',
+    name: 'RepeatBusinessDashboard',
+    component: () => import('@/pages/RepeatBusinessDashboard.vue'),
+  },
+  {
+    path: '/technical-presale-dashboard',
+    name: 'TechnicalPresaleDashboard',
+    component: () => import('@/pages/TechnicalPresaleDashboard.vue'),
+  },
+  {
+    path: '/my-dashboard',
+    name: 'MyDashboard',
+    component: () => import('@/pages/MyDashboard.vue'),
+  },
+  {
+    path: '/marketing-dashboard',
+    name: 'MarketingDashboard',
+    component: () => import('@/pages/MarketingDashboard.vue'),
+  },
+  {
     alias: '/leads',
     path: '/leads/view/:viewType?',
     name: 'Leads',

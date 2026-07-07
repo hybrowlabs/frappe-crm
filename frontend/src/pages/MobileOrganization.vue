@@ -113,6 +113,7 @@
           <component :is="tab.icon" v-if="tab.icon" class="h-5" />
           {{ __(tab.label) }}
           <Badge
+            v-if="tab.count !== undefined"
             class="group-hover:bg-surface-gray-7"
             :class="[selected ? 'bg-surface-gray-7' : 'bg-gray-600']"
             variant="solid"
@@ -137,30 +138,32 @@
             />
           </div>
         </div>
+        <OrganizationAnalytics
+          v-if="tab.name === 'Analytics'"
+          class="px-3"
+          :organization="props.organizationId"
+        />
+        <OrganizationOrderedItems
+          v-else-if="tab.name === 'Ordered Items'"
+          class="px-3"
+          :organization="props.organizationId"
+        />
         <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
+          v-else-if="tab.label === 'Deals' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
         <ContactsListView
-          v-if="tab.label === 'Contacts' && rows.length"
+          v-else-if="tab.label === 'Contacts' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
-        <ListView
-          v-if="tab.name === 'Order Items' && rows.length"
-          class="mt-4 px-3 sm:px-5"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-          row-key="name"
-        />
         <div
-          v-if="!rows.length && tab.name !== 'Details'"
+          v-else-if="['Deals', 'Contacts'].includes(tab.name) && !rows.length"
           class="grid flex-1 place-items-center text-xl font-medium text-ink-gray-4"
         >
           <div class="flex flex-col items-center justify-center space-y-3">
@@ -193,6 +196,9 @@ import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
+import OrganizationAnalytics from '@/components/Organization/OrganizationAnalytics.vue'
+import OrganizationOrderedItems from '@/components/Organization/OrganizationOrderedItems.vue'
+import TrendingUpIcon from '~icons/lucide/trending-up'
 import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
@@ -382,22 +388,27 @@ const tabs = [
     icon: DetailsIcon,
   },
   {
+    name: 'Analytics',
+    label: __('Analytics'),
+    icon: h(TrendingUpIcon, { class: 'h-4 w-4' }),
+  },
+  {
     name: 'Deals',
     label: __('Deals'),
     icon: h(DealsIcon, { class: 'h-4 w-4' }),
     count: computed(() => deals.data?.length),
   },
   {
+    name: 'Ordered Items',
+    label: __('Ordered Items'),
+    icon: h(PackageIcon, { class: 'h-4 w-4' }),
+    count: computed(() => organization.doc?.previous_order_items?.length || 0),
+  },
+  {
     name: 'Contacts',
     label: __('Contacts'),
     icon: h(ContactsIcon, { class: 'h-4 w-4' }),
     count: computed(() => contacts.data?.length),
-  },
-  {
-    name: 'Order Items',
-    label: __('Order Items'),
-    icon: h(PackageIcon, { class: 'h-4 w-4' }),
-    count: computed(() => organization.doc?.previous_order_items?.length || 0),
   },
 ]
 
@@ -448,26 +459,18 @@ const contacts = createListResource({
 const activeTabName = computed(() => tabs[tabIndex.value]?.name)
 
 const rows = computed(() => {
-  if (activeTabName.value === 'Order Items') {
-    return (organization.doc?.previous_order_items || []).map(getOrderItemRowObject)
-  }
-
-  let list = activeTabName.value === 'Contacts' ? contacts : deals
-
-  if (!list.data) return []
-
-  return list.data.map((row) => {
-    return activeTabName.value === 'Contacts'
-      ? getContactRowObject(row)
-      : getDealRowObject(row)
-  })
+  if (activeTabName.value === 'Deals')
+    return (deals.data || []).map(getDealRowObject)
+  if (activeTabName.value === 'Contacts')
+    return (contacts.data || []).map(getContactRowObject)
+  return []
 })
 
 const { getFormattedCurrency } = getMeta('CRM Deal')
 
 const columns = computed(() => {
-  if (activeTabName.value === 'Order Items') return orderItemColumns
-  return activeTabName.value === 'Contacts' ? contactColumns : dealColumns
+  if (activeTabName.value === 'Contacts') return contactColumns
+  return dealColumns
 })
 
 function getDealRowObject(deal) {
@@ -515,28 +518,6 @@ function getContactRowObject(contact) {
     },
   }
 }
-
-function getOrderItemRowObject(item) {
-  return {
-    name: item.name,
-    item_code: item.item_code,
-    quantity: item.quantity,
-  }
-}
-
-const orderItemColumns = [
-  {
-    label: __('Item Code'),
-    key: 'item_code',
-    width: 2,
-  },
-  {
-    label: __('Quantity'),
-    key: 'quantity',
-    align: 'right',
-    width: 1,
-  },
-]
 
 const dealColumns = [
   {

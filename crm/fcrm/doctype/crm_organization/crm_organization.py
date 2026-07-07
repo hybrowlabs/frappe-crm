@@ -32,6 +32,20 @@ class CRMOrganization(Document):
 	def validate(self):
 		self.update_exchange_rate()
 		self.refetch_previous_order_items()
+		self.update_last_order()
+
+	def update_last_order(self):
+		"""Store the date of the linked customer's most recent submitted Sales Order,
+		so the org list can filter dormancy live from a single stored date."""
+		customer = self.get("erpnext_customer")
+		if not customer or not frappe.db.exists("DocType", "Sales Order"):
+			return
+		self.last_order = frappe.db.get_value(
+			"Sales Order",
+			{"customer": customer, "docstatus": 1},
+			"transaction_date",
+			order_by="transaction_date desc",
+		)
 
 	def refetch_previous_order_items(self):
 		"""When the linked ERPNext customer changes, rebuild the previously-ordered
@@ -101,6 +115,82 @@ class CRMOrganization(Document):
 			"modified",
 		]
 		return {"columns": columns, "rows": rows}
+
+
+def update_repeat_business_signals():
+	"""Nightly: recompute the two aggregate order-signal checkboxes for every linked
+	organization, and refresh last_order. The two date-based signals (no order 20-29
+	days, dormant 30+ days) are derived live from last_order at list-filter time.
+
+	- ordering_below_average: this month's order count < its trailing 3-month average.
+	- declining_order_value: average order value this quarter < last quarter.
+	"""
+	from frappe.utils import add_months, get_first_day, getdate
+
+	if not frappe.db.exists("DocType", "Sales Order"):
+		return
+
+	orgs = frappe.get_all(
+		"CRM Organization",
+		filters={"erpnext_customer": ["is", "set"]},
+		fields=["name", "erpnext_customer"],
+	)
+	if not orgs:
+		return
+
+	customers = list({o.erpnext_customer for o in orgs})
+
+	today = getdate()
+	month_start = get_first_day(today)
+	prev3_start = get_first_day(add_months(month_start, -3))
+	quarter_start = get_first_day(add_months(month_start, -((today.month - 1) % 3)))
+	last_quarter_start = get_first_day(add_months(quarter_start, -3))
+	window_start = min(prev3_start, last_quarter_start)
+
+	orders = frappe.get_all(
+		"Sales Order",
+		filters={
+			"docstatus": 1,
+			"customer": ["in", customers],
+			"transaction_date": [">=", window_start],
+		},
+		fields=["customer", "transaction_date", "base_grand_total"],
+	)
+	by_customer = {}
+	for o in orders:
+		by_customer.setdefault(o.customer, []).append(o)
+
+	last_orders = frappe.get_all(
+		"Sales Order",
+		filters={"docstatus": 1, "customer": ["in", customers]},
+		fields=["customer", "MAX(transaction_date) as last_order"],
+		group_by="customer",
+	)
+	last_map = {r.customer: r.last_order for r in last_orders}
+
+	for org in orgs:
+		rows = by_customer.get(org.erpnext_customer, [])
+		current_count = sum(1 for r in rows if getdate(r.transaction_date) >= month_start)
+		prev3_count = sum(1 for r in rows if prev3_start <= getdate(r.transaction_date) < month_start)
+		below = 1 if current_count < (prev3_count / 3) else 0
+
+		this_q = [r for r in rows if getdate(r.transaction_date) >= quarter_start]
+		last_q = [r for r in rows if last_quarter_start <= getdate(r.transaction_date) < quarter_start]
+		this_avg = sum((r.base_grand_total or 0) for r in this_q) / len(this_q) if this_q else 0
+		last_avg = sum((r.base_grand_total or 0) for r in last_q) / len(last_q) if last_q else 0
+		declining = 1 if (last_q and this_avg < last_avg) else 0
+
+		frappe.db.set_value(
+			"CRM Organization",
+			org.name,
+			{
+				"ordering_below_average": below,
+				"declining_order_value": declining,
+				"last_order": last_map.get(org.erpnext_customer),
+			},
+			update_modified=False,
+		)
+	frappe.db.commit()
 
 
 def sync_customers_to_crm_orgs():

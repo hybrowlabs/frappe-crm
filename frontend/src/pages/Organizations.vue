@@ -23,7 +23,18 @@
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
     doctype="CRM Organization"
-  />
+  >
+    <template #prefix-filters>
+      <div class="m-1 min-w-40">
+        <FormControl
+          type="select"
+          v-model="signal"
+          :options="signalOptions"
+          :placeholder="__('Signal')"
+        />
+      </div>
+    </template>
+  </ViewControls>
   <OrganizationsListView
     v-if="organizations.data && rows.length"
     ref="organizationsListView"
@@ -75,6 +86,48 @@ const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
 
 const organizationsListView = ref(null)
 const showOrganizationModal = ref(false)
+
+const signalOptions = [
+  { label: __('All'), value: 'all' },
+  { label: __('Ordering below average'), value: 'below' },
+  { label: __('Declining order value'), value: 'declining' },
+  { label: __('No order 20–29 days'), value: 'no_order_20_29' },
+  { label: __('Dormant 30+ days'), value: 'dormant' },
+]
+
+function daysAgo(days) {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return d.toISOString().slice(0, 10)
+}
+
+// Derived from the live filters so it stays in sync on reload and resets to
+// 'all' when filters are cleared elsewhere.
+const signal = computed({
+  get() {
+    const f = organizations.value?.params?.filters || {}
+    if (f.ordering_below_average) return 'below'
+    if (f.declining_order_value) return 'declining'
+    const lo = f.last_order
+    if (Array.isArray(lo) && String(lo[0]).toLowerCase() === 'between') {
+      return lo[1]?.[0] === '1900-01-01' ? 'dormant' : 'no_order_20_29'
+    }
+    return 'all'
+  },
+  set(value) {
+    const filters = { ...(organizations.value?.params?.filters || {}) }
+    delete filters.ordering_below_average
+    delete filters.declining_order_value
+    delete filters.last_order
+    if (value === 'below') filters.ordering_below_average = 1
+    else if (value === 'declining') filters.declining_order_value = 1
+    else if (value === 'no_order_20_29')
+      filters.last_order = ['between', [daysAgo(29), daysAgo(20)]]
+    else if (value === 'dormant')
+      filters.last_order = ['between', ['1900-01-01', daysAgo(30)]]
+    viewControls.value?.updateFilter(filters)
+  },
+})
 
 // organizations data is loaded in the ViewControls component
 const organizations = ref({})

@@ -32,3 +32,6 @@ crm.patches.v1_0.seed_organization_sidebar_fields_layout # 25-06-2026 - 2
 # crm.patches.v1_0.seed_territories # 22-06-2026 - 3
 crm.patches.v1_0.import_sales_persons_and_territories # 23-06-2026
 crm.patches.v1_0.sync_customers_to_crm_orgs # 01-07-2026
+crm.patches.v1_0.refresh_organization_quick_filters # 07-07-2026
+crm.patches.v1_0.set_organization_last_order # 07-07-2026
+crm.patches.v1_0.create_precious_alloys_roles # 07-07-2026

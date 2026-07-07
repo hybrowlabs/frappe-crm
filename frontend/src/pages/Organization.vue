@@ -145,6 +145,7 @@
           <component :is="tab.icon" v-if="tab.icon" class="h-5" />
           {{ __(tab.label) }}
           <Badge
+            v-if="tab.count !== undefined"
             class="group-hover:bg-surface-gray-7"
             :class="[selected ? 'bg-surface-gray-7' : 'bg-gray-600']"
             variant="solid"
@@ -156,30 +157,32 @@
         </button>
       </template>
       <template #tab-panel="{ tab }">
+        <OrganizationAnalytics
+          v-if="tab.label === 'Analytics'"
+          class="px-3 sm:px-5"
+          :organization="props.organizationId"
+        />
+        <OrganizationOrderedItems
+          v-else-if="tab.label === 'Ordered Items'"
+          class="px-3 sm:px-5"
+          :organization="props.organizationId"
+        />
         <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
+          v-else-if="tab.label === 'Deals' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
         <ContactsListView
-          v-if="tab.label === 'Contacts' && rows.length"
+          v-else-if="tab.label === 'Contacts' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
-        <ListView
-          v-if="tab.label === 'Order Items' && rows.length"
-          class="mt-4 px-3 sm:px-5"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-          row-key="name"
-        />
         <EmptyState
-          v-if="!rows.length"
+          v-else-if="['Deals', 'Contacts'].includes(tab.label) && !rows.length"
           :icon="tab.icon"
           :name="__(tab.label)"
         />
@@ -220,6 +223,9 @@ import Icon from '@/components/Icon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
+import OrganizationAnalytics from '@/components/Organization/OrganizationAnalytics.vue'
+import OrganizationOrderedItems from '@/components/Organization/OrganizationOrderedItems.vue'
+import TrendingUpIcon from '~icons/lucide/trending-up'
 import WebsiteIcon from '@/components/Icons/WebsiteIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
@@ -413,19 +419,23 @@ function getParsedSections(_sections) {
 const tabIndex = ref(0)
 const tabs = [
   {
+    label: 'Analytics',
+    icon: TrendingUpIcon,
+  },
+  {
     label: 'Deals',
     icon: DealsIcon,
     count: computed(() => deals.data?.length),
   },
   {
+    label: 'Ordered Items',
+    icon: PackageIcon,
+    count: computed(() => organization.doc?.previous_order_items?.length || 0),
+  },
+  {
     label: 'Contacts',
     icon: ContactsIcon,
     count: computed(() => contacts.data?.length),
-  },
-  {
-    label: 'Order Items',
-    icon: PackageIcon,
-    count: computed(() => organization.doc?.previous_order_items?.length || 0),
   },
 ]
 
@@ -473,25 +483,22 @@ const contacts = createListResource({
   auto: true,
 })
 
+const currentTabLabel = computed(() => tabs[tabIndex.value]?.label)
+
 const rows = computed(() => {
-  if (tabIndex.value === 2) {
-    return (organization.doc?.previous_order_items || []).map(getOrderItemRowObject)
-  }
-
-  let list = !tabIndex.value ? deals : contacts
-
-  if (!list.data) return []
-
-  return list.data.map((row) => {
-    return !tabIndex.value ? getDealRowObject(row) : getContactRowObject(row)
-  })
+  const label = currentTabLabel.value
+  if (label === 'Deals') return (deals.data || []).map(getDealRowObject)
+  if (label === 'Contacts') return (contacts.data || []).map(getContactRowObject)
+  return []
 })
 
 const { getFormattedCurrency } = getMeta('CRM Deal')
 
 const columns = computed(() => {
-  if (tabIndex.value === 2) return orderItemColumns
-  return tabIndex.value === 0 ? dealColumns : contactColumns
+  const label = currentTabLabel.value
+  if (label === 'Deals') return dealColumns
+  if (label === 'Contacts') return contactColumns
+  return []
 })
 
 function getDealRowObject(deal) {
@@ -539,28 +546,6 @@ function getContactRowObject(contact) {
     },
   }
 }
-
-function getOrderItemRowObject(item) {
-  return {
-    name: item.name,
-    item_code: item.item_code,
-    quantity: item.quantity,
-  }
-}
-
-const orderItemColumns = [
-  {
-    label: __('Item Code'),
-    key: 'item_code',
-    width: 2,
-  },
-  {
-    label: __('Quantity'),
-    key: 'quantity',
-    align: 'right',
-    width: 1,
-  },
-]
 
 const dealColumns = [
   {
