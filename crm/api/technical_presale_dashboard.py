@@ -43,7 +43,11 @@ def _response_bands(view):
 		{"label": BANDS[i][0], "tag": BANDS[i][1], "theme": BANDS[i][2], "count": counts[i]}
 		for i in range(len(BANDS))
 	]
-	avg = frappe.db.get_value("CRM Deal", filters, "avg(first_response_time)")
+	# "My Average Response — This Month" (spec): restrict the average to responses
+	# given in the current month (first_responded_on in this month).
+	month_filters = dict(filters)
+	month_filters["first_responded_on"] = [">=", getdate().replace(day=1)]
+	avg = frappe.db.get_value("CRM Deal", month_filters, "avg(first_response_time)")
 	return {"bands": bands, "total": sum(counts), "avg_seconds": flt(avg)}
 
 
@@ -84,8 +88,11 @@ def _trials(view):
 	base = {"trial_required": 1}
 	base.update(scope)
 
+	# "Trials I Managed This Month" (spec): trials whose outcome was concluded in
+	# the current month (evaluation_end in this month).
 	outcome_filters = dict(base)
 	outcome_filters["trial_outcome"] = ["in", ["Successful", "Partial", "Unsuccessful"]]
+	outcome_filters["evaluation_end"] = [">=", getdate().replace(day=1)]
 	rows = frappe.get_all(
 		"CRM Deal",
 		filters=outcome_filters,

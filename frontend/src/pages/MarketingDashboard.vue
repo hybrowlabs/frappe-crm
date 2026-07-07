@@ -112,6 +112,7 @@
                   <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
                   <th class="py-1.5 text-left font-normal">{{ __('Status') }}</th>
                   <th class="py-1.5 text-right font-normal">{{ __('Days Since Upload') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Last Activity') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,6 +128,7 @@
                     <Badge v-if="l.stale" theme="red" :label="`${l.days}d`" variant="subtle" />
                     <span v-else class="text-ink-gray-5">{{ l.days }}d</span>
                   </td>
+                  <td class="py-1.5 text-right text-ink-gray-5">{{ __('{0}d ago', [l.last_activity_days]) }}</td>
                 </tr>
               </tbody>
             </table>

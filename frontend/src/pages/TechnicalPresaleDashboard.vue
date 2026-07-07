@@ -12,7 +12,7 @@
           <h1 class="text-xl font-semibold text-ink-gray-9">{{ __('Technical Pre-Sale Dashboard') }}</h1>
           <Badge theme="gray" variant="subtle" :label="__('CRM Pipeline phase')" />
         </div>
-        <div class="flex rounded-lg border border-outline-gray-2 p-0.5 text-sm">
+        <div v-if="canSeeTeam" class="flex rounded-lg border border-outline-gray-2 p-0.5 text-sm">
           <button v-for="opt in views" :key="opt.value"
             class="rounded-md px-3 py-1 transition"
             :class="view === opt.value ? 'bg-surface-gray-3 font-medium text-ink-gray-9' : 'text-ink-gray-5'"
@@ -197,10 +197,13 @@ import { useRouter } from 'vue-router'
 import { usersStore } from '@/stores/users'
 
 const router = useRouter()
-const { getUser } = usersStore()
+const { getUser, isTechnicalHead } = usersStore()
 
 const goDeal = (name) => name && router.push({ name: 'Deal', params: { dealId: name } })
 
+// The Team (Head) view is head-only per spec — only a Technical Head (or admin)
+// sees the toggle; everyone else is locked to My View.
+const canSeeTeam = computed(() => isTechnicalHead())
 const views = [
   { value: 'my', label: __('My View') },
   { value: 'team', label: __('Team (Head)') },
@@ -208,6 +211,7 @@ const views = [
 const view = ref('my')
 function setView(v) {
   if (v === view.value) return
+  if (v === 'team' && !canSeeTeam.value) return
   view.value = v
   dash.reload({ view: v })
 }

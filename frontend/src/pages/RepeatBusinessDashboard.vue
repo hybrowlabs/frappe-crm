@@ -43,6 +43,7 @@
                 <span class="flex items-center gap-1"><Dot color="green" />{{ __('Healthy') }}</span>
                 <span class="flex items-center gap-1"><Dot color="amber" />{{ __('Declining') }}</span>
                 <span class="flex items-center gap-1"><Dot color="red" />{{ __('Dormant') }}</span>
+                <span class="flex items-center gap-1"><Dot color="gray" />{{ __('No Data') }}</span>
               </span>
             </div>
           </template>
@@ -211,20 +212,20 @@
             </Card>
             <Card :title="__('Revenue Concentration')">
               <div class="mb-3 flex h-3 w-full overflow-hidden rounded-full">
-                <div class="bg-blue-500" :style="`width: ${d.revenue_trend.concentration.top5_pct}%`"></div>
-                <div class="bg-surface-gray-3" :style="`width: ${100 - d.revenue_trend.concentration.top5_pct}%`"></div>
+                <div class="bg-blue-500" :style="`width: ${d.revenue_trend.concentration.top_pct}%`"></div>
+                <div class="bg-surface-gray-3" :style="`width: ${100 - d.revenue_trend.concentration.top_pct}%`"></div>
               </div>
               <div class="mb-1 flex items-center justify-between text-sm">
-                <span class="flex items-center gap-2 text-ink-gray-7"><span class="h-2.5 w-2.5 rounded-sm bg-blue-500"></span>{{ __('Top 5 accounts') }}</span>
-                <span class="font-medium text-ink-gray-8">{{ d.revenue_trend.concentration.top5_pct }}% · {{ fmtINR(d.revenue_trend.concentration.top5_value) }}</span>
+                <span class="flex items-center gap-2 text-ink-gray-7"><span class="h-2.5 w-2.5 rounded-sm bg-blue-500"></span>{{ __('Top {0} accounts', [d.revenue_trend.concentration.top_n]) }}</span>
+                <span class="font-medium text-ink-gray-8">{{ d.revenue_trend.concentration.top_pct }}% · {{ fmtINR(d.revenue_trend.concentration.top_value) }}</span>
               </div>
               <div class="flex items-center justify-between text-sm">
                 <span class="flex items-center gap-2 text-ink-gray-7"><span class="h-2.5 w-2.5 rounded-sm bg-surface-gray-3"></span>{{ __('Rest of accounts') }}</span>
-                <span class="font-medium text-ink-gray-8">{{ 100 - d.revenue_trend.concentration.top5_pct }}% · {{ fmtINR(d.revenue_trend.concentration.rest_value) }}</span>
+                <span class="font-medium text-ink-gray-8">{{ 100 - d.revenue_trend.concentration.top_pct }}% · {{ fmtINR(d.revenue_trend.concentration.rest_value) }}</span>
               </div>
-              <div v-if="d.revenue_trend.concentration.top5_pct > 55"
+              <div v-if="d.revenue_trend.concentration.top_pct > 55"
                 class="mt-3 rounded-md bg-surface-amber-1 px-3 py-2 text-xs text-ink-amber-3">
-                {{ __('High concentration — {0}% of revenue from 5 accounts. Diversify to reduce risk.', [d.revenue_trend.concentration.top5_pct]) }}
+                {{ __('High concentration — {0}% of revenue from {1} accounts. Diversify to reduce risk.', [d.revenue_trend.concentration.top_pct, d.revenue_trend.concentration.top_n]) }}
               </div>
             </Card>
           </div>
@@ -367,7 +368,7 @@ function gaps(a) {
   return (d.value?.cross_sell.categories || []).filter((c) => !a.cats.includes(c))
 }
 
-const statusTheme = (s) => ({ Healthy: 'green', Declining: 'orange', Dormant: 'red' })[s] || 'gray'
+const statusTheme = (s) => ({ Healthy: 'green', Declining: 'orange', Dormant: 'red', 'No Data': 'gray' })[s] || 'gray'
 const statusBar = (s) => ({ Healthy: 'bg-green-500', Declining: 'bg-amber-500', Dormant: 'bg-red-500' })[s] || 'bg-surface-gray-3'
 
 // ---- drill-down drawer ----

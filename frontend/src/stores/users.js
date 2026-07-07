@@ -72,6 +72,10 @@ export const usersStore = defineStore('crm-users', () => {
     return hasRole('Technical Person', email) || hasRole('Technical Head', email) || isAdmin(email)
   }
 
+  function isTechnicalHead(email) {
+    return hasRole('Technical Head', email) || isAdmin(email)
+  }
+
   function isMarketing(email) {
     return hasRole('Marketing Team', email) || isCEO(email)
   }
@@ -111,6 +115,7 @@ export const usersStore = defineStore('crm-users', () => {
     hasRole,
     isCEO,
     isTechnical,
+    isTechnicalHead,
     isMarketing,
     isSalesUser,
     isTelephonyAgent,

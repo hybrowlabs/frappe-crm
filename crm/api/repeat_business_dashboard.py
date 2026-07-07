@@ -115,6 +115,11 @@ def _marketing_orgs():
 
 
 def _status(row, days):
+	# An account with no order history at all (no orders in any window and no
+	# last-order date) has nothing to judge — mark it "No Data", not Healthy.
+	has_history = row["ytd_orders"] or row["this_month"] or row["last_month"] or row["this_qtr"]
+	if days is None and not has_history:
+		return "No Data"
 	if days is not None and days > 30:
 		return "Dormant"
 	if row["this_month"] < row["avg3mo"] or (row["aov_q"] and row["aov_q"] < row["aov_lastq"]):
@@ -199,8 +204,8 @@ def get_repeat_business_dashboard() -> dict:
 	rev_sorted = sorted([a for a in accounts if a["rev_ytd"] or a["rev_last_year"]], key=lambda a: a["rev_ytd"], reverse=True)
 	top_by_freq = sorted([a for a in accounts if a["ytd_orders"]], key=lambda a: a["ytd_orders"], reverse=True)
 	total_rev = sum(a["rev_ytd"] for a in accounts)
-	top5_rev = sum(a["rev_ytd"] for a in rev_sorted[:5])
-	conc_pct = round(top5_rev / total_rev * 100) if total_rev else 0
+	top10_rev = sum(a["rev_ytd"] for a in rev_sorted[:10])
+	conc_pct = round(top10_rev / total_rev * 100) if total_rev else 0
 
 	# ---- cross-sell ----
 	one_cat = [a for a in accounts if len(a["cats"]) == 1]
@@ -242,11 +247,12 @@ def get_repeat_business_dashboard() -> dict:
 		},
 		"revenue_trend": {
 			"rows": trim(rev_sorted, 40),
-			"top_by_freq": top_by_freq[:8],
+			"top_by_freq": top_by_freq[:20],
 			"concentration": {
-				"top5_pct": conc_pct,
-				"top5_value": top5_rev,
-				"rest_value": total_rev - top5_rev,
+				"top_n": 10,
+				"top_pct": conc_pct,
+				"top_value": top10_rev,
+				"rest_value": total_rev - top10_rev,
 				"total_value": total_rev,
 			},
 		},

@@ -39,7 +39,8 @@ def _pipeline(me, statuses):
 	by_stage = []
 	for name in statuses:
 		group = [d for d in deals if d.status == name]
-		by_stage.append({"stage": name, "count": len(group), "value": sum(_value(d) for d in group)})
+		if group:
+			by_stage.append({"stage": name, "count": len(group), "value": sum(_value(d) for d in group)})
 	deal_rows = [
 		{
 			"name": d.name,
