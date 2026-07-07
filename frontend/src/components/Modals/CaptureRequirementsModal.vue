@@ -42,24 +42,56 @@
       </FieldGrid>
     </StageSection>
 
-    <!-- Pain Points -->
+    <!-- Commercial Pain Points -->
     <StageSection
       :title="
-        cat
-          ? __('Pain Points — {0} options for {1}', [painOpts.length, cat])
-          : __('Pain Points')
+        sub
+          ? __('Commercial Pain Points — {0} for {1}', [commercialPains.length, sub])
+          : __('Commercial Pain Points')
+      "
+      icon="rupee"
+    >
+      <p v-if="!sub" class="text-p-sm text-ink-gray-5">
+        {{ __('Select a sub-category to load relevant pain points.') }}
+      </p>
+      <p v-else-if="!commercialPains.length" class="text-p-sm text-ink-gray-5">
+        {{ __('No commercial pain points mapped to this sub-category yet.') }}
+      </p>
+      <div
+        v-if="sub && commercialPains.length"
+        class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3"
+      >
+        <FieldCheckbox
+          v-for="p in commercialPains"
+          :key="p.name"
+          :label="p.name"
+          :checked="pains.includes(p.name)"
+          @change="togglePain(p.name)"
+        />
+      </div>
+    </StageSection>
+
+    <!-- Technical Pain Points -->
+    <StageSection
+      :title="
+        sub
+          ? __('Technical Pain Points — {0} for {1}', [technicalPains.length, sub])
+          : __('Technical Pain Points')
       "
       icon="alert"
     >
-      <p v-if="!cat" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('Select a product category to load relevant pain points.') }}
+      <p v-if="!sub" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('Select a sub-category to load relevant pain points.') }}
       </p>
-      <p v-else-if="!painOpts.length" class="mb-3 text-p-sm text-ink-gray-5">
-        {{ __('No pain points mapped to this category yet.') }}
+      <p v-else-if="!technicalPains.length" class="mb-3 text-p-sm text-ink-gray-5">
+        {{ __('No technical pain points mapped to this sub-category yet.') }}
       </p>
-      <div v-if="cat" class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
+      <div
+        v-if="sub && technicalPains.length"
+        class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3"
+      >
         <FieldCheckbox
-          v-for="p in painOpts"
+          v-for="p in technicalPains"
           :key="p.name"
           :label="p.name"
           :checked="pains.includes(p.name)"
@@ -305,6 +337,15 @@ function otherLast(list) {
   })
 }
 const painOpts = computed(() => otherLast(painPointList.data))
+// Pain points are captured in two parts — Technical and Commercial — driven by
+// the master data's pain_type. The "Other" catch-all (pain_type Technical) stays
+// pinned to the end of the Technical group via otherLast above.
+const technicalPains = computed(() =>
+  painOpts.value.filter((p) => p.pain_type === 'Technical'),
+)
+const commercialPains = computed(() =>
+  painOpts.value.filter((p) => p.pain_type === 'Commercial'),
+)
 // Operational impact has its own dedicated "Other" checkbox rendered last, so
 // drop any "Other" coming from the master data to avoid a duplicate.
 const opImpactOpts = computed(() =>
@@ -328,15 +369,15 @@ function loadVariants(subCat) {
   })
   variantList.reload()
 }
-function loadPains(category) {
-  if (!category) {
+function loadPains(subCategory) {
+  if (!subCategory) {
     painPointList.data = []
     return
   }
-  // filter the parent via its Category multiselect child table
+  // filter the parent via its Sub-Category multiselect child table
   painPointList.update({
     filters: [
-      ['CRM Product Category Select', 'product_category', '=', category],
+      ['CRM Product Sub Category Select', 'product_sub_category', '=', subCategory],
     ],
   })
   painPointList.reload()
@@ -424,10 +465,12 @@ onMounted(() => {
   // hydrate dependent dropdowns for the already-selected values
   if (cat.value) {
     loadSubs(cat.value)
-    loadPains(cat.value)
     loadOpImpacts(cat.value)
   }
-  if (sub.value) loadVariants(sub.value)
+  if (sub.value) {
+    loadVariants(sub.value)
+    loadPains(sub.value)
+  }
 })
 
 function onCategoryChange(v) {
@@ -444,14 +487,17 @@ function onCategoryChange(v) {
   painPointList.data = []
   operationImpactList.data = []
   loadSubs(v)
-  loadPains(v)
   loadOpImpacts(v)
 }
 
 function onSubChange(v) {
   sub.value = v
   variant.value = ''
+  // pain points are filtered by sub-category — reload on every sub change
+  pains.value = []
+  otherPainPoint.value = ''
   loadVariants(v)
+  loadPains(v)
 }
 
 function togglePain(p) {

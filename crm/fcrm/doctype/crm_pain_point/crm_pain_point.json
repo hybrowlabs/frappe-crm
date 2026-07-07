@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_bulk_edit": 1,
  "allow_rename": 1,
  "autoname": "field:pain_point",
  "creation": "2026-06-10 11:44:56.273283",
@@ -9,6 +8,7 @@
  "field_order": [
   "pain_point",
   "product_categories",
+  "product_sub_categories",
   "pain_type"
  ],
  "fields": [
@@ -28,8 +28,16 @@
    "reqd": 1
   },
   {
+   "fieldname": "product_sub_categories",
+   "fieldtype": "Table MultiSelect",
+   "label": "Product Sub Categories",
+   "options": "CRM Product Sub Category Select",
+   "reqd": 1
+  },
+  {
    "fieldname": "pain_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Pain Type",
    "options": "Technical\nCommercial",
    "reqd": 1
@@ -38,7 +46,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-10 13:00:55.696058",
+ "modified": "2026-07-07 23:37:13.952488",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Pain Point",

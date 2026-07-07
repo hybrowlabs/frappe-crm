@@ -5,6 +5,10 @@
     "categories": [
       "Alloys",
       "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Machines"
     ]
   },
   {
@@ -13,6 +17,10 @@
     "categories": [
       "Alloys",
       "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Machines"
     ]
   },
   {
@@ -20,6 +28,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -27,6 +38,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -34,6 +48,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -41,6 +58,11 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys",
+      "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
       "Machines"
     ]
   },
@@ -50,6 +72,10 @@
     "categories": [
       "Alloys",
       "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Machines"
     ]
   },
   {
@@ -57,6 +83,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -65,6 +94,10 @@
     "categories": [
       "Alloys",
       "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Machines"
     ]
   },
   {
@@ -72,6 +105,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -79,6 +115,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -86,6 +125,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -94,6 +136,10 @@
     "categories": [
       "Alloys",
       "Machines"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Machines"
     ]
   },
   {
@@ -101,6 +147,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys"
     ]
   },
   {
@@ -108,6 +157,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -115,6 +167,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -122,6 +177,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -129,6 +187,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -136,6 +197,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -143,6 +207,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -150,6 +217,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -157,6 +227,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -164,6 +237,9 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
@@ -171,103 +247,18 @@
     "pain_type": "Technical",
     "categories": [
       "Alloys"
-    ]
-  },
-  {
-    "pain_point": "Delivery Delay",
-    "pain_type": "Commercial",
-    "categories": [
-      "Alloys"
-    ]
-  },
-  {
-    "pain_point": "Batch Code Mismatch",
-    "pain_type": "Commercial",
-    "categories": [
-      "Alloys"
-    ]
-  },
-  {
-    "pain_point": "Price Not Competitive",
-    "pain_type": "Commercial",
-    "categories": [
-      "Alloys"
-    ]
-  },
-  {
-    "pain_point": "MOQ Too High",
-    "pain_type": "Commercial",
-    "categories": [
-      "Alloys"
-    ]
-  },
-  {
-    "pain_point": "Credit Terms Not Suitable",
-    "pain_type": "Commercial",
-    "categories": [
-      "Alloys"
-    ]
-  },
-  {
-    "pain_point": "Spots",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Burning",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Streaks",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Hazy / Cloudy",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Dull",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Colour Inconsistency",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Pitting",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
-    ]
-  },
-  {
-    "pain_point": "Micron Inconsistency",
-    "pain_type": "Technical",
-    "categories": [
-      "Plating"
+    ],
+    "sub_categories": [
+      "Mechanical / Handmade"
     ]
   },
   {
     "pain_point": "Water Flow Issue",
     "pain_type": "Technical",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -276,12 +267,18 @@
     "pain_type": "Technical",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
     "pain_point": "Temperature Calibration",
     "pain_type": "Technical",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -290,12 +287,18 @@
     "pain_type": "Technical",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
     "pain_point": "Water Leakage",
     "pain_type": "Technical",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -304,12 +307,18 @@
     "pain_type": "Technical",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
     "pain_point": "Fire Scale / Oxidation",
     "pain_type": "Technical",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -318,12 +327,18 @@
     "pain_type": "Technical",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
     "pain_point": "High Spare Parts Cost",
     "pain_type": "Commercial",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -332,12 +347,18 @@
     "pain_type": "Commercial",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
     "pain_point": "Metal Loss During Operation",
     "pain_type": "Commercial",
     "categories": [
+      "Machines"
+    ],
+    "sub_categories": [
       "Machines"
     ]
   },
@@ -346,15 +367,69 @@
     "pain_type": "Commercial",
     "categories": [
       "Machines"
+    ],
+    "sub_categories": [
+      "Machines"
     ]
   },
   {
-    "pain_point": "Other",
-    "pain_type": "Technical",
+    "pain_point": "Delivery Delay",
+    "pain_type": "Commercial",
     "categories": [
-      "Alloys",
-      "Plating",
-      "Machines"
+      "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
+      "Solder Alloys"
+    ]
+  },
+  {
+    "pain_point": "Batch Code Mismatch",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
+      "Solder Alloys"
+    ]
+  },
+  {
+    "pain_point": "Price Not Competitive",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
+      "Solder Alloys"
+    ]
+  },
+  {
+    "pain_point": "MOQ Too High",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
+      "Solder Alloys"
+    ]
+  },
+  {
+    "pain_point": "Credit Terms Not Suitable",
+    "pain_type": "Commercial",
+    "categories": [
+      "Alloys"
+    ],
+    "sub_categories": [
+      "Casting Alloys",
+      "Mechanical / Handmade",
+      "Solder Alloys"
     ]
   }
 ]

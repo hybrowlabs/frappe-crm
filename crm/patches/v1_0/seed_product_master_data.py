@@ -78,10 +78,19 @@ def _ensure_categories(doc, categories):
 
 
 def seed_pain_points(pain_points):
+	# Pain points are filtered by sub-category. `product_categories` is kept
+	# populated too ("sits as data") so the filter can be switched back to
+	# category-based at any time without a re-seed.
 	for row in pain_points:
 		if frappe.db.exists("CRM Pain Point", row["pain_point"]):
 			doc = frappe.get_doc("CRM Pain Point", row["pain_point"])
+			dirty = _ensure_subcategories(doc, row["sub_categories"])
 			if _ensure_categories(doc, row["categories"]):
+				dirty = True
+			if doc.pain_type != row["pain_type"]:
+				doc.pain_type = row["pain_type"]
+				dirty = True
+			if dirty:
 				doc.save(ignore_permissions=True)
 			continue
 		doc = frappe.get_doc(
@@ -91,6 +100,7 @@ def seed_pain_points(pain_points):
 				"pain_type": row["pain_type"],
 			}
 		)
+		_ensure_subcategories(doc, row["sub_categories"])
 		_ensure_categories(doc, row["categories"])
 		doc.insert(ignore_permissions=True)
 
