@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_bulk_edit": 1,
  "allow_rename": 1,
  "autoname": "field:product_category",
  "creation": "2026-06-10 11:21:54.506089",
@@ -22,7 +21,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-10 12:21:53.235963",
+ "modified": "2026-07-08 17:06:23.916588",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Product Category",
@@ -40,6 +39,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "select": 1,
+   "share": 1
   }
  ],
  "row_format": "Dynamic",

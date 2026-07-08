@@ -306,7 +306,7 @@
     :document="document"
   />
   <CaptureRequirementsModal
-    v-if="showCaptureRequirementsModal"
+    v-if="showCaptureRequirementsModal && isSalesTeam()"
     v-model="showCaptureRequirementsModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
@@ -314,7 +314,7 @@
     @save="saveRequirements"
   />
   <InitiateTrialModal
-    v-if="showInitiateTrialModal"
+    v-if="showInitiateTrialModal && isSalesTeam()"
     v-model="showInitiateTrialModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
@@ -322,7 +322,7 @@
     @save="saveRequirements"
   />
   <RecordEvaluationModal
-    v-if="showRecordEvaluationModal"
+    v-if="showRecordEvaluationModal && isTechnicalPerson()"
     v-model="showRecordEvaluationModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
@@ -339,21 +339,21 @@
     @save="saveRequirements"
   />
   <RetrialStageModal
-    v-if="showRetrialStageModal"
+    v-if="showRetrialStageModal && isSalesTeam()"
     v-model="showRetrialStageModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
     @ticket="showCreateServiceTicketModal = true"
   />
   <ProposalStageModal
-    v-if="showProposalStageModal"
+    v-if="showProposalStageModal && isSalesTeam()"
     v-model="showProposalStageModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
     @view-quotations="showQuotationsModal = true"
   />
   <OrderHandoffModal
-    v-if="showOrderHandoffModal"
+    v-if="showOrderHandoffModal && isSalesTeam()"
     v-model="showOrderHandoffModal"
     :statusLabel="statusLabel(doc.status)"
     :subtitle="`${title} · ${dealId}`"
@@ -378,7 +378,7 @@
     :value="doc.deal_value || 0"
   />
   <PreQuotationModal
-    v-if="showPreQuotationModal"
+    v-if="showPreQuotationModal && isSalesTeam()"
     v-model="showPreQuotationModal"
     :org="title"
     :subtitle="`${title} · ${dealId}`"
@@ -460,7 +460,7 @@ import { useRoute, useRouter } from 'vue-router'
 const { brand } = getSettings()
 const { $dialog, $socket } = globalStore()
 const { statusOptions, getDealStatus, dealStatuses } = statusesStore()
-const { isManager } = usersStore()
+const { isManager, isSalesTeam, isTechnicalPerson } = usersStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const route = useRoute()
@@ -558,8 +558,16 @@ const STAGE_CTA = {
 }
 
 const stageCta = computed(() => {
-  if (!doc.value.status) return null
-  return STAGE_CTA[doc.value.status] || null
+  const status = doc.value.status
+  if (!status) return null
+  const cta = STAGE_CTA[status] || null
+  if (!cta) return null
+  // Record Evaluation is a technical-team action — visible to Technical Person only.
+  if (['Demo/Making', 'Retrial'].includes(status)) {
+    return isTechnicalPerson() ? cta : null
+  }
+  // Every other stage action belongs to the sales team.
+  return isSalesTeam() ? cta : null
 })
 
 // Quotations are reviewable directly from the header on the Proposal & Won stages.
@@ -601,6 +609,7 @@ const canApproveEvaluation = computed(
 // no linked customer yet, offer to create the customer.
 const canPrepareQuotation = computed(
   () =>
+    isSalesTeam() &&
     doc.value?.status === 'Evaluation Completed' &&
     (!doc.value?.sales_manager_approval_required ||
       doc.value?.sales_manager_approved) &&
@@ -611,6 +620,7 @@ const canPrepareQuotation = computed(
 // direct "Proceed to Quotation" instead (moves to the Proposal/Quotation stage).
 const canProceedToQuotation = computed(
   () =>
+    isSalesTeam() &&
     doc.value?.status === 'Evaluation Completed' &&
     (!doc.value?.sales_manager_approval_required ||
       doc.value?.sales_manager_approved) &&
@@ -967,7 +977,7 @@ async function triggerStatusChange(value) {
     // Entering Proposal/Quotation runs the Create Customer gate, but only when the
     // organization has no linked customer yet. Otherwise advance directly.
     if (value === 'Proposal/Quotation' && current !== 'Proposal/Quotation') {
-      if (!orgErpnextCustomer.value) {
+      if (isSalesTeam() && !orgErpnextCustomer.value) {
         pendingProposalStatus.value = value
         showPreQuotationModal.value = true
         return
@@ -977,7 +987,14 @@ async function triggerStatusChange(value) {
       return
     }
     // The Proposal stage form doesn't advance the deal, so skip it here.
-    if (current !== 'Proposal/Quotation') {
+    // Stage forms are role-scoped (Record Evaluation → Technical Person, all others
+    // → sales team). For anyone without access, skip the (gated) stage form and fall
+    // through to the backend status change, which advances when the stage data is
+    // already filled and errors when it isn't.
+    const canOpenStageForm = ['Demo/Making', 'Retrial'].includes(current)
+      ? isTechnicalPerson()
+      : isSalesTeam()
+    if (current !== 'Proposal/Quotation' && canOpenStageForm) {
       const modal = STAGE_MODALS[current]
       if (modal && stageModals[modal]) {
         stageModals[modal].value = true

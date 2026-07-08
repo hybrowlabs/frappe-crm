@@ -240,30 +240,31 @@ const links = [
     label: 'Sales Manager',
     icon: LucideLineChart,
     to: 'SalesManagerDashboard',
-    condition: () => isManager(),
+    condition: () => isSalesManager(),
   },
   {
     label: 'Repeat Business',
     icon: LucideRepeat,
     to: 'RepeatBusinessDashboard',
-    condition: () => isManager() || isCEO(),
+    condition: () => isSalesManager() || isCEO(),
   },
   {
     label: 'Technical Pre-Sale',
     icon: LucideFlaskConical,
     to: 'TechnicalPresaleDashboard',
-    condition: () => isTechnical(),
+    condition: () => isTechnicalTeam(),
   },
   {
     label: 'My Dashboard',
     icon: LucideCircleUser,
     to: 'MyDashboard',
+    condition: () => isSalesperson(),
   },
   {
     label: 'Marketing',
     icon: LucideMegaphone,
     to: 'MarketingDashboard',
-    condition: () => isMarketing(),
+    condition: () => isMarketingTeam(),
   },
   {
     label: 'Leads',
@@ -371,7 +372,15 @@ function getIcon(routeName, icon) {
 
 // onboarding
 const { user } = sessionStore()
-const { users, isManager, isAdmin, isCEO, isTechnical, isMarketing } = usersStore()
+const {
+  users,
+  isManager,
+  isCEO,
+  isSalesManager,
+  isSalesperson,
+  isTechnicalTeam,
+  isMarketingTeam,
+} = usersStore()
 const { isOnboardingStepsCompleted, setUp } = useOnboarding('frappecrm')
 
 async function getFirstLead() {

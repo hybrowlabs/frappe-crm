@@ -1,15 +1,12 @@
 <template>
-  <StageFormDialog v-model="show" :statusLabel="statusLabel" :subtitle="subtitle">
-    <!-- intro callout -->
-    <StageCallout theme="blue" icon="zap" class="mb-3">
-      <b>{{ __('3-layer pain capture.') }}</b>
-      {{
-        __(
-          'Pain points auto-filter by Product Category → Sub-Category → Variant. Capture commercial & operational impact to qualify the opportunity.',
-        )
-      }}
-    </StageCallout>
-
+  <StageFormDialog
+    v-model="show"
+    :statusLabel="statusLabel"
+    :subtitle="subtitle"
+    :steps="steps"
+  >
+    <template #default="{ step }">
+    <div v-show="step === 0">
     <!-- Product Selection -->
     <StageSection :title="__('Product Selection')" icon="package">
       <FieldGrid :cols="3">
@@ -165,7 +162,9 @@
         {{ errors.opImpacts }}
       </div>
     </StageSection>
+    </div>
 
+    <div v-show="step === 1">
     <!-- Commercial Context -->
     <StageSection :title="__('Commercial Context')" icon="fileText">
       <FieldGrid :cols="2">
@@ -221,11 +220,26 @@
         :error="errors.requirementNote"
       />
     </StageSection>
+    </div>
+    </template>
 
-    <template #actions>
-      <div class="flex items-center justify-between gap-2">
-        <Button :label="__('Save Draft')" @click="saveDraft" />
+    <template #actions="{ step, next, back, isLast }">
+      <div class="flex w-full items-center gap-2">
+        <Button v-if="step === 0" :label="__('Save Draft')" @click="saveDraft" />
+        <Button v-else :label="__('Back')" @click="back">
+          <template #prefix><StageIcon name="arrowLeft" class="h-4 w-4" /></template>
+        </Button>
+        <span class="flex-1" />
         <Button
+          v-if="!isLast"
+          variant="solid"
+          :label="__('Next: Commercial Context')"
+          @click="next"
+        >
+          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
+        </Button>
+        <Button
+          v-else
           variant="solid"
           :label="__('Mark Ready to Qualify')"
           @click="markReadyToQualify"
@@ -260,6 +274,12 @@ const props = defineProps({
 
 const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save'])
+
+// wizard steps: capture through operational impact first, commercial context last
+const steps = [
+  { label: __('Requirements & Impact') },
+  { label: __('Commercial Context') },
+]
 
 // fields required to mark the deal ready to qualify (not enforced on draft)
 const REQUIRED_FIELDS = [

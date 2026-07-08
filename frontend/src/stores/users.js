@@ -64,20 +64,40 @@ export const usersStore = defineStore('crm-users', () => {
     return Array.isArray(roles) && roles.includes(role)
   }
 
+  // --- Precious Alloys access helpers ---
+  // Single source of truth for who can see each role dashboard and act on each deal
+  // stage. Today these are plain Frappe-role membership checks; future conditions
+  // (department, region, assignment, etc.) plug in here so no call site changes.
   function isCEO(email) {
-    return hasRole('CEO', email) || isAdmin(email)
+    return hasRole('CEO', email)
   }
 
-  function isTechnical(email) {
-    return hasRole('Technical Person', email) || hasRole('Technical Head', email) || isAdmin(email)
+  function isSalesManager(email) {
+    return hasRole('Sales Manager', email)
+  }
+
+  function isSalesperson(email) {
+    return hasRole('Sales User', email)
+  }
+
+  function isSalesTeam(email) {
+    return isSalesperson(email) || isSalesManager(email)
+  }
+
+  function isTechnicalPerson(email) {
+    return hasRole('Technical Person', email)
   }
 
   function isTechnicalHead(email) {
-    return hasRole('Technical Head', email) || isAdmin(email)
+    return hasRole('Technical Head', email)
   }
 
-  function isMarketing(email) {
-    return hasRole('Marketing Team', email) || isCEO(email)
+  function isTechnicalTeam(email) {
+    return isTechnicalPerson(email) || isTechnicalHead(email)
+  }
+
+  function isMarketingTeam(email) {
+    return hasRole('Marketing Team', email)
   }
 
   function isWebsiteUser(email) {
@@ -114,9 +134,13 @@ export const usersStore = defineStore('crm-users', () => {
     isManager,
     hasRole,
     isCEO,
-    isTechnical,
+    isSalesManager,
+    isSalesperson,
+    isSalesTeam,
+    isTechnicalPerson,
     isTechnicalHead,
-    isMarketing,
+    isTechnicalTeam,
+    isMarketingTeam,
     isSalesUser,
     isTelephonyAgent,
     getUserRole,
