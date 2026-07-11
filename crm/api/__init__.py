@@ -68,8 +68,19 @@ def check_app_permission():
 	if "FCRM" not in allowed_modules:
 		return False
 
+	# Stock CRM roles plus the Precious Alloys business roles — the tech team needs the
+	# CRM to give their Technical Response, and CEO / Marketing have their own dashboards.
+	allowed_roles = [
+		"System Manager",
+		"Sales User",
+		"Sales Manager",
+		"CEO",
+		"Technical Head",
+		"Technical Person",
+		"Marketing Team",
+	]
 	roles = frappe.get_roles()
-	if any(role in ["System Manager", "Sales User", "Sales Manager"] for role in roles):
+	if any(role in allowed_roles for role in roles):
 		return True
 
 	return False

@@ -3,17 +3,27 @@ import frappe
 
 @frappe.whitelist()
 def get_previous_order_items(deal):
-	"""Item codes previously ordered by the deal's organization, for prefilling
-	a new Quotation (one row per item, quantity left for the user to fill)."""
-	organization = frappe.db.get_value("CRM Deal", deal, "organization")
-	if not organization:
-		return []
+	"""Item codes to prefill a new Quotation created from this deal: the technical
+	team's recommended item (from the Tech Assignment stage) first, then any items the
+	deal's organization previously ordered. One row per item, quantity left blank."""
+	item_codes = []
 
-	return frappe.get_all(
-		"CRM Previous Order Items",
-		filters={"parent": organization, "parenttype": "CRM Organization"},
-		pluck="item_code",
-	)
+	recommended = frappe.db.get_value("CRM Deal", deal, "recommended_item_code")
+	if recommended:
+		item_codes.append(recommended)
+
+	organization = frappe.db.get_value("CRM Deal", deal, "organization")
+	if organization:
+		previous = frappe.get_all(
+			"CRM Previous Order Items",
+			filters={"parent": organization, "parenttype": "CRM Organization"},
+			pluck="item_code",
+		)
+		for code in previous:
+			if code and code not in item_codes:
+				item_codes.append(code)
+
+	return item_codes
 
 
 @frappe.whitelist()

@@ -1,9 +1,16 @@
 <template>
-  <StageFormDialog v-model="show" :statusLabel="statusLabel" :subtitle="subtitle">
+  <StageFormDialog
+    v-model="show"
+    :statusLabel="statusLabel"
+    :subtitle="subtitle"
+    :steps="steps"
+  >
+    <template #default="{ step }">
+    <div v-show="step === 0">
     <StageCallout theme="green" icon="check" class="mb-3">
       {{
         __(
-          'Qualifies the commercial opportunity. Trial decision is made here. On save, the Tech team is auto-assigned by Product Category × Region and the waiting-time clock starts.',
+          'Qualify the commercial opportunity — decision maker, criteria, volume and value. The trial decision & tech assignment come next.',
         )
       }}
     </StageCallout>
@@ -52,12 +59,6 @@
       <div v-if="errors.criteria" class="mt-1 text-xs text-ink-red-3">
         {{ errors.criteria }}
       </div>
-      <div class="mb-3.5" />
-      <FieldCheckbox
-        :label="__('Trial Required Before Decision')"
-        :checked="trialBeforeDecision"
-        @change="trialBeforeDecision = !trialBeforeDecision"
-      />
       <div class="my-3.5 h-px bg-outline-gray-2" />
       <FieldGrid :cols="2">
         <FieldSelect
@@ -106,6 +107,16 @@
         />
       </FieldGrid>
     </StageSection>
+    </div>
+
+    <div v-show="step === 1">
+    <StageCallout theme="blue" icon="beaker" class="mb-3">
+      {{
+        __(
+          'Make the trial decision and assign the tech team. On save, the team is auto-assigned by Product Category × Region and the waiting-time clock starts.',
+        )
+      }}
+    </StageCallout>
 
     <StageSection :title="__('Technical Assignment')" icon="beaker">
       <FieldGrid :cols="2">
@@ -145,11 +156,26 @@
         <FieldText v-model="assignNotes" :label="__('Assignment Notes')" />
       </FieldGrid>
     </StageSection>
+    </div>
+    </template>
 
-    <template #actions>
-      <div class="flex items-center justify-between gap-2">
-        <Button :label="__('Save Draft')" @click="saveDraft" />
+    <template #actions="{ step, next, back, isLast }">
+      <div class="flex w-full items-center gap-2">
+        <Button v-if="step === 0" :label="__('Save Draft')" @click="saveDraft" />
+        <Button v-else :label="__('Back')" @click="back">
+          <template #prefix><StageIcon name="arrowLeft" class="h-4 w-4" /></template>
+        </Button>
+        <span class="flex-1" />
         <Button
+          v-if="!isLast"
+          variant="solid"
+          :label="__('Next: Technical Assignment')"
+          @click="next"
+        >
+          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
+        </Button>
+        <Button
+          v-else
           variant="solid"
           :label="__('Assign & Notify Tech Team')"
           :loading="assigning"
@@ -185,10 +211,15 @@ const props = defineProps({
 const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save'])
 
+// wizard steps: commercial qualification first, technical assignment last
+const steps = [
+  { label: __('Commercial Qualification') },
+  { label: __('Technical Assignment') },
+]
+
 const oppType = ref('')
 const dmInvolved = ref('')
 const criteria = ref([])
-const trialBeforeDecision = ref(false)
 const timeline = ref('')
 const volume = ref('')
 const volumeUom = ref('')
@@ -265,7 +296,6 @@ onMounted(() => {
   oppType.value = d.opportunity_type || 'New Business'
   dmInvolved.value = d.decision_maker_involved || ''
   criteria.value = CRITERIA_FIELDS.filter((c) => d[c.key]).map((c) => c.label)
-  trialBeforeDecision.value = !!d.trial_required_before_decision
   timeline.value = d.decision_timeline || ''
   volume.value = d.expected_monthly_volume ? String(d.expected_monthly_volume) : ''
   volumeUom.value = d.expected_monthly_volume_uom || ''
@@ -288,7 +318,6 @@ function buildValues() {
   const values = {
     opportunity_type: oppType.value || null,
     decision_maker_involved: dmInvolved.value || null,
-    trial_required_before_decision: trialBeforeDecision.value ? 1 : 0,
     decision_timeline: timeline.value || null,
     expected_monthly_volume: parseFloat(volume.value) || 0,
     expected_monthly_volume_uom: volumeUom.value || null,
@@ -371,13 +400,11 @@ async function assignAndNotify() {
     assigning.value = false
   }
 
-  // No trial required → skip the trial/evaluation stages and go straight to
-  // Evaluation Completed. Otherwise advance to the next stage as usual.
-  emit('save', {
-    values,
-    advance: true,
-    status: trialRequired.value === 'y' ? undefined : 'Evaluation Completed',
-  })
+  // Every deal advances to Tech Assignment next, where the tech team recommends a
+  // product. The trial / no-trial branch is applied there (trial → Technical
+  // Evaluation, no trial → straight to the quotation flow). Emit the explicit target
+  // so the move never depends on the cached status order.
+  emit('save', { values, advance: true, status: 'Tech Assignment' })
   show.value = false
 }
 </script>

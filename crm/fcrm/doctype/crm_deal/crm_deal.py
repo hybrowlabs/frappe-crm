@@ -29,7 +29,7 @@ STAGE_GATES = [
 		],
 	},
 	{
-		"status": "Demo/Making",
+		"status": "Tech Assignment",
 		"step": "Initiate Trial / Qualify Opportunity",
 		"fields": [
 			("opportunity_type", "Opportunity Type"),
@@ -39,6 +39,14 @@ STAGE_GATES = [
 			("deal_value", "Deal Value"),
 			("forecast_category", "Forecast Category"),
 			("technical_person", "Technical Person"),
+		],
+	},
+	{
+		"status": "Demo/Making",
+		"step": "Technical Response",
+		"fields": [
+			("recommended_item_code", "Recommended Item Code"),
+			("application_notes", "Application Notes"),
 		],
 	},
 	{

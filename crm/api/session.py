@@ -1,7 +1,17 @@
 import frappe
 from frappe import _
 
-CRM_ALLOWED_ROLES = ["System Manager", "Sales Manager", "Sales User"]
+# Stock CRM roles plus the Precious Alloys business roles. The tech team, CEO and
+# Marketing need CRM access for their stage actions and role dashboards.
+CRM_ALLOWED_ROLES = [
+	"System Manager",
+	"Sales Manager",
+	"Sales User",
+	"CEO",
+	"Technical Head",
+	"Technical Person",
+	"Marketing Team",
+]
 
 
 def get_session_role_flags():
@@ -67,7 +77,12 @@ def get_users():
 		user.is_telephony_agent = frappe.db.exists("CRM Telephony Agent", {"user": user.name})
 		user.language = user.language or system_language
 
-		if user.role in ("System Manager", "Sales Manager", "Sales User"):
+		# Sales roles collapse into user.role; the Precious Alloys roles don't, so match
+		# on the full role list too — otherwise the tech team / CEO / Marketing wouldn't
+		# be recognised as CRM users and would be locked out of the app.
+		if user.role in ("System Manager", "Sales Manager", "Sales User") or set(
+			user.roles
+		).intersection(CRM_ALLOWED_ROLES):
 			crm_users.append(user)
 
 	if not session_roles["is_system_manager"]:

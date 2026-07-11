@@ -321,6 +321,23 @@
     :deal="doc"
     @save="saveRequirements"
   />
+  <TechnicalResponseModal
+    v-if="showTechnicalResponseModal && isTechnicalTeam()"
+    v-model="showTechnicalResponseModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @save="saveRequirements"
+    @done="reloadDeal"
+  />
+  <ReviewEscalationModal
+    v-if="showReviewEscalationModal && isSalesManager()"
+    v-model="showReviewEscalationModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @done="reloadDeal"
+  />
   <RecordEvaluationModal
     v-if="showRecordEvaluationModal && isTechnicalPerson()"
     v-model="showRecordEvaluationModal"
@@ -410,6 +427,8 @@ import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsModal.vue'
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
+import TechnicalResponseModal from '@/components/Modals/TechnicalResponseModal.vue'
+import ReviewEscalationModal from '@/components/Modals/ReviewEscalationModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
 import ApproveEvaluationModal from '@/components/Modals/ApproveEvaluationModal.vue'
 import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
@@ -421,6 +440,7 @@ import QuotationsModal from '@/components/Modals/QuotationsModal.vue'
 import PreQuotationModal from '@/components/Modals/PreQuotationModal.vue'
 import PackageIcon from '@/components/Icons/PackageIcon.vue'
 import BeakerIcon from '@/components/Icons/BeakerIcon.vue'
+import AlertIcon from '@/components/Icons/AlertIcon.vue'
 import HeadphonesIcon from '@/components/Icons/HeadphonesIcon.vue'
 import RupeeIcon from '@/components/Icons/RupeeIcon.vue'
 import CheckIcon from '@/components/Icons/CheckIcon.vue'
@@ -460,7 +480,13 @@ import { useRoute, useRouter } from 'vue-router'
 const { brand } = getSettings()
 const { $dialog, $socket } = globalStore()
 const { statusOptions, getDealStatus, dealStatuses } = statusesStore()
-const { isManager, isSalesTeam, isTechnicalPerson } = usersStore()
+const {
+  isManager,
+  isSalesTeam,
+  isSalesManager,
+  isTechnicalPerson,
+  isTechnicalTeam,
+} = usersStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const route = useRoute()
@@ -552,16 +578,33 @@ watch(
 const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
   Qualification: { label: __('Initiate Trial'), icon: BeakerIcon },
+  'Tech Assignment': { label: __('Technical Response'), icon: BeakerIcon },
   'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
 }
 
+// When the tech team flags a deal Not Suitable, it stays in Tech Assignment for the
+// sales manager to review — the header CTA switches to the escalation review.
+const isEscalationReview = computed(
+  () => doc.value.status === 'Tech Assignment' && !!doc.value.not_suitable,
+)
+
 const stageCta = computed(() => {
   const status = doc.value.status
   if (!status) return null
+  // Sales-manager escalation review takes over the Tech Assignment CTA when flagged.
+  if (isEscalationReview.value) {
+    return isSalesManager()
+      ? { label: __('Review Escalation'), icon: AlertIcon }
+      : null
+  }
   const cta = STAGE_CTA[status] || null
   if (!cta) return null
+  // Technical Response is a technical-team action — visible to the tech team only.
+  if (status === 'Tech Assignment') {
+    return isTechnicalTeam() ? cta : null
+  }
   // Record Evaluation is a technical-team action — visible to Technical Person only.
   if (['Demo/Making', 'Retrial'].includes(status)) {
     return isTechnicalPerson() ? cta : null
@@ -586,6 +629,7 @@ const dealValueLabel = computed(() =>
 const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualification: 'showInitiateTrialModal',
+  'Tech Assignment': 'showTechnicalResponseModal',
   'Demo/Making': 'showRecordEvaluationModal',
   Retrial: 'showRecordEvaluationModal',
   'Proposal/Quotation': 'showProposalStageModal',
@@ -593,6 +637,8 @@ const STAGE_MODALS = {
 
 const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
+const showTechnicalResponseModal = ref(false)
+const showReviewEscalationModal = ref(false)
 const showRecordEvaluationModal = ref(false)
 const showApproveEvaluationModal = ref(false)
 
@@ -642,6 +688,7 @@ const showPreQuotationModal = ref(false)
 const stageModals = {
   showCaptureRequirementsModal,
   showInitiateTrialModal,
+  showTechnicalResponseModal,
   showRecordEvaluationModal,
   showRetrialStageModal,
   showProposalStageModal,
@@ -651,6 +698,11 @@ const stageModals = {
 function onStageAction() {
   let status = doc.value.status
 
+  // A Not-Suitable escalation is resolved by the sales manager, not the tech team.
+  if (isEscalationReview.value) {
+    if (isSalesManager()) showReviewEscalationModal.value = true
+    return
+  }
 
   // Quotations live in ERPNext — jump straight to the Desk create page,
   // prefilling the custom_deal link back to this deal and the linked customer.
@@ -702,6 +754,14 @@ function saveRequirements({ values, advance, status }) {
       toast.error(err.messages?.[0] || __('Error saving requirements'))
     },
   })
+}
+
+// Some stage actions (request more info, mark not suitable, resolve escalation) are
+// persisted server-side by their own whitelisted method — just refresh the deal so the
+// header CTA and status reflect the change without re-saving the local doc.
+function reloadDeal() {
+  document.reload()
+  reload.value = true
 }
 
 const breadcrumbs = computed(() => {
@@ -991,9 +1051,15 @@ async function triggerStatusChange(value) {
     // → sales team). For anyone without access, skip the (gated) stage form and fall
     // through to the backend status change, which advances when the stage data is
     // already filled and errors when it isn't.
-    const canOpenStageForm = ['Demo/Making', 'Retrial'].includes(current)
-      ? isTechnicalPerson()
-      : isSalesTeam()
+    let canOpenStageForm
+    if (current === 'Tech Assignment') {
+      // A flagged deal awaits the sales manager's escalation review, not a forward move.
+      canOpenStageForm = !doc.value.not_suitable && isTechnicalTeam()
+    } else if (['Demo/Making', 'Retrial'].includes(current)) {
+      canOpenStageForm = isTechnicalPerson()
+    } else {
+      canOpenStageForm = isSalesTeam()
+    }
     if (current !== 'Proposal/Quotation' && canOpenStageForm) {
       const modal = STAGE_MODALS[current]
       if (modal && stageModals[modal]) {

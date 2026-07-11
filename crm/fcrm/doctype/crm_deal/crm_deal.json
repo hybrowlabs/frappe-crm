@@ -69,6 +69,16 @@
   "column_break_trial_3",
   "assigned_tech_member",
   "assignment_notes",
+  "technical_response_section",
+  "technical_response",
+  "recommended_item_code",
+  "trial_quantity",
+  "column_break_techresp_1",
+  "application_notes",
+  "info_questions",
+  "not_suitable",
+  "not_suitable_reason",
+  "not_suitable_notes",
   "evaluation_tab",
   "trial_logistics_section",
   "evaluation_start",
@@ -810,6 +820,58 @@
    "fieldname": "assignment_notes",
    "fieldtype": "Small Text",
    "label": "Assignment Notes"
+  },
+  {
+   "fieldname": "technical_response_section",
+   "fieldtype": "Section Break",
+   "label": "Technical Response"
+  },
+  {
+   "fieldname": "technical_response",
+   "fieldtype": "Select",
+   "label": "Technical Response",
+   "options": "\nRecommend & Approve\nRequest More Info\nNot Suitable"
+  },
+  {
+   "fieldname": "recommended_item_code",
+   "fieldtype": "Data",
+   "label": "Recommended Item Code"
+  },
+  {
+   "fieldname": "trial_quantity",
+   "fieldtype": "Data",
+   "label": "Trial Quantity"
+  },
+  {
+   "fieldname": "column_break_techresp_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "application_notes",
+   "fieldtype": "Small Text",
+   "label": "Application Notes"
+  },
+  {
+   "fieldname": "info_questions",
+   "fieldtype": "Small Text",
+   "label": "Questions for Salesperson"
+  },
+  {
+   "default": "0",
+   "fieldname": "not_suitable",
+   "fieldtype": "Check",
+   "label": "Not Suitable"
+  },
+  {
+   "fieldname": "not_suitable_reason",
+   "fieldtype": "Select",
+   "label": "Not Suitable — Reason",
+   "options": "\nNo matching product for required spec\nSpec outside our range\nVolume too low to serve\nBetter served by alternative product\nTechnically not feasible"
+  },
+  {
+   "fieldname": "not_suitable_notes",
+   "fieldtype": "Small Text",
+   "label": "Not Suitable — Comments"
   },
   {
    "fieldname": "evaluation_tab",
