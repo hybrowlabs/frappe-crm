@@ -46,7 +46,7 @@
           >
             <FieldCheckbox
               :checked="selected.includes(it.item_code)"
-              @change="toggleItem(it.item_code)"
+              @change="(checked) => setItemSelected(it.item_code, checked)"
             />
             <div class="leading-tight">
               <div class="font-medium">{{ it.item_name }}</div>
@@ -102,10 +102,10 @@ createResource({
   },
 })
 
-function toggleItem(itemCode) {
+function setItemSelected(itemCode, checked) {
   const i = selected.value.indexOf(itemCode)
-  if (i === -1) selected.value.push(itemCode)
-  else selected.value.splice(i, 1)
+  if (checked && i === -1) selected.value.push(itemCode)
+  else if (!checked && i !== -1) selected.value.splice(i, 1)
 }
 
 function selectAll() {

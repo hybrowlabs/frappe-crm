@@ -32,13 +32,43 @@ def get_order_items(customer):
 
 @frappe.whitelist()
 def get_ordered_items(organization: str) -> dict:
-	"""Per-item purchase aggregates (monthly/quarterly volume, last purchase, totals)."""
+	"""Per-item purchase aggregates plus quote-created catalogue rows.
+
+	Submitted Sales Orders are authoritative for quantity/value. CRM Previous
+	Order Items keeps quote-created items visible at quantity 0 until an order is
+	submitted for them.
+	"""
+	previous_items = frappe.get_all(
+		"CRM Previous Order Items",
+		filters={"parent": organization, "parenttype": "CRM Organization"},
+		fields=["item_code", "quantity"],
+	)
 	items = get_order_items(get_customer(organization))
 	today = getdate()
 	month_ago = add_days(today, -30)
 	quarter_ago = add_days(today, -90)
 
 	agg = {}
+	for previous in previous_items:
+		if not previous.item_code:
+			continue
+		item = frappe.db.get_value(
+			"Item",
+			previous.item_code,
+			["item_name", "stock_uom"],
+			as_dict=True,
+		) or {}
+		agg[previous.item_code] = {
+			"item_code": previous.item_code,
+			"item_name": item.get("item_name") or previous.item_code,
+			"uom": item.get("stock_uom"),
+			"monthly_vol": 0,
+			"quarterly_vol": 0,
+			"total_qty": 0,
+			"total_purchase": 0,
+			"last_purchase": None,
+		}
+
 	for it in items:
 		row = agg.setdefault(
 			it.item_code,

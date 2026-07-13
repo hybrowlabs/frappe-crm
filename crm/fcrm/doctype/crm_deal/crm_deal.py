@@ -83,74 +83,121 @@ class CRMDeal(Document):
 
 	if TYPE_CHECKING:
 		from crm.fcrm.doctype.crm_contacts.crm_contacts import CRMContacts
+		from crm.fcrm.doctype.crm_image_list.crm_image_list import CRMImageList
+		from crm.fcrm.doctype.crm_operation_impact_select.crm_operation_impact_select import CRMOperationImpactSelect
 		from crm.fcrm.doctype.crm_pain_point_select.crm_pain_point_select import CRMPainPointSelect
-		from crm.fcrm.doctype.crm_products.crm_products import CRMProducts
 		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import CRMRollingResponseTime
 		from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import CRMStatusChangeLog
 		from frappe.types import DF
 
 		annual_revenue: DF.Currency
+		application_notes: DF.SmallText | None
+		assign_to_tech_team: DF.Check
+		assigned_tech_member: DF.Link | None
+		assignment_notes: DF.SmallText | None
+		billing_address: DF.Link | None
+		business_impact: DF.Literal["", "Low", "Medium", "High", "Strategic"]
+		business_priority: DF.Literal["", "P1", "P2", "P3"]
+		close_timeline: DF.Literal["", "Immediate (<1 month)", "Short (<2 months)", "Medium (3-6 months)"]
 		closed_date: DF.Date | None
 		communication_status: DF.Link | None
 		contact: DF.Link | None
 		contacts: DF.Table[CRMContacts]
+		conversion_reason: DF.Literal["", "New product or application \u2014 first time enquiry", "Existing customer wants to try a different product", "Problem identified \u2014 needs technical recommendation", "Trial requested by customer"]
 		credit_check: DF.Check
 		currency: DF.Link | None
+		current_monthly_spend: DF.Currency
+		current_monthly_volume: DF.Float
 		current_supplier: DF.Literal["", "Indian Supplier", "Imported", "In-house", "None / New"]
+		customer_feedback: DF.SmallText | None
+		customer_validation_received: DF.Check
+		dc_delivery_lead_time: DF.Check
+		dc_performance_colour: DF.Check
+		dc_performance_metal_loss: DF.Check
+		dc_price_competitive: DF.Check
 		deal_owner: DF.Link | None
 		deal_value: DF.Currency
 		decision_maker: DF.Link | None
-		delayed_order_fulfillment: DF.Check
+		decision_maker_involved: DF.Literal["", "Yes \u2014 Strong Deal", "Partial", "No"]
+		decision_timeline: DF.Literal["", "Immediate (<1 month)", "Short (<2 months)", "Medium (3-6 months)", "Long (6 months+)"]
 		email: DF.Data | None
+		evaluation_end: DF.Date | None
+		evaluation_observations: DF.SmallText | None
+		evaluation_photos: DF.Table[CRMImageList]
+		evaluation_start: DF.Date | None
 		exchange_rate: DF.Float
 		expected_closure_date: DF.Date | None
 		expected_deal_value: DF.Currency
+		expected_monthly_revenue: DF.Currency
+		expected_monthly_volume: DF.Float
+		expected_monthly_volume_uom: DF.Link | None
 		first_name: DF.Data | None
 		first_responded_on: DF.Datetime | None
 		first_response_time: DF.Duration | None
+		forecast_category: DF.Literal["", "Pipeline", "Best Case", "Commit", "Omitted"]
+		freight_terms: DF.Literal["", "To Pay", "Charged", "Paid Upfront"]
 		gender: DF.Link | None
-		high_rework_cost: DF.Check
-		increased_scrap_and_metal_loss: DF.Check
+		gstin: DF.Data | None
+		impact_notes: DF.SmallText | None
 		industry: DF.Link | None
+		info_questions: DF.SmallText | None
 		job_title: DF.Data | None
 		last_name: DF.Data | None
 		last_responded_on: DF.Datetime | None
 		last_response_time: DF.Duration | None
 		lead: DF.Link | None
 		lead_name: DF.Data | None
-		lost_notes: DF.Text | None
+		legal_name: DF.Data | None
+		lost_notes: DF.SmallText | None
 		lost_reason: DF.Link | None
+		manager_reviewed: DF.Check
 		mobile_no: DF.Data | None
+		monthly_volume_uplift: DF.Float
 		naming_series: DF.Literal["CRM-DEAL-.YYYY.-"]
-		net_total: DF.Currency
 		next_step: DF.Data | None
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
-		organization: DF.Link | None
+		not_suitable: DF.Check
+		not_suitable_notes: DF.SmallText | None
+		not_suitable_reason: DF.Literal["", "No matching product for required spec", "Spec outside our range", "Volume too low to serve", "Better served by alternative product", "Technically not feasible"]
+		operational_impacts: DF.TableMultiSelect[CRMOperationImpactSelect]
+		opportunity_type: DF.Literal["", "New Business", "New Product", "Expansion", "Win-back"]
+		organization: DF.Link
 		organization_name: DF.Data | None
 		other_operational_impact: DF.Data | None
 		other_pain_point: DF.Data | None
 		pain_frequency: DF.Literal["", "Every Production Cycle", "Weekly", "Monthly", "Occasional"]
 		pain_points: DF.TableMultiSelect[CRMPainPointSelect]
 		pain_severity: DF.Literal["", "Critical", "High", "Medium", "Low"]
+		performance_baseline: DF.Data | None
+		performance_trial: DF.Data | None
 		phone: DF.Data | None
 		probability: DF.Percent
 		product_category: DF.Link | None
 		product_sub_category: DF.Link | None
 		product_variant: DF.Link | None
-		production_downtime_due_to_casting_failure: DF.Check
-		products: DF.Table[CRMProducts]
+		recommended_item_code: DF.Data | None
+		repeat_deal: DF.Check
 		requirement_note: DF.SmallText | None
 		response_by: DF.Datetime | None
 		rolling_responses: DF.Table[CRMRollingResponseTime]
+		sales_manager_approval_required: DF.Check
+		sales_manager_approved: DF.Check
 		salutation: DF.Link | None
+		shipping_address: DF.Link | None
 		sla: DF.Link | None
 		sla_creation: DF.Datetime | None
 		sla_status: DF.Literal["", "First Response Due", "Rolling Response Due", "Failed", "Fulfilled"]
 		source: DF.Link | None
 		status: DF.Link
 		status_change_log: DF.Table[CRMStatusChangeLog]
-		territory: DF.Link | None
-		total: DF.Currency
+		technical_person: DF.Link | None
+		technical_response: DF.Literal["", "Recommend & Approve", "Request More Info", "Not Suitable"]
+		territory: DF.Link
+		testimonial_captured: DF.Check
+		trial_outcome: DF.Literal["", "Successful", "Partial", "Unsuccessful"]
+		trial_quantity: DF.Data | None
+		trial_required: DF.Check
+		trial_required_before_decision: DF.Check
 		website: DF.Data | None
 	# end: auto-generated types
 

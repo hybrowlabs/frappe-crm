@@ -108,8 +108,6 @@
   "trial_outcome",
   "sales_manager_approval_required",
   "sales_manager_approved",
-  "lost_reason",
-  "lost_notes",
   "quotation_tab",
   "legal_name",
   "gstin",
@@ -144,12 +142,6 @@
   "mobile_no",
   "phone",
   "gender",
-  "products_tab",
-  "products",
-  "section_break_ccbj",
-  "total",
-  "column_break_udbq",
-  "net_total",
   "sla_tab",
   "sla",
   "sla_creation",
@@ -459,40 +451,6 @@
    "options": "Currency"
   },
   {
-   "fieldname": "products_tab",
-   "fieldtype": "Tab Break",
-   "label": "Products"
-  },
-  {
-   "fieldname": "products",
-   "fieldtype": "Table",
-   "label": "Products",
-   "options": "CRM Products"
-  },
-  {
-   "fieldname": "section_break_ccbj",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_udbq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total",
-   "fieldtype": "Currency",
-   "label": "Total",
-   "options": "currency",
-   "read_only": 1
-  },
-  {
-   "description": "Total after discount",
-   "fieldname": "net_total",
-   "fieldtype": "Currency",
-   "label": "Net Total",
-   "options": "currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_jgpm",
    "fieldtype": "Section Break"
   },
@@ -505,18 +463,6 @@
   {
    "fieldname": "column_break_kpxa",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "lost_reason",
-   "fieldtype": "Link",
-   "label": "Lost Reason",
-   "options": "CRM Lost Reason"
-  },
-  {
-   "fieldname": "lost_notes",
-   "fieldtype": "Text",
-   "label": "Lost Notes",
-   "mandatory_depends_on": "eval: doc.lost_reason == \"Other\""
   },
   {
    "default": "1",
@@ -545,7 +491,7 @@
    "fieldname": "conversion_reason",
    "fieldtype": "Select",
    "label": "Conversion Reason",
-   "options": "\nNew product or application — first time enquiry\nExisting customer wants to try a different product\nProblem identified — needs technical recommendation\nTrial requested by customer"
+   "options": "\nNew product or application \u2014 first time enquiry\nExisting customer wants to try a different product\nProblem identified \u2014 needs technical recommendation\nTrial requested by customer"
   },
   {
    "fieldname": "close_timeline",
@@ -720,7 +666,7 @@
    "fieldname": "decision_maker_involved",
    "fieldtype": "Select",
    "label": "Decision Maker Involved?",
-   "options": "\nYes — Strong Deal\nPartial\nNo"
+   "options": "\nYes \u2014 Strong Deal\nPartial\nNo"
   },
   {
    "fieldname": "column_break_trial_1",
@@ -752,13 +698,13 @@
    "default": "0",
    "fieldname": "dc_performance_metal_loss",
    "fieldtype": "Check",
-   "label": "Performance — Metal Loss"
+   "label": "Performance \u2014 Metal Loss"
   },
   {
    "default": "0",
    "fieldname": "dc_performance_colour",
    "fieldtype": "Check",
-   "label": "Performance — Colour"
+   "label": "Performance \u2014 Colour"
   },
   {
    "fieldname": "column_break_dc",
@@ -768,13 +714,13 @@
    "default": "0",
    "fieldname": "dc_price_competitive",
    "fieldtype": "Check",
-   "label": "Price — Competitive"
+   "label": "Price \u2014 Competitive"
   },
   {
    "default": "0",
    "fieldname": "dc_delivery_lead_time",
    "fieldtype": "Check",
-   "label": "Delivery — Lead Time"
+   "label": "Delivery \u2014 Lead Time"
   },
   {
    "fieldname": "current_monthly_volume",
@@ -923,13 +869,13 @@
   {
    "fieldname": "not_suitable_reason",
    "fieldtype": "Select",
-   "label": "Not Suitable — Reason",
+   "label": "Not Suitable \u2014 Reason",
    "options": "\nNo matching product for required spec\nSpec outside our range\nVolume too low to serve\nBetter served by alternative product\nTechnically not feasible"
   },
   {
    "fieldname": "not_suitable_notes",
    "fieldtype": "Small Text",
-   "label": "Not Suitable — Comments"
+   "label": "Not Suitable \u2014 Comments"
   },
   {
    "fieldname": "evaluation_tab",
@@ -974,12 +920,12 @@
   {
    "fieldname": "performance_baseline",
    "fieldtype": "Data",
-   "label": "Performance — Baseline"
+   "label": "Performance \u2014 Baseline"
   },
   {
    "fieldname": "performance_trial",
    "fieldtype": "Data",
-   "label": "Performance — Trial"
+   "label": "Performance \u2014 Trial"
   },
   {
    "fieldname": "customer_feedback",
@@ -1085,7 +1031,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-10 18:14:41.952339",
+ "modified": "2026-07-13 21:49:58.420239",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

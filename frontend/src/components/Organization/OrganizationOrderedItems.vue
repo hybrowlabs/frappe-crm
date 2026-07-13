@@ -22,9 +22,10 @@
         <thead>
           <tr class="border-b border-outline-gray-1 text-xs text-ink-gray-5">
             <th class="w-8 py-2 pr-2">
-              <FormControl
+              <input
                 type="checkbox"
-                :modelValue="allSelected"
+                :checked="allSelected"
+                class="h-4 w-4 cursor-pointer rounded-sm border-outline-gray-3 accent-blue-500"
                 @change="toggleAll($event.target.checked)"
               />
             </th>
@@ -43,10 +44,11 @@
             class="border-b border-outline-gray-1"
           >
             <td class="pr-2">
-              <FormControl
+              <input
                 type="checkbox"
-                :modelValue="selected.includes(it.item_code)"
-                @change="toggleItem(it.item_code)"
+                :checked="selected.includes(it.item_code)"
+                class="h-4 w-4 cursor-pointer rounded-sm border-outline-gray-3 accent-blue-500"
+                @change="setItemSelected(it.item_code, $event.target.checked)"
               />
             </td>
             <td class="py-2.5 pr-3">
@@ -100,7 +102,7 @@
 
 <script setup>
 import { formatDate, timeAgo } from '@/utils'
-import { Button, FormControl, createResource, toast } from 'frappe-ui'
+import { Button, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
 const props = defineProps({
@@ -121,10 +123,10 @@ const allSelected = computed(() => {
   return items.length > 0 && selected.value.length === items.length
 })
 
-function toggleItem(itemCode) {
+function setItemSelected(itemCode, checked) {
   const i = selected.value.indexOf(itemCode)
-  if (i === -1) selected.value.push(itemCode)
-  else selected.value.splice(i, 1)
+  if (checked && i === -1) selected.value.push(itemCode)
+  else if (!checked && i !== -1) selected.value.splice(i, 1)
 }
 
 function toggleAll(checked) {
