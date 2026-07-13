@@ -37,6 +37,8 @@ STAGE_GATES = [
 			("decision_timeline", "Decision Timeline"),
 			("expected_monthly_volume", "Expected Monthly Volume"),
 			("deal_value", "Deal Value"),
+			("business_impact", "Business Impact"),
+			("business_priority", "Business Priority"),
 			("forecast_category", "Forecast Category"),
 			("technical_person", "Technical Person"),
 		],
@@ -157,6 +159,7 @@ class CRMDeal(Document):
 
 	def validate(self):
 		self.validate_status()
+		self.set_business_impact_metrics()
 		self.set_primary_contact()
 		self.set_primary_email_mobile_no()
 		if not self.is_new() and self.has_value_changed("deal_owner") and self.deal_owner:
@@ -446,6 +449,11 @@ class CRMDeal(Document):
 				frappe.throw(_("Expected deal value is required."), frappe.MandatoryError)
 			if not self.expected_closure_date:
 				frappe.throw(_("Expected closure date is required."), frappe.MandatoryError)
+
+	def set_business_impact_metrics(self):
+		expected_volume = self.get("expected_monthly_volume") or 0
+		current_volume = self.get("current_monthly_volume") or 0
+		self.monthly_volume_uplift = expected_volume - current_volume
 
 	def validate_lost_reason(self):
 		"""

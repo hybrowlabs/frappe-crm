@@ -107,6 +107,7 @@
         />
       </FieldGrid>
     </StageSection>
+
     </div>
 
     <div v-show="step === 1">
@@ -117,6 +118,52 @@
         )
       }}
     </StageCallout>
+
+    <StageSection :title="__('Business Impact')" icon="trendingUp">
+      <FieldGrid :cols="2">
+        <FieldText
+          v-model="currentVolume"
+          type="number"
+          :label="__('Current Monthly Volume')"
+          :help="__('Use 0 for new business')"
+        />
+        <FieldText
+          :modelValue="volumeUplift"
+          type="number"
+          :label="__('Monthly Volume Uplift')"
+          readonly
+        />
+        <FieldText
+          v-model="currentSpend"
+          type="number"
+          :label="__('Current Monthly Spend (INR)')"
+        />
+        <FieldText
+          v-model="expectedRevenue"
+          type="number"
+          :label="__('Expected Monthly Revenue (INR)')"
+        />
+        <FieldSelect
+          v-model="businessImpact"
+          :label="__('Business Impact')"
+          required
+          :options="businessImpactOptions"
+          :error="errors.businessImpact"
+        />
+        <FieldSelect
+          v-model="businessPriority"
+          :label="__('Business Priority')"
+          required
+          :options="businessPriorityOptions"
+          :error="errors.businessPriority"
+        />
+      </FieldGrid>
+      <FieldText
+        v-model="impactNotes"
+        class="mt-1"
+        :label="__('Impact Notes')"
+      />
+    </StageSection>
 
     <StageSection :title="__('Technical Assignment')" icon="beaker">
       <FieldGrid :cols="2">
@@ -214,7 +261,7 @@ const emit = defineEmits(['save'])
 // wizard steps: commercial qualification first, technical assignment last
 const steps = [
   { label: __('Commercial Qualification') },
-  { label: __('Technical Assignment') },
+  { label: __('Impact & Technical Assignment') },
 ]
 
 const oppType = ref('')
@@ -224,6 +271,12 @@ const timeline = ref('')
 const volume = ref('')
 const volumeUom = ref('')
 const dealValue = ref('')
+const currentVolume = ref('')
+const currentSpend = ref('')
+const expectedRevenue = ref('')
+const businessImpact = ref('')
+const businessPriority = ref('')
+const impactNotes = ref('')
 const forecast = ref('')
 const trialRequired = ref('y')
 const assignTech = ref('y')
@@ -253,6 +306,8 @@ const timelineOptions = [
   'Long (6 months+)',
 ]
 const forecastOptions = ['Pipeline', 'Best Case', 'Commit', 'Omitted']
+const businessImpactOptions = ['Low', 'Medium', 'High', 'Strategic']
+const businessPriorityOptions = ['P1', 'P2', 'P3']
 const yesNoOptions = [
   { label: __('Yes'), value: 'y' },
   { label: __('No'), value: 'n' },
@@ -279,6 +334,11 @@ const productSummary = computed(() => {
     .filter(Boolean)
     .join(' → ')
 })
+const volumeUplift = computed(() => {
+  const expected = parseFloat(volume.value) || 0
+  const current = parseFloat(currentVolume.value) || 0
+  return String(expected - current)
+})
 
 // Allowed units per product category (UOM master names, seeded via fixture).
 const UOM_BY_CATEGORY = {
@@ -297,9 +357,15 @@ onMounted(() => {
   dmInvolved.value = d.decision_maker_involved || ''
   criteria.value = CRITERIA_FIELDS.filter((c) => d[c.key]).map((c) => c.label)
   timeline.value = d.decision_timeline || ''
+  currentVolume.value = d.current_monthly_volume ? String(d.current_monthly_volume) : ''
   volume.value = d.expected_monthly_volume ? String(d.expected_monthly_volume) : ''
   volumeUom.value = d.expected_monthly_volume_uom || ''
   dealValue.value = d.deal_value ? String(d.deal_value) : ''
+  currentSpend.value = d.current_monthly_spend ? String(d.current_monthly_spend) : ''
+  expectedRevenue.value = d.expected_monthly_revenue ? String(d.expected_monthly_revenue) : ''
+  businessImpact.value = d.business_impact || ''
+  businessPriority.value = d.business_priority || ''
+  impactNotes.value = d.impact_notes || ''
   forecast.value = d.forecast_category || ''
   trialRequired.value = d.trial_required === 0 ? 'n' : 'y'
   assignTech.value = d.assign_to_tech_team === 0 ? 'n' : 'y'
@@ -319,9 +385,15 @@ function buildValues() {
     opportunity_type: oppType.value || null,
     decision_maker_involved: dmInvolved.value || null,
     decision_timeline: timeline.value || null,
+    current_monthly_volume: parseFloat(currentVolume.value) || 0,
     expected_monthly_volume: parseFloat(volume.value) || 0,
     expected_monthly_volume_uom: volumeUom.value || null,
     deal_value: parseFloat(dealValue.value) || 0,
+    current_monthly_spend: parseFloat(currentSpend.value) || 0,
+    expected_monthly_revenue: parseFloat(expectedRevenue.value) || 0,
+    business_impact: businessImpact.value || null,
+    business_priority: businessPriority.value || null,
+    impact_notes: impactNotes.value || '',
     forecast_category: forecast.value || null,
     trial_required: trialRequired.value === 'y' ? 1 : 0,
     assign_to_tech_team: assignTech.value === 'y' ? 1 : 0,
@@ -350,6 +422,8 @@ const requiredFields = [
   { key: 'volume', label: __('Expected Monthly Volume'), val: () => volume.value },
   { key: 'volumeUom', label: __('Unit'), val: () => volumeUom.value },
   { key: 'dealValue', label: __('Deal Value'), val: () => dealValue.value },
+  { key: 'businessImpact', label: __('Business Impact'), val: () => businessImpact.value },
+  { key: 'businessPriority', label: __('Business Priority'), val: () => businessPriority.value },
   { key: 'forecast', label: __('Forecast Category'), val: () => forecast.value },
   { key: 'evalStart', label: __('Trial Start Date'), val: () => trialRequired.value !== 'y' || evalStart.value },
 ]

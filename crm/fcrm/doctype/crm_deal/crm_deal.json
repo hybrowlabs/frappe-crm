@@ -59,9 +59,18 @@
   "dc_price_competitive",
   "dc_delivery_lead_time",
   "trial_details_section",
+  "current_monthly_volume",
   "expected_monthly_volume",
   "expected_monthly_volume_uom",
   "column_break_trial_2",
+  "monthly_volume_uplift",
+  "current_monthly_spend",
+  "business_impact_section",
+  "business_impact",
+  "business_priority",
+  "column_break_business_impact",
+  "expected_monthly_revenue",
+  "impact_notes",
   "trial_required_before_decision",
   "trial_required",
   "technical_assignment_section",
@@ -768,6 +777,11 @@
    "label": "Delivery — Lead Time"
   },
   {
+   "fieldname": "current_monthly_volume",
+   "fieldtype": "Float",
+   "label": "Current Monthly Volume"
+  },
+  {
    "fieldname": "expected_monthly_volume",
    "fieldtype": "Float",
    "label": "Expected Monthly Volume"
@@ -781,6 +795,50 @@
   {
    "fieldname": "column_break_trial_2",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monthly_volume_uplift",
+   "fieldtype": "Float",
+   "label": "Monthly Volume Uplift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_monthly_spend",
+   "fieldtype": "Currency",
+   "label": "Current Monthly Spend",
+   "options": "currency"
+  },
+  {
+   "fieldname": "business_impact_section",
+   "fieldtype": "Section Break",
+   "label": "Business Impact"
+  },
+  {
+   "fieldname": "business_impact",
+   "fieldtype": "Select",
+   "label": "Business Impact",
+   "options": "\nLow\nMedium\nHigh\nStrategic"
+  },
+  {
+   "fieldname": "business_priority",
+   "fieldtype": "Select",
+   "label": "Business Priority",
+   "options": "\nP1\nP2\nP3"
+  },
+  {
+   "fieldname": "column_break_business_impact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_monthly_revenue",
+   "fieldtype": "Currency",
+   "label": "Expected Monthly Revenue",
+   "options": "currency"
+  },
+  {
+   "fieldname": "impact_notes",
+   "fieldtype": "Small Text",
+   "label": "Impact Notes"
   },
   {
    "default": "0",
