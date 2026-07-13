@@ -32,74 +32,40 @@ def get_order_items(customer):
 
 @frappe.whitelist()
 def get_ordered_items(organization: str) -> dict:
-	"""Per-item purchase aggregates plus quote-created catalogue rows.
-
-	Submitted Sales Orders are authoritative for quantity/value. CRM Previous
-	Order Items keeps quote-created items visible at quantity 0 until an order is
-	submitted for them.
-	"""
-	previous_items = frappe.get_all(
+	"""Stored ordered-item snapshot for the Organization tab."""
+	rows = frappe.get_all(
 		"CRM Previous Order Items",
 		filters={"parent": organization, "parenttype": "CRM Organization"},
-		fields=["item_code", "quantity"],
+		fields=[
+			"item_code",
+			"item_name",
+			"uom",
+			"monthly_volume",
+			"quarterly_volume",
+			"last_purchase",
+			"total_purchase",
+			"quantity",
+		],
+		order_by="total_purchase desc, item_code asc",
 	)
-	items = get_order_items(get_customer(organization))
-	today = getdate()
-	month_ago = add_days(today, -30)
-	quarter_ago = add_days(today, -90)
 
-	agg = {}
-	for previous in previous_items:
-		if not previous.item_code:
-			continue
-		item = frappe.db.get_value(
-			"Item",
-			previous.item_code,
-			["item_name", "stock_uom"],
-			as_dict=True,
-		) or {}
-		agg[previous.item_code] = {
-			"item_code": previous.item_code,
-			"item_name": item.get("item_name") or previous.item_code,
-			"uom": item.get("stock_uom"),
-			"monthly_vol": 0,
-			"quarterly_vol": 0,
-			"total_qty": 0,
-			"total_purchase": 0,
-			"last_purchase": None,
+	items = [
+		{
+			"item_code": row.item_code,
+			"item_name": row.item_name or row.item_code,
+			"uom": row.uom,
+			"monthly_vol": flt(row.monthly_volume),
+			"quarterly_vol": flt(row.quarterly_volume),
+			"last_purchase": row.last_purchase,
+			"total_purchase": flt(row.total_purchase),
+			"total_qty": flt(row.quantity),
 		}
-
-	for it in items:
-		row = agg.setdefault(
-			it.item_code,
-			{
-				"item_code": it.item_code,
-				"item_name": it.item_name or it.item_code,
-				"uom": it.stock_uom,
-				"monthly_vol": 0,
-				"quarterly_vol": 0,
-				"total_qty": 0,
-				"total_purchase": 0,
-				"last_purchase": None,
-			},
-		)
-		qty = flt(it.qty)
-		row["total_qty"] += qty
-		row["total_purchase"] += flt(it.base_amount)
-		d = getdate(it.date) if it.date else None
-		if d:
-			if row["last_purchase"] is None or d > row["last_purchase"]:
-				row["last_purchase"] = d
-			if d >= month_ago:
-				row["monthly_vol"] += qty
-			if d >= quarter_ago:
-				row["quarterly_vol"] += qty
-
-	rows = sorted(agg.values(), key=lambda r: r["total_purchase"], reverse=True)
+		for row in rows
+	]
 	return {
-		"items": rows,
-		"total_purchase": sum(r["total_purchase"] for r in rows),
-		"count": len(rows),
+		"items": items,
+		"total_purchase": sum(row["total_purchase"] for row in items),
+		"count": len(items),
 	}
 
 

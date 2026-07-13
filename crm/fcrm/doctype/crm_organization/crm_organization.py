@@ -86,8 +86,8 @@ class CRMOrganization(Document):
 
 		totals = get_ordered_items_for_customer(self.get("erpnext_customer"))
 		self.set("previous_order_items", [])
-		for item_code, quantity in totals.items():
-			self.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
+		for total in totals.values():
+			self.append("previous_order_items", total)
 
 	def update_exchange_rate(self):
 		if self.has_value_changed("currency") or not self.exchange_rate:

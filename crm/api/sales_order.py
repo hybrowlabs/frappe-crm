@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import add_days, flt, getdate
 
 
 @frappe.whitelist()
@@ -42,28 +43,72 @@ def get_previous_order_items_for_customer(customer):
 
 
 def get_ordered_items_for_customer(customer):
-	"""Aggregate item_code -> total quantity across all submitted Sales Orders of
-	the given ERPNext customer. Used to (re)build a CRM Organization's previously
-	ordered items. Returns {} if there's no customer or ERPNext/Sales Order isn't
-	available."""
+	"""Build the stored ordered-item snapshot from submitted Sales Orders."""
 	if not customer or not frappe.db.exists("DocType", "Sales Order"):
 		return {}
 
-	orders = frappe.get_all("Sales Order", filters={"customer": customer, "docstatus": 1}, pluck="name")
+	orders = frappe.get_all(
+		"Sales Order",
+		filters={"customer": customer, "docstatus": 1},
+		fields=["name", "transaction_date"],
+	)
 	if not orders:
 		return {}
 
+	date_map = {order.name: order.transaction_date for order in orders}
 	rows = frappe.get_all(
 		"Sales Order Item",
-		filters={"parent": ["in", orders], "parenttype": "Sales Order"},
-		fields=["item_code", "qty"],
+		filters={"parent": ["in", list(date_map)], "parenttype": "Sales Order"},
+		fields=["item_code", "item_name", "qty", "stock_uom", "base_amount", "parent"],
 	)
+	today = getdate()
+	month_ago = add_days(today, -30)
+	quarter_ago = add_days(today, -90)
 	totals = {}
 	for r in rows:
 		if not r.item_code or not r.qty:
 			continue
-		totals[r.item_code] = totals.get(r.item_code, 0) + r.qty
+		row = totals.setdefault(
+			r.item_code,
+			{
+				"item_code": r.item_code,
+				"item_name": r.item_name or r.item_code,
+				"uom": r.stock_uom,
+				"quantity": 0,
+				"monthly_volume": 0,
+				"quarterly_volume": 0,
+				"total_purchase": 0,
+				"last_purchase": None,
+			},
+		)
+		qty = flt(r.qty)
+		row["quantity"] += qty
+		row["total_purchase"] += flt(r.base_amount)
+		d = getdate(date_map.get(r.parent)) if date_map.get(r.parent) else None
+		if d:
+			if row["last_purchase"] is None or d > row["last_purchase"]:
+				row["last_purchase"] = d
+			if d >= month_ago:
+				row["monthly_volume"] += qty
+			if d >= quarter_ago:
+				row["quarterly_volume"] += qty
 	return totals
+
+
+def get_item_snapshot_defaults(item_code):
+	if not item_code:
+		return {}
+	item = frappe.db.get_value("Item", item_code, ["item_name", "stock_uom"], as_dict=True) or {}
+	return {
+		"item_code": item_code,
+		"item_name": item.get("item_name") or item_code,
+		"uom": item.get("stock_uom"),
+		"quantity": 0,
+		"monthly_volume": 0,
+		"quarterly_volume": 0,
+		"total_purchase": 0,
+		"last_purchase": None,
+	}
 
 
 def rebuild_previous_order_items(customer):
@@ -84,11 +129,18 @@ def rebuild_previous_order_items(customer):
 	# already listed — items no longer in any Sales Order are kept with quantity 0.
 	existing = set()
 	for row in org.previous_order_items:
-		row.quantity = totals.get(row.item_code, 0)
+		total = totals.get(row.item_code) or get_item_snapshot_defaults(row.item_code)
+		row.item_name = total.get("item_name")
+		row.uom = total.get("uom")
+		row.quantity = total.get("quantity", 0)
+		row.monthly_volume = total.get("monthly_volume", 0)
+		row.quarterly_volume = total.get("quarterly_volume", 0)
+		row.total_purchase = total.get("total_purchase", 0)
+		row.last_purchase = total.get("last_purchase")
 		existing.add(row.item_code)
-	for item_code, quantity in totals.items():
+	for item_code, total in totals.items():
 		if item_code not in existing:
-			org.append("previous_order_items", {"item_code": item_code, "quantity": quantity})
+			org.append("previous_order_items", total)
 
 	org.save(ignore_permissions=True)
 
@@ -124,7 +176,7 @@ def add_quotation_items_to_previous_order_items(doc, method=None):
 	added = False
 	for item in doc.items:
 		if item.item_code and item.item_code not in existing:
-			org.append("previous_order_items", {"item_code": item.item_code, "quantity": 0})
+			org.append("previous_order_items", get_item_snapshot_defaults(item.item_code))
 			existing.add(item.item_code)
 			added = True
 	if added:

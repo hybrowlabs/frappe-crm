@@ -7,6 +7,12 @@
  "engine": "InnoDB",
  "field_order": [
   "item_code",
+  "item_name",
+  "uom",
+  "monthly_volume",
+  "quarterly_volume",
+  "last_purchase",
+  "total_purchase",
   "quantity"
  ],
  "fields": [
@@ -19,11 +25,53 @@
    "reqd": 1
   },
   {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_volume",
+   "fieldtype": "Float",
+   "label": "Monthly Volume",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "quarterly_volume",
+   "fieldtype": "Float",
+   "label": "Quarterly Volume",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_purchase",
+   "fieldtype": "Date",
+   "label": "Last Purchase",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_purchase",
+   "fieldtype": "Currency",
+   "label": "Total Purchase",
+   "non_negative": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Quantity",
    "non_negative": 1,
+   "read_only": 1,
    "reqd": 1
   }
  ],

@@ -43,7 +43,7 @@
             :key="it.item_code"
             class="border-b border-outline-gray-1"
           >
-            <td class="pr-2">
+            <td class="w-8 py-2.5 pr-2 text-center align-middle">
               <input
                 type="checkbox"
                 :checked="selected.includes(it.item_code)"
@@ -78,7 +78,7 @@
             </td>
           </tr>
           <tr v-if="orderedItems.data?.items?.length" class="font-medium">
-            <td class="pr-2"></td>
+            <td class="w-8 py-2.5 pr-2 text-center"></td>
             <td class="py-2.5 pr-3 text-ink-gray-8">{{ __('Total') }}</td>
             <td class="px-3 text-right text-ink-gray-4">—</td>
             <td class="px-3 text-right text-ink-gray-4">—</td>

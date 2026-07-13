@@ -15,9 +15,15 @@ class CRMPreviousOrderItems(Document):
 		from frappe.types import DF
 
 		item_code: DF.Link
+		item_name: DF.Data | None
+		last_purchase: DF.Date | None
+		monthly_volume: DF.Float
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		quantity: DF.Float
+		quarterly_volume: DF.Float
+		total_purchase: DF.Currency
+		uom: DF.Link | None
 	# end: auto-generated types
 	pass
