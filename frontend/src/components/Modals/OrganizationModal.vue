@@ -33,6 +33,24 @@
             placeholder="27AABCM1234E1Z5"
           />
           <p class="mt-1 text-xs text-ink-gray-5">{{ gstinHelp }}</p>
+          <div
+            v-if="duplicateOrganization"
+            class="mt-2 rounded border border-yellow-400 bg-yellow-100 px-3 py-2 text-sm text-yellow-950"
+          >
+            <div class="font-medium">
+              {{ __('Organization with this GSTIN already exists') }}
+            </div>
+            <div class="mt-1 flex items-center justify-between gap-3">
+              <span class="truncate">
+                {{ duplicateOrganization.organization_name || duplicateOrganization.name }}
+              </span>
+              <Button
+                variant="ghost"
+                :label="__('Open existing')"
+                @click="openDuplicateOrganization"
+              />
+            </div>
+          </div>
         </div>
         <FieldLayout
           v-if="tabs.data?.length"
@@ -95,6 +113,8 @@ const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
 const gstinLoading = ref(false)
 let lastFetchedGstin = ''
 const fetchedAddress = ref(null)
+const duplicateOrganization = ref(null)
+let lastDuplicateCheckGstin = ''
 
 const gstinHelp = computed(() =>
   gstinLoading.value
@@ -107,11 +127,40 @@ watch(
   (value) => {
     const clean = (value || '').toUpperCase().replace(/\s/g, '')
     if (clean !== value) organization.doc.gstin = clean
-    if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
+    duplicateOrganization.value = null
+    if (!GSTIN_REGEX.test(clean)) return
+    checkDuplicateOrganization(clean)
+    if (clean === lastFetchedGstin) return
     lastFetchedGstin = clean
     fetchGstinInfo(clean)
   },
 )
+
+async function checkDuplicateOrganization(value) {
+  lastDuplicateCheckGstin = value
+  try {
+    const rows = await call('frappe.client.get_list', {
+      doctype: 'CRM Organization',
+      filters: { gstin: value },
+      fields: ['name', 'organization_name'],
+      limit_page_length: 1,
+      order_by: 'creation asc',
+    })
+    if (lastDuplicateCheckGstin !== value) return
+    duplicateOrganization.value = rows?.[0] || null
+  } catch (e) {
+    duplicateOrganization.value = null
+  }
+}
+
+function openDuplicateOrganization() {
+  if (!duplicateOrganization.value?.name) return
+  router.push({
+    name: 'Organization',
+    params: { organizationId: duplicateOrganization.value.name },
+  })
+  show.value = false
+}
 
 async function fetchGstinInfo(value) {
   gstinLoading.value = true
