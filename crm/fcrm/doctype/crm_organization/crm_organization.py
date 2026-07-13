@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from crm.api.exchange_rate import get_exchange_rate
@@ -33,6 +34,16 @@ class CRMOrganization(Document):
 		self.update_exchange_rate()
 		self.refetch_previous_order_items()
 		self.update_last_order()
+
+	def before_save(self):
+		self.validate_account_type()
+
+	def validate_account_type(self):
+		if self.erpnext_customer and self.account_type == "Dealer":
+			frappe.throw(
+				_("Account Type can't be Dealer when Customer in ERPNext is linked."),
+				title=_("Invalid Account Type"),
+			)
 
 	def update_last_order(self):
 		"""Store the date of the linked customer's most recent submitted Sales Order,
