@@ -52,14 +52,19 @@ def _response_bands(view):
 
 
 def _open_assignments(view):
-	filters = {"assign_to_tech_team": 1, "evaluation_end": ["is", "not set"]}
+	filters = {
+		"assign_to_tech_team": 1,
+		"assigned_tech_member": ["is", "set"],
+		"evaluation_end": ["is", "not set"],
+	}
 	filters.update(_scope(view))
 	rows = frappe.get_all(
 		"CRM Deal",
 		filters=filters,
 		fields=[
 			"name", "organization", "organization_name", "product_category",
-			"product_sub_category", "assigned_tech_member", "evaluation_start", "creation",
+			"product_sub_category", "assigned_tech_member", "evaluation_start",
+			"communication_status", "creation",
 		],
 	)
 	now = now_datetime()
@@ -75,12 +80,14 @@ def _open_assignments(view):
 				"product": r.product_category or "—",
 				"sub_category": r.product_sub_category or "—",
 				"tech_member": r.assigned_tech_member,
+				"evaluation_start": r.evaluation_start,
+				"communication_status": r.communication_status or "—",
 				"elapsed_hours": elapsed_h,
 			}
 		)
 	out.sort(key=lambda o: o["elapsed_hours"], reverse=True)
 	overdue = [o for o in out if o["elapsed_hours"] >= 4]
-	return {"open": out[:25], "open_count": len(out), "overdue_count": len(overdue)}
+	return {"open": out, "open_count": len(out), "overdue_count": len(overdue)}
 
 
 def _trials(view):

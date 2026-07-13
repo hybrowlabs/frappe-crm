@@ -74,27 +74,42 @@
           </div>
 
           <Card :title="__('My Open Assignments Right Now')" class="mb-6">
-            <table v-if="d.open_assignments.open.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Assignment') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Product') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Elapsed / SLA') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="o in d.open_assignments.open" :key="o.name"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goDeal(o.name)">
-                  <td class="py-1.5 font-medium text-ink-gray-8">{{ o.name }}</td>
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="o.organization_name" size="sm" /><span class="text-ink-gray-8">{{ o.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-ink-gray-5">{{ o.product }}</td>
-                  <td class="py-1.5 text-right">
-                    <Badge :theme="slaTheme(o.elapsed_hours)" :label="`${fmtElapsed(o.elapsed_hours)} · ${slaLabel(o.elapsed_hours)}`" variant="subtle" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.open_assignments.open.length" class="overflow-x-auto">
+              <table class="w-full min-w-[860px] text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Deal') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Product') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Started') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Communication') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Escalation') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Waiting / SLA') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Action') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="o in d.open_assignments.open" :key="o.name"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goDeal(o.name)">
+                    <td class="py-2 pr-3 font-medium text-ink-gray-8">{{ o.name }}</td>
+                    <td class="py-2 pr-3">
+                      <span class="flex items-center gap-2">
+                        <Avatar :label="o.organization_name" size="sm" />
+                        <span class="text-ink-gray-8">{{ o.organization_name }}</span>
+                      </span>
+                    </td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ o.product }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ fmtDate(o.evaluation_start) }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ o.communication_status }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-7">{{ escalationLabel(o.elapsed_hours) }}</td>
+                    <td class="py-2 pr-3 text-right">
+                      <Badge :theme="slaTheme(o.elapsed_hours)" :label="`${fmtElapsed(o.elapsed_hours)} · ${slaLabel(o.elapsed_hours)}`" variant="subtle" />
+                    </td>
+                    <td class="py-2 text-right text-ink-blue-3">{{ __('Open deal') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No open assignments')" />
           </Card>
 
@@ -124,6 +139,54 @@
         <!-- TEAM VIEW -->
         <template v-else-if="d.team">
           <SectionLabel :label="__('Team View')" :hint="__('head-only visibility')" />
+
+          <div class="mb-5 grid grid-cols-2 gap-3">
+            <Tile :title="__('Team Open Assignments')" :value="String(d.open_assignments.open_count)" :sub="__('pending on technical person')" />
+            <Tile :title="__('Overdue — Past 4h')" :value="String(d.open_assignments.overdue_count)" :sub="__('needs immediate action')" tone="red" />
+          </div>
+
+          <Card :title="__('All Open Technical Assignments')" class="mb-6">
+            <div v-if="d.open_assignments.open.length" class="overflow-x-auto">
+              <table class="w-full min-w-[980px] text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Deal') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Product') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Technical Person') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Started') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Communication') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Escalation') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Waiting / SLA') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Action') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="o in d.open_assignments.open" :key="o.name"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goDeal(o.name)">
+                    <td class="py-2 pr-3 font-medium text-ink-gray-8">{{ o.name }}</td>
+                    <td class="py-2 pr-3">
+                      <span class="flex items-center gap-2">
+                        <Avatar :label="o.organization_name" size="sm" />
+                        <span class="text-ink-gray-8">{{ o.organization_name }}</span>
+                      </span>
+                    </td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ o.product }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-7">{{ engName(o.tech_member) }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ fmtDate(o.evaluation_start) }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-5">{{ o.communication_status }}</td>
+                    <td class="py-2 pr-3 text-ink-gray-7">{{ escalationLabel(o.elapsed_hours) }}</td>
+                    <td class="py-2 pr-3 text-right">
+                      <Badge :theme="slaTheme(o.elapsed_hours)" :label="`${fmtElapsed(o.elapsed_hours)} · ${slaLabel(o.elapsed_hours)}`" variant="subtle" />
+                    </td>
+                    <td class="py-2 text-right text-ink-blue-3">{{ __('Open deal') }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <Empty v-else :text="__('No open technical assignments')" />
+          </Card>
+
           <Card :title="__('Team Response Time Distribution')" class="mb-6">
             <table v-if="d.team.team_response.length" class="w-full text-sm">
               <thead>
@@ -238,6 +301,7 @@ function ratio(v, max) {
 }
 const slaTheme = (h) => (h < 2 ? 'green' : h < 4 ? 'blue' : h < 24 ? 'orange' : 'red')
 const slaLabel = (h) => (h < 2 ? __('Excellent') : h < 4 ? __('Acceptable') : h < 8 ? __('Amber') : h < 24 ? __('Amber/Red') : h < 48 ? __('Breach') : __('Critical'))
+const escalationLabel = (h) => (h < 4 ? __('Technical person') : h < 24 ? __('Head') : h < 48 ? __('Sales Manager') : __('Auto-escalate'))
 function fmtElapsed(h) {
   return h < 1 ? `${Math.round(h * 60)}m` : `${h.toFixed(1)}h`
 }
@@ -247,6 +311,10 @@ function fmtDuration(seconds) {
   const hours = s / 3600
   if (hours >= 1) return `${hours.toFixed(1)} h`
   return `${Math.round(s / 60)} m`
+}
+function fmtDate(value) {
+  if (!value) return '—'
+  return String(value).slice(0, 10)
 }
 
 const bandBg = (theme) => ({ green: 'bg-green-500', blue: 'bg-blue-500', amber: 'bg-amber-500', red: 'bg-red-500' })[theme] || 'bg-surface-gray-4'
