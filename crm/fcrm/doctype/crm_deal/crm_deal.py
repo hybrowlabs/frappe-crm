@@ -173,8 +173,8 @@ class CRMDeal(Document):
         phone: DF.Data | None
         probability: DF.Percent
         product_category: DF.Link | None
-        product_suggestions: DF.Table[CRMProductSuggestion]
         product_sub_category: DF.Link | None
+        product_suggestions: DF.Table[CRMProductSuggestion]
         product_variant: DF.Link | None
         repeat_deal: DF.Check
         requirement_note: DF.SmallText | None
@@ -198,7 +198,6 @@ class CRMDeal(Document):
         trial_required: DF.Check
         trial_required_before_decision: DF.Check
         website: DF.Data | None
-
     # end: auto-generated types
 
     def before_validate(self):
