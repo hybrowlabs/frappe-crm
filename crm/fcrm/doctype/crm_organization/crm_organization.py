@@ -15,18 +15,31 @@ class CRMOrganization(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from crm.fcrm.doctype.crm_previous_order_items.crm_previous_order_items import CRMPreviousOrderItems
 		from frappe.types import DF
 
+		account_owner: DF.Link | None
+		account_type: DF.Literal["", "Customer", "Dealer"]
 		address: DF.Link | None
 		annual_revenue: DF.Currency
+		credit_terms: DF.Literal["", "Advance", "0 days", "7 days", "15 days", "30 days", "45 days"]
 		currency: DF.Link | None
+		declining_order_value: DF.Check
+		erpnext_customer: DF.Link | None
 		exchange_rate: DF.Float
 		gstin: DF.Data | None
+		health_score: DF.Float
 		industry: DF.Link | None
+		last_order: DF.Date | None
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]
+		ordering_below_average: DF.Check
 		organization_logo: DF.AttachImage | None
 		organization_name: DF.Data | None
-		territory: DF.Link | None
+		previous_order_items: DF.Table[CRMPreviousOrderItems]
+		region: DF.Data | None
+		repeat_revenue: DF.Percent
+		sales_manager: DF.Link | None
+		territory: DF.Link
 		website: DF.Data | None
 	# end: auto-generated types
 
