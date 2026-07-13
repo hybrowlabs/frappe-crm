@@ -36,7 +36,25 @@ class CRMOrganization(Document):
 		self.update_last_order()
 
 	def before_save(self):
+		self.fetch_gstin_from_linked_customer()
 		self.validate_account_type()
+
+	def fetch_gstin_from_linked_customer(self):
+		if self.gstin or not self.erpnext_customer:
+			return
+
+		if not frappe.db.exists("DocType", "Customer"):
+			return
+
+		customer_meta = frappe.get_meta("Customer")
+		for fieldname in ("gstin", "tax_id"):
+			if not customer_meta.has_field(fieldname):
+				continue
+
+			gstin = frappe.db.get_value("Customer", self.erpnext_customer, fieldname)
+			if gstin:
+				self.gstin = gstin
+				return
 
 	def validate_account_type(self):
 		if self.erpnext_customer and self.account_type == "Dealer":
