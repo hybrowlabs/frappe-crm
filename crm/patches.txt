@@ -27,7 +27,7 @@ crm.patches.v1_0.create_email_account_custom_field
 crm.patches.v1_0.create_default_quick_filters
 crm.patches.v1_0.seed_product_master_data # 17-06-2026 - 8
 crm.patches.v1_0.add_other_pain_point # 23-06-2026 - 2
-crm.patches.v1_0.seed_deal_data_fields_layout # 13-07-2026 - 3
+crm.patches.v1_0.seed_deal_data_fields_layout # 13-07-2026 - 4
 crm.patches.v1_0.seed_organization_sidebar_fields_layout # 25-06-2026 - 2
 # crm.patches.v1_0.seed_territories # 22-06-2026 - 3
 crm.patches.v1_0.sync_customers_to_crm_orgs # 01-07-2026
@@ -35,3 +35,4 @@ crm.patches.v1_0.refresh_organization_quick_filters # 07-07-2026
 crm.patches.v1_0.set_organization_last_order # 07-07-2026
 crm.patches.v1_0.create_precious_alloys_roles # 07-07-2026
 crm.patches.v1_0.rebuild_previous_order_items_snapshot # 13-07-2026
+crm.patches.v1_0.migrate_deal_product_suggestions # 13-07-2026

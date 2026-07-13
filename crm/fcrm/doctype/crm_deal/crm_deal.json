@@ -80,8 +80,7 @@
   "assignment_notes",
   "technical_response_section",
   "technical_response",
-  "recommended_item_code",
-  "trial_quantity",
+  "product_suggestions",
   "column_break_techresp_1",
   "application_notes",
   "info_questions",
@@ -837,14 +836,10 @@
    "options": "\nRecommend & Approve\nRequest More Info\nNot Suitable"
   },
   {
-   "fieldname": "recommended_item_code",
-   "fieldtype": "Data",
-   "label": "Recommended Item Code"
-  },
-  {
-   "fieldname": "trial_quantity",
-   "fieldtype": "Data",
-   "label": "Trial Quantity"
+   "fieldname": "product_suggestions",
+   "fieldtype": "Table",
+   "label": "Product Suggestions",
+   "options": "CRM Product Suggestion"
   },
   {
    "fieldname": "column_break_techresp_1",

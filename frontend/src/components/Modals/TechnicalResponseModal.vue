@@ -61,39 +61,57 @@
     <!-- Recommend & Approve -->
     <StageSection
       v-if="response === 'recommend'"
-      :title="__('Recommended Product')"
+      :title="__('Product Suggestions')"
       icon="beaker"
     >
-      <FieldGrid :cols="2">
-        <div>
-          <div class="mb-1.5 text-sm text-ink-gray-5">
-            {{ __('Recommended Item Code') }}
+      <div class="overflow-hidden rounded border border-outline-gray-2">
+        <div
+          class="grid grid-cols-[minmax(0,1fr)_120px_36px] items-center gap-2 border-b border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-xs font-medium text-ink-gray-5"
+        >
+          <div>
+            {{ __('Item') }}
             <span class="text-ink-red-3">*</span>
           </div>
+          <div>
+            {{ __('Quantity') }}
+            <span class="text-ink-red-3">*</span>
+          </div>
+          <div />
+        </div>
+        <div
+          v-for="(suggestion, index) in productSuggestions"
+          :key="suggestion.key"
+          class="grid grid-cols-[minmax(0,1fr)_120px_36px] items-center gap-2 border-b border-outline-gray-1 px-3 py-2 last:border-b-0"
+        >
           <Link
             class="form-control"
-            :value="itemCode"
+            :value="suggestion.item"
             doctype="Item"
             :placeholder="__('Select item')"
-            @change="(v) => (itemCode = v)"
+            @change="(v) => (suggestion.item = v)"
           />
-          <div v-if="errors.itemCode" class="mt-1 text-xs text-ink-red-3">
-            {{ errors.itemCode }}
-          </div>
-          <div v-else-if="productSummary" class="mt-1 text-xs text-ink-gray-4">
-            {{ __('For {0}', [productSummary]) }}
-          </div>
+          <input
+            v-model.number="suggestion.quantity"
+            min="0.000001"
+            step="any"
+            type="number"
+            class="form-input h-8 rounded border border-outline-gray-2 bg-surface-white px-2 text-base text-ink-gray-8 focus:border-outline-gray-4 focus:outline-none"
+          />
+          <Button
+            :tooltip="__('Remove')"
+            icon="trash-2"
+            :disabled="productSuggestions.length === 1"
+            @click="removeSuggestion(index)"
+          />
         </div>
-        <FieldText
-          v-model="trialQty"
-          :label="__('Trial Quantity')"
-          :help="
-            trialRequired
-              ? __('For the trial run')
-              : __('Recommendation only — no trial')
-          "
-        />
-      </FieldGrid>
+      </div>
+      <div v-if="errors.productSuggestions" class="mt-1 text-xs text-ink-red-3">
+        {{ errors.productSuggestions }}
+      </div>
+      <div v-else-if="productSummary" class="mt-1 text-xs text-ink-gray-4">
+        {{ __('For {0}', [productSummary]) }}
+      </div>
+      <Button class="mt-2" :label="__('Add Product')" iconLeft="plus" @click="addSuggestion" />
       <FieldTextarea
         v-model="appNotes"
         :label="__('Application Notes')"
@@ -216,7 +234,6 @@ import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
-import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
 import Link from '@/components/Controls/Link.vue'
@@ -233,8 +250,8 @@ const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save', 'done'])
 
 const response = ref(null) // null | 'recommend' | 'info' | 'unsuitable'
-const itemCode = ref('')
-const trialQty = ref('')
+let suggestionKey = 0
+const productSuggestions = ref([newSuggestion()])
 const appNotes = ref('')
 const questions = ref('')
 const unsuitReason = ref('')
@@ -288,10 +305,37 @@ const productSummary = computed(() => {
     .join(' → ')
 })
 
+function newSuggestion(row = {}) {
+  return {
+    key: row.name || `suggestion-${suggestionKey++}`,
+    item: row.item || '',
+    quantity: row.quantity ?? null,
+  }
+}
+
+function addSuggestion() {
+  productSuggestions.value.push(newSuggestion())
+}
+
+function removeSuggestion(index) {
+  if (productSuggestions.value.length === 1) return
+  productSuggestions.value.splice(index, 1)
+}
+
+function cleanSuggestions() {
+  return productSuggestions.value
+    .filter((row) => row.item || row.quantity)
+    .map((row) => ({
+      item: row.item || null,
+      quantity: row.quantity || 0,
+    }))
+}
+
 onMounted(() => {
   const d = props.deal || {}
-  itemCode.value = d.recommended_item_code || ''
-  trialQty.value = d.trial_quantity || ''
+  productSuggestions.value = (d.product_suggestions || []).length
+    ? d.product_suggestions.map((row) => newSuggestion(row))
+    : [newSuggestion()]
   appNotes.value = d.application_notes || ''
   questions.value = d.info_questions || ''
   unsuitReason.value = d.not_suitable_reason || ''
@@ -311,7 +355,10 @@ const errors = computed(() => {
   const e = {}
   if (!response.value) e.response = __('Select a response')
   if (response.value === 'recommend') {
-    if (!itemCode.value) e.itemCode = __('Required')
+    const suggestions = cleanSuggestions()
+    if (!suggestions.length) e.productSuggestions = __('Add at least one product suggestion')
+    else if (suggestions.some((row) => !row.item || !row.quantity))
+      e.productSuggestions = __('Each suggestion needs an item and quantity')
     if (!appNotes.value) e.appNotes = __('Required')
   } else if (response.value === 'info') {
     if (!questions.value) e.questions = __('Required')
@@ -325,8 +372,7 @@ const errors = computed(() => {
 function recommendValues() {
   return {
     technical_response: 'Recommend & Approve',
-    recommended_item_code: itemCode.value || null,
-    trial_quantity: trialQty.value || null,
+    product_suggestions: cleanSuggestions(),
     application_notes: appNotes.value || '',
   }
 }
@@ -351,8 +397,8 @@ function saveDraft() {
 
 function recommendAndApprove() {
   attempted.value = true
-  if (!itemCode.value || !appNotes.value) {
-    toast.error(__('Please select a product and add application notes.'))
+  if (errors.value.productSuggestions || errors.value.appNotes) {
+    toast.error(__('Please add product suggestions and application notes.'))
     return
   }
   // Trial required → Technical Evaluation (Demo/Making). No trial → skip the

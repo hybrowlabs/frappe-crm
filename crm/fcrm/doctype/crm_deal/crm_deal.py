@@ -46,7 +46,7 @@ STAGE_GATES = [
         "status": "Demo/Making",
         "step": "Technical Response",
         "fields": [
-            ("recommended_item_code", "Recommended Item Code"),
+            ("product_suggestions", "Product Suggestions"),
             ("application_notes", "Application Notes"),
         ],
     },
@@ -85,6 +85,7 @@ class CRMDeal(Document):
         from crm.fcrm.doctype.crm_image_list.crm_image_list import CRMImageList
         from crm.fcrm.doctype.crm_operation_impact_select.crm_operation_impact_select import CRMOperationImpactSelect
         from crm.fcrm.doctype.crm_pain_point_select.crm_pain_point_select import CRMPainPointSelect
+        from crm.fcrm.doctype.crm_product_suggestion.crm_product_suggestion import CRMProductSuggestion
         from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import CRMRollingResponseTime
         from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import CRMStatusChangeLog
         from frappe.types import DF
@@ -172,9 +173,9 @@ class CRMDeal(Document):
         phone: DF.Data | None
         probability: DF.Percent
         product_category: DF.Link | None
+        product_suggestions: DF.Table[CRMProductSuggestion]
         product_sub_category: DF.Link | None
         product_variant: DF.Link | None
-        recommended_item_code: DF.Data | None
         repeat_deal: DF.Check
         requirement_note: DF.SmallText | None
         response_by: DF.Datetime | None
@@ -194,7 +195,6 @@ class CRMDeal(Document):
         territory: DF.Link
         testimonial_captured: DF.Check
         trial_outcome: DF.Literal["", "Successful", "Partial", "Unsuccessful"]
-        trial_quantity: DF.Data | None
         trial_required: DF.Check
         trial_required_before_decision: DF.Check
         website: DF.Data | None
@@ -333,6 +333,10 @@ class CRMDeal(Document):
                 # Technical Person is only needed when the deal is assigned to the tech team.
                 if fieldname == "technical_person" and not self.assign_to_tech_team:
                     continue
+                if fieldname == "product_suggestions":
+                    if not self.has_valid_product_suggestions():
+                        missing.append(_(label))
+                    continue
                 if not is_filled(fieldname):
                     missing.append(_(label))
             if gate["status"] == "Proposal/Quotation" and not self.get_linked_customer():
@@ -360,6 +364,14 @@ class CRMDeal(Document):
         if not self.organization:
             return None
         return frappe.db.get_value("CRM Organization", self.organization, "erpnext_customer")
+
+    def has_valid_product_suggestions(self):
+        if not self.product_suggestions:
+            return False
+        for row in self.product_suggestions:
+            if not row.item or frappe.utils.flt(row.quantity) <= 0:
+                return False
+        return True
 
     def set_primary_contact(self, contact=None):
         if not self.contacts:

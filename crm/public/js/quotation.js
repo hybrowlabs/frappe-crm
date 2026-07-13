@@ -1,5 +1,6 @@
 // When a Quotation is created from CRM (custom_* fields prefilled in the URL),
-// auto-add the relevant organization's previously ordered items as rows with qty 0.
+// auto-add product suggestions first, then the relevant organization's previously
+// ordered items as rows with qty 0.
 // URL query params are applied on refresh, not onload, so run here.
 frappe.ui.form.on('Quotation', {
 	refresh(frm) {
@@ -80,15 +81,18 @@ function prefill_items(frm, method, args) {
 	})
 }
 
-function set_items(frm, item_codes) {
-	if (!(item_codes || []).length) return
+function set_items(frm, items) {
+	if (!(items || []).length) return
 	frm.clear_table('items')
-	item_codes.forEach((item_code) => {
-		const row = frm.add_child('items', { item_code, qty: 0 })
+	items.forEach((item) => {
+		const item_code = typeof item === 'string' ? item : item.item_code
+		const qty = typeof item === 'string' ? 0 : item.qty || 0
+		if (!item_code) return
+		const row = frm.add_child('items', { item_code, qty })
 		frm.script_manager
 			.trigger('item_code', row.doctype, row.name)
 			.then(() => {
-				frappe.model.set_value(row.doctype, row.name, 'qty', 0)
+				frappe.model.set_value(row.doctype, row.name, 'qty', qty)
 			})
 	})
 	frm.refresh_field('items')
