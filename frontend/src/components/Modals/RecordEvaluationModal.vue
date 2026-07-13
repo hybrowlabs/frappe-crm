@@ -136,7 +136,12 @@
             )
           }}
         </StageCallout>
-        <Button :label="__('Create Lab Request')" @click="$emit('lab')">
+        <!-- Hidden for now (will be needed later); keep the lab request modal flow wired. -->
+        <Button
+          v-if="showLabRequestButton"
+          :label="__('Create Lab Request')"
+          @click="$emit('lab')"
+        >
           <template #prefix><StageIcon name="beaker" class="h-4 w-4" /></template>
         </Button>
       </div>
@@ -242,6 +247,7 @@ const props = defineProps({
 
 const show = defineModel({ type: Boolean })
 const emit = defineEmits(['save', 'lab'])
+const showLabRequestButton = false
 
 // local YYYY-MM-DD for the date input
 function today() {

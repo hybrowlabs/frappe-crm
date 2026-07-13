@@ -55,7 +55,7 @@ def _open_assignments(view):
 	filters = {
 		"assign_to_tech_team": 1,
 		"assigned_tech_member": ["is", "set"],
-		"evaluation_end": ["is", "not set"],
+		"status": ["in", ["Tech Assignment", "Demo/Making"]],
 	}
 	filters.update(_scope(view))
 	rows = frappe.get_all(
