@@ -198,6 +198,7 @@ class CRMDeal(Document):
         trial_required: DF.Check
         trial_required_before_decision: DF.Check
         website: DF.Data | None
+
     # end: auto-generated types
 
     def before_validate(self):
@@ -496,14 +497,14 @@ class CRMDeal(Document):
 
     def update_expected_deal_value(self):
         """
-        Update the expected deal value based on the net total or total.
+        Update the expected deal value based on the deal value.
         """
         if (
             frappe.db.get_single_value("FCRM Settings", "auto_update_expected_deal_value")
-            and (self.net_total or self.total)
+            and self.deal_value
             and self.expected_deal_value
         ):
-            self.expected_deal_value = self.net_total or self.total
+            self.expected_deal_value = self.deal_value
 
     def validate_forecasting_fields(self):
         self.update_closed_date()

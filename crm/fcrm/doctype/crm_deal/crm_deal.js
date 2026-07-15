@@ -7,21 +7,11 @@ frappe.ui.form.on("CRM Deal", {
   },
   update_total: function (frm) {
     let total = 0;
-    let total_qty = 0;
-    let net_total = 0;
     frm.doc.products.forEach((d) => {
       total += d.amount;
-      total_qty += d.qty;
-      net_total += d.net_amount;
     });
 
-    frappe.model.set_value(frm.doctype, frm.docname, "total", total);
-    frappe.model.set_value(
-      frm.doctype,
-      frm.docname,
-      "net_total",
-      net_total || total,
-    );
+    frappe.model.set_value(frm.doctype, frm.docname, "deal_value", total);
   },
 });
 
