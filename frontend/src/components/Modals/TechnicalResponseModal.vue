@@ -15,6 +15,65 @@
       </FieldGrid>
     </StageSection>
 
+    <!-- Technical pain points captured by the salesperson in Req. Discussion.
+         Mirrors that form exactly (all options for the sub-category, the picked
+         ones ticked) but entirely read-only for the tech team to review. -->
+    <StageSection
+      v-if="sub"
+      :title="
+        __('Technical Pain Points — {0} for {1}', [technicalPainOptions.length, sub])
+      "
+      icon="alert"
+    >
+      <p
+        v-if="!technicalPainOptions.length"
+        class="mb-3 text-p-sm text-ink-gray-5"
+      >
+        {{ __('No technical pain points mapped to this sub-category yet.') }}
+      </p>
+      <div
+        v-else
+        class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3"
+      >
+        <label
+          v-for="p in technicalPainOptions"
+          :key="p.name"
+          class="flex select-none items-start gap-2"
+          @click.prevent
+        >
+          <!-- read-only: reflects the salesperson's selection, cannot be toggled -->
+          <input
+            type="checkbox"
+            :checked="selectedPains.has(p.name)"
+            tabindex="-1"
+            class="pointer-events-none mt-0.5 h-4 w-4 shrink-0 rounded-sm border-outline-gray-3 accent-blue-500"
+          />
+          <span class="text-base leading-5 text-ink-gray-8">{{ p.name }}</span>
+        </label>
+      </div>
+      <FieldText
+        v-if="otherPainSelected"
+        :modelValue="otherPainText"
+        :label="__('Other Pain Point')"
+        readonly
+        class="mb-3"
+      />
+      <FieldGrid :cols="2">
+        <FieldSelect
+          :modelValue="painFrequency"
+          :label="__('Pain Frequency')"
+          :options="freqOptions"
+          disabled
+        />
+        <FieldSelect
+          :modelValue="painSeverity"
+          :label="__('Pain Severity')"
+          :options="severityOptions"
+          disabled
+        />
+      </FieldGrid>
+    </StageSection>
+
     <StageSection
       :title="__('Decision Point — Technical team response?')"
       icon="flag"
@@ -234,10 +293,11 @@ import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
+import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
 import Link from '@/components/Controls/Link.vue'
-import { Button, call, toast } from 'frappe-ui'
+import { Button, call, createListResource, toast } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
@@ -305,6 +365,41 @@ const productSummary = computed(() => {
     .join(' → ')
 })
 
+const sub = computed(() => props.deal?.product_sub_category || '')
+const painFrequency = computed(() => props.deal?.pain_frequency || '')
+const painSeverity = computed(() => props.deal?.pain_severity || '')
+const otherPainText = computed(() => props.deal?.other_pain_point || '')
+
+const freqOptions = ['Every Production Cycle', 'Weekly', 'Monthly', 'Occasional']
+const severityOptions = ['Critical', 'High', 'Medium', 'Low']
+
+// Mirror the capture form's Technical Pain Points section: load every pain point
+// mapped to the deal's sub-category, then render them read-only with the ones the
+// salesperson selected ticked.
+const OTHER_PAIN_POINT = 'Other'
+const painPointList = createListResource({
+  doctype: 'CRM Pain Point',
+  fields: ['name', 'pain_type'],
+  orderBy: 'pain_point asc',
+  pageLength: 0,
+  auto: false,
+})
+// keep the catch-all "Other" pinned to the end, exactly like the capture form
+function otherLast(list) {
+  return [...(list || [])].sort((a, b) => {
+    const ao = a.name === OTHER_PAIN_POINT
+    const bo = b.name === OTHER_PAIN_POINT
+    return ao === bo ? 0 : ao ? 1 : -1
+  })
+}
+const technicalPainOptions = computed(() =>
+  otherLast(painPointList.data).filter((p) => p.pain_type === 'Technical'),
+)
+const selectedPains = computed(
+  () => new Set((props.deal?.pain_points || []).map((r) => r.pain_point)),
+)
+const otherPainSelected = computed(() => selectedPains.value.has(OTHER_PAIN_POINT))
+
 function newSuggestion(row = {}) {
   return {
     key: row.name || `suggestion-${suggestionKey++}`,
@@ -346,6 +441,21 @@ onMounted(() => {
     'Not Suitable': 'unsuitable',
   }
   response.value = map[d.technical_response] || null
+
+  // load all pain points mapped to the sub-category via its multiselect child
+  if (d.product_sub_category) {
+    painPointList.update({
+      filters: [
+        [
+          'CRM Product Sub Category Select',
+          'product_sub_category',
+          '=',
+          d.product_sub_category,
+        ],
+      ],
+    })
+    painPointList.reload()
+  }
 })
 
 // validation — errors surface only after an attempt, then clear live
