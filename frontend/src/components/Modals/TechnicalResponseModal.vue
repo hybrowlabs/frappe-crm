@@ -21,30 +21,30 @@
     <StageSection
       v-if="sub"
       :title="
-        __('Technical Pain Points — {0} for {1}', [technicalPainOptions.length, sub])
+        __('Technical Pain Points — {0} for {1}', [technicalPainsToShow.length, sub])
       "
       icon="alert"
     >
       <p
-        v-if="!technicalPainOptions.length"
+        v-if="!technicalPainsToShow.length"
         class="mb-3 text-p-sm text-ink-gray-5"
       >
-        {{ __('No technical pain points mapped to this sub-category yet.') }}
+        {{ __('No technical pain points selected.') }}
       </p>
       <div
         v-else
         class="mb-3.5 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3"
       >
         <label
-          v-for="p in technicalPainOptions"
+          v-for="p in technicalPainsToShow"
           :key="p.name"
           class="flex select-none items-start gap-2"
           @click.prevent
         >
-          <!-- read-only: reflects the salesperson's selection, cannot be toggled -->
+          <!-- read-only: only the salesperson's selected pains, cannot be toggled -->
           <input
             type="checkbox"
-            :checked="selectedPains.has(p.name)"
+            checked
             tabindex="-1"
             class="pointer-events-none mt-0.5 h-4 w-4 shrink-0 rounded-sm border-outline-gray-3 accent-blue-500"
           />
@@ -397,6 +397,10 @@ const technicalPainOptions = computed(() =>
 )
 const selectedPains = computed(
   () => new Set((props.deal?.pain_points || []).map((r) => r.pain_point)),
+)
+// only the technical pains the salesperson actually selected (checked)
+const technicalPainsToShow = computed(() =>
+  technicalPainOptions.value.filter((p) => selectedPains.value.has(p.name)),
 )
 const otherPainSelected = computed(() => selectedPains.value.has(OTHER_PAIN_POINT))
 
