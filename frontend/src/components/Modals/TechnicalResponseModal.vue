@@ -212,7 +212,7 @@
       <StageCallout theme="amber" icon="mail" class="mt-1">
         {{
           __(
-            'Questions are emailed to the salesperson. The waiting-time clock pauses until they reply — the deal stays in this stage.',
+            'Questions are emailed to the salesperson. The waiting-time clock pauses and the deal returns to Qualified until they continue the trial.',
           )
         }}
       </StageCallout>

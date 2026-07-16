@@ -84,6 +84,7 @@
   "column_break_techresp_1",
   "application_notes",
   "info_questions",
+  "sent_back_by_tech_team",
   "not_suitable",
   "not_suitable_reason",
   "not_suitable_notes",
@@ -854,6 +855,13 @@
    "fieldname": "info_questions",
    "fieldtype": "Small Text",
    "label": "Questions for Salesperson"
+  },
+  {
+   "default": "0",
+   "fieldname": "sent_back_by_tech_team",
+   "fieldtype": "Check",
+   "label": "Sent Back by Tech Team",
+   "read_only": 1
   },
   {
    "default": "0",

@@ -745,7 +745,10 @@ const stageCta = computed(() => {
       ? { label: __('Review Escalation'), icon: AlertIcon }
       : null
   }
-  const cta = STAGE_CTA[status] || null
+  const cta =
+    status === 'Qualification' && doc.value.sent_back_by_tech_team
+      ? { ...STAGE_CTA[status], label: __('Continue Trial') }
+      : STAGE_CTA[status] || null
   if (!cta) return null
   // Technical Response is a technical-team action — visible to the tech team only.
   if (status === 'Tech Assignment') {

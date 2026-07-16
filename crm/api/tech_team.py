@@ -217,14 +217,16 @@ def _email_row(label, value, border=True):
 @frappe.whitelist()
 def request_more_info(deal: str, questions: str):
 	"""Tech team asks the salesperson for more info before recommending a product.
-	The questions are saved on the deal and emailed to the salesperson; the deal stays
-	in its current stage (the waiting-time clock pauses on Sales)."""
+	The questions are saved on the deal and emailed to the salesperson; the deal returns
+	to Qualification while the waiting-time clock pauses on Sales."""
 	if not questions or not questions.strip():
 		frappe.throw(_("Please enter the questions for the salesperson."))
 
 	doc = frappe.get_doc("CRM Deal", deal)
 	doc.info_questions = questions
 	doc.technical_response = "Request More Info"
+	doc.sent_back_by_tech_team = 1
+	doc.status = "Qualification"
 	doc.save(ignore_permissions=True)
 
 	from crm.api.sales_manager import _deal_sales_person_user
