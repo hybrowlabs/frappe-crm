@@ -63,6 +63,7 @@
             :tabs="tabs.data"
             :data="deal.doc"
             doctype="CRM Deal"
+            :context="deal"
           />
           <ErrorMessage v-if="error" class="mt-4" :message="__(error)" />
         </div>

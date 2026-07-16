@@ -208,6 +208,7 @@ class CRMDeal(Document):
         self.validate_status()
         self.set_business_impact_metrics()
         self.set_primary_contact()
+        self.validate_contact_connected_to_organization()
         self.set_primary_email_mobile_no()
         if not self.is_new() and self.has_value_changed("deal_owner") and self.deal_owner:
             self.share_with_agent(self.deal_owner)
@@ -385,6 +386,33 @@ class CRMDeal(Document):
                     d.is_primary = 1
                 else:
                     d.is_primary = 0
+
+    def validate_contact_connected_to_organization(self):
+        if not self.organization:
+            return
+
+        if not self.contacts:
+            frappe.throw(_("Create or select a contact connected to the organization before saving the deal."))
+
+        contacts = [d.contact for d in self.contacts if d.contact]
+        if not contacts:
+            frappe.throw(_("Create or select a contact connected to the organization before saving the deal."))
+
+        connected_contacts = frappe.get_all(
+            "Contact",
+            filters={"name": ["in", contacts], "company_name": self.organization},
+            pluck="name",
+        )
+        disconnected_contacts = [contact for contact in contacts if contact not in connected_contacts]
+        if disconnected_contacts:
+            organization = frappe.db.get_value(
+                "CRM Organization", self.organization, "organization_name"
+            ) or self.organization
+            frappe.throw(
+                _(
+                    "Contact {0} is not connected to Organization {1}. Connect the contact to the organization before saving the deal."
+                ).format(frappe.bold(", ".join(disconnected_contacts)), frappe.bold(organization))
+            )
 
     def set_primary_email_mobile_no(self):
         if not self.contacts:
@@ -661,6 +689,9 @@ def create_organization(doc):
     if existing_organization:
         return existing_organization
 
+    if not doc.get("territory"):
+        frappe.throw(_("Territory is required to create a new CRM Organization."))
+
     organization = frappe.new_doc("CRM Organization")
     organization.update(
         {
@@ -691,6 +722,8 @@ def contact_exists(doc):
 def create_contact(doc):
     existing_contact = contact_exists(doc)
     if existing_contact:
+        if doc.get("organization"):
+            frappe.db.set_value("Contact", existing_contact, "company_name", doc.get("organization"))
         return existing_contact
 
     contact = frappe.new_doc("Contact")
@@ -720,15 +753,22 @@ def create_contact(doc):
 def create_deal(doc: dict):
     deal = frappe.new_doc("CRM Deal")
 
+    organization = doc.get("organization") or create_organization(doc)
+    doc["organization"] = organization
+    if organization and not doc.get("territory"):
+        doc["territory"] = frappe.db.get_value("CRM Organization", organization, "territory")
+
     contact = doc.get("contact")
     if not contact and (
         doc.get("first_name") or doc.get("last_name") or doc.get("email") or doc.get("mobile_no")
     ):
         contact = create_contact(doc)
+    elif contact and organization:
+        frappe.db.set_value("Contact", contact, "company_name", organization)
 
     deal.update(
         {
-            "organization": doc.get("organization") or create_organization(doc),
+            "organization": organization,
             "contacts": [{"contact": contact, "is_primary": 1}] if contact else [],
         }
     )
@@ -736,6 +776,9 @@ def create_deal(doc: dict):
     doc.pop("organization", None)
 
     deal.update(doc)
+    if contact and not any(d.contact for d in deal.get("contacts", [])):
+        deal.set("contacts", [])
+        deal.append("contacts", {"contact": contact, "is_primary": 1})
 
     deal.insert(ignore_permissions=True)
     return deal.name

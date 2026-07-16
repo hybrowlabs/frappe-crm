@@ -286,10 +286,10 @@
       v-else
       type="text"
       :placeholder="getPlaceholder(field)"
-      :value="data[field.fieldname]"
+      v-model="data[field.fieldname]"
       :disabled="Boolean(field.read_only)"
       :description="field.description"
-      @change="fieldChange($event.target.value, field)"
+      @update:modelValue="(v) => fieldChange(v, field)"
     />
   </div>
 </template>

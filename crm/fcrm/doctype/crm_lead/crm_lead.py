@@ -318,6 +318,8 @@ class CRMLead(Document):
 
 		existing_contact = existing_contact or self.contact_exists(throw)
 		if existing_contact:
+			if self.organization:
+				frappe.db.set_value("Contact", existing_contact, "company_name", self.organization)
 			self.update_lead_contact(existing_contact)
 			return existing_contact
 

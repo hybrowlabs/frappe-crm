@@ -33,6 +33,29 @@
       />
     </StageSection>
 
+    <StageSection :title="__('Contact')" icon="users">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <FieldText
+          v-model="firstName"
+          :label="__('First Name')"
+          required
+          :error="errors.firstName"
+        />
+        <FieldText v-model="lastName" :label="__('Last Name')" />
+        <FieldText
+          v-model="email"
+          :label="__('Email')"
+          type="email"
+          :error="errors.email"
+        />
+        <FieldText
+          v-model="mobileNo"
+          :label="__('Mobile No.')"
+          :error="errors.mobileNo"
+        />
+      </div>
+    </StageSection>
+
     <template #actions>
       <div class="flex items-center justify-between gap-2">
         <Button :label="__('Cancel')" @click="show = false" />
@@ -56,6 +79,7 @@ import StageCallout from '@/components/StageForms/StageCallout.vue'
 import StageIcon from '@/components/StageForms/StageIcon.vue'
 import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
+import FieldText from '@/components/StageForms/FieldText.vue'
 import { usersStore } from '@/stores/users'
 import { Button, createResource, toast } from 'frappe-ui'
 import { ref, computed } from 'vue'
@@ -97,15 +121,25 @@ createResource({
 
 const why = ref('')
 const timeline = ref('')
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
+const mobileNo = ref('')
 const creating = ref(false)
 
 const attempted = ref(false)
-const fieldValues = { why, timeline }
+const fieldValues = { why, timeline, firstName }
 const errors = computed(() => {
   if (!attempted.value) return {}
   const e = {}
   for (const k of Object.keys(fieldValues)) {
     if (!fieldValues[k].value) e[k] = __('Required')
+  }
+  if (email.value && !email.value.includes('@')) {
+    e.email = __('Invalid email address')
+  }
+  if (mobileNo.value && isNaN(mobileNo.value.replace(/[-+() ]/g, ''))) {
+    e.mobileNo = __('Mobile No. should be a number')
   }
   return e
 })
@@ -124,6 +158,10 @@ function createDeal() {
         deal_owner: getUser().name,
         conversion_reason: why.value,
         close_timeline: timeline.value,
+        first_name: firstName.value,
+        last_name: lastName.value,
+        email: email.value,
+        mobile_no: mobileNo.value,
       },
     },
     auto: true,

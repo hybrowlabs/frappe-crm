@@ -387,8 +387,6 @@ async function convertToDeal() {
 
   if (newDeal) {
     if (!chooseExistingOrganization.value) await createDealAddresses(newDeal)
-    if (chooseExistingContact.value && existingContact.value)
-      await linkContactToOrg(newDeal)
     show.value = false
     error.value = ''
     updateOnboardingStep('convert_lead_to_deal', true, false, () => {
@@ -396,33 +394,6 @@ async function convertToDeal() {
     })
     capture('convert_lead_to_deal')
     router.push({ name: 'Deal', params: { dealId: newDeal } })
-  }
-}
-
-// if the chosen contact has no organization, link it to the deal's org
-async function linkContactToOrg(dealName) {
-  try {
-    const contact = await call('frappe.client.get_value', {
-      doctype: 'Contact',
-      filters: existingContact.value,
-      fieldname: 'company_name',
-    })
-    if (contact?.company_name) return
-    const dealDoc = await call('frappe.client.get_value', {
-      doctype: 'CRM Deal',
-      filters: dealName,
-      fieldname: 'organization',
-    })
-    const org = dealDoc?.organization
-    if (!org) return
-    await call('frappe.client.set_value', {
-      doctype: 'Contact',
-      name: existingContact.value,
-      fieldname: 'company_name',
-      value: org,
-    })
-  } catch (err) {
-    toast.error(err.messages?.[0] || __('Error linking contact to organization'))
   }
 }
 
