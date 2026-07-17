@@ -46,7 +46,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-08 17:07:45.264883",
+ "modified": "2026-07-17 14:31:30.788116",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Pain Point",
@@ -73,6 +73,24 @@
    "report": 1,
    "role": "Sales User",
    "select": 1,
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Technical Head",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Technical Person",
    "share": 1
   }
  ],
