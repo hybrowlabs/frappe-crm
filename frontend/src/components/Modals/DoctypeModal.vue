@@ -68,6 +68,7 @@ import { usersStore } from '@/stores/users'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { isMobileView } from '@/composables/settings'
 import { setupCustomizations } from '@/utils'
+import { validatePhoneFields } from '@/utils/phoneFields'
 import { call, createResource, toast } from 'frappe-ui'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -126,6 +127,12 @@ const _create = createResource({
 })
 
 async function create() {
+  const phoneError = validatePhoneFields(props.doctype, document.doc, getLabel)
+  if (phoneError) {
+    error.value = phoneError
+    return
+  }
+
   await triggerOnBeforeCreate?.()
 
   _create.submit({
@@ -136,7 +143,27 @@ async function create() {
   })
 }
 
+// resolve a fieldname to the label shown in the form, for error messages
+function getLabel(fieldname) {
+  for (const tab of layout.data || []) {
+    for (const section of tab.sections || []) {
+      for (const column of section.columns || []) {
+        for (const field of column.fields || []) {
+          if (field.fieldname === fieldname) return field.label
+        }
+      }
+    }
+  }
+  return fieldname
+}
+
 function update() {
+  const phoneError = validatePhoneFields(props.doctype, document.doc, getLabel)
+  if (phoneError) {
+    error.value = phoneError
+    return
+  }
+
   document.save.submit(null, {
     onSuccess: (d) => {
       emit('afterUpdate', d)
