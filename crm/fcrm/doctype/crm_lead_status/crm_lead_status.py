@@ -14,6 +14,7 @@ class CRMLeadStatus(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		active: DF.Check
 		color: DF.Literal["black", "gray", "blue", "green", "red", "pink", "orange", "amber", "yellow", "cyan", "teal", "violet", "purple"]
 		label: DF.Data | None
 		lead_status: DF.Data

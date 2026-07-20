@@ -1,49 +1,54 @@
 [
  {
+  "active": 1,
   "color": "gray",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
-  "label": "New",
+  "label": "Not Contacted",
   "lead_status": "New",
-  "modified": "2026-06-13 12:09:23.228167",
+  "modified": "2026-07-20 13:07:24.813262",
   "name": "New",
   "position": 1,
   "type": "Open"
  },
  {
+  "active": 1,
   "color": "orange",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
-  "label": "Contacted",
+  "label": "Contacted / Nurturing",
   "lead_status": "Contacted",
-  "modified": "2026-06-13 12:09:23.228721",
+  "modified": "2026-07-20 13:07:39.871548",
   "name": "Contacted",
   "position": 2,
   "type": "Ongoing"
  },
  {
+  "active": 0,
   "color": "blue",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
   "label": "Nurturing",
   "lead_status": "Nurture",
-  "modified": "2026-06-13 12:09:23.229070",
+  "modified": "2026-07-20 13:07:53.800260",
   "name": "Nurture",
   "position": 3,
   "type": "Ongoing"
  },
  {
+  "active": 0,
   "color": "green",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
   "label": "Qualified",
   "lead_status": "Qualified",
-  "modified": "2026-06-13 12:09:23.230311",
+  "modified": "2026-07-20 13:07:04.060078",
   "name": "Qualified",
   "position": 4,
   "type": "Won"
  },
  {
+  "active": 1,
   "color": "teal",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
@@ -55,17 +60,19 @@
   "type": "Won"
  },
  {
+  "active": 0,
   "color": "red",
   "docstatus": 0,
   "doctype": "CRM Lead Status",
   "label": "Unqualified",
   "lead_status": "Unqualified",
-  "modified": "2026-06-13 12:09:23.230643",
+  "modified": "2026-07-20 13:07:01.049713",
   "name": "Unqualified",
   "position": 6,
   "type": "Lost"
  },
  {
+  "active": 1,
   "color": "purple",
   "docstatus": 0,
   "doctype": "CRM Lead Status",

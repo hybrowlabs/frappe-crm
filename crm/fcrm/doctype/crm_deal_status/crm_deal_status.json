@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "active",
   "deal_status",
   "type",
   "position",
@@ -15,6 +16,13 @@
   "label"
  ],
  "fields": [
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
   {
    "default": "gray",
    "fieldname": "color",
@@ -65,7 +73,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-09 21:40:50.671160",
+ "modified": "2026-07-20 13:16:16.055455",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal Status",

@@ -43,15 +43,6 @@
       </template>
 
       <template #footer="{ value: v, close }">
-        <div v-if="attrs.onCreate">
-          <Button
-            variant="ghost"
-            class="w-full !justify-start"
-            :label="__('Create New')"
-            iconLeft="plus"
-            @click="() => attrs.onCreate(v, close)"
-          />
-        </div>
         <div>
           <Button
             variant="ghost"

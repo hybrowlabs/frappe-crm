@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "active",
   "lead_status",
   "type",
   "label",
@@ -14,6 +15,13 @@
   "position"
  ],
  "fields": [
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
   {
    "default": "gray",
    "fieldname": "color",
@@ -57,7 +65,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-09 21:49:25.005017",
+ "modified": "2026-07-20 13:03:44.665698",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Lead Status",

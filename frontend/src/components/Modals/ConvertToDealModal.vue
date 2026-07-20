@@ -56,7 +56,20 @@
         :help="__('As per GST certificate')"
         :error="errors.legalName"
       />
-      <StageCallout v-if="valid" theme="green" icon="check" class="mt-1">
+      <StageCallout
+        v-if="orgNameMismatch"
+        theme="red"
+        icon="alert"
+        class="mt-1"
+      >
+        {{
+          __(
+            'Organization name is not as per the official GST name. Lead has {0}, GST certificate says {1}. Correct the organization name on the lead before converting.',
+            [leadOrgName, fetchedLegalName],
+          )
+        }}
+      </StageCallout>
+      <StageCallout v-if="valid && !orgNameMismatch" theme="green" icon="check" class="mt-1">
         {{ __('State') }} <b>{{ fetchedState || stateCode }}</b>
         {{
           __(
@@ -215,6 +228,9 @@ const converting = ref(false)
 const attempted = ref(false)
 const gstinLoading = ref(false)
 const fetchedState = ref('')
+// legal name exactly as returned by the GST portal, kept separate from the
+// editable field so the mismatch check always compares against the official name
+const fetchedLegalName = ref('')
 const territory = ref(props.lead.territory || '')
 const chooseExistingOrganization = ref(false)
 const existingOrganization = ref('')
@@ -274,6 +290,7 @@ watch(show, (val) => {
     error.value = ''
     attempted.value = false
     fetchedState.value = ''
+    fetchedLegalName.value = ''
     lastFetchedGstin = ''
     resetAddress(billing)
     resetAddress(shipping)
@@ -305,6 +322,7 @@ const gstinHelp = computed(() => {
 // Auto-fetch the legal name from the GSTIN via india_compliance.
 watch(clean, (value) => {
   fetchedState.value = ''
+  fetchedLegalName.value = ''
   if (!valid.value || value === lastFetchedGstin) return
   lastFetchedGstin = value
   fetchGstinInfo(value)
@@ -317,7 +335,10 @@ async function fetchGstinInfo(value) {
       'india_compliance.gst_india.utils.gstin_info.get_gstin_info',
       { gstin: value },
     )
-    if (info?.business_name) legalName.value = info.business_name
+    if (info?.business_name) {
+      legalName.value = info.business_name
+      fetchedLegalName.value = info.business_name
+    }
     if (info?.gst_category && GST_CATEGORY_MAP[info.gst_category])
       gstType.value = GST_CATEGORY_MAP[info.gst_category]
     if (info?.permanent_address?.state) fetchedState.value = info.permanent_address.state
@@ -330,6 +351,27 @@ async function fetchGstinInfo(value) {
   }
 }
 
+// "Bse Limited" and "BSE  LIMITED" are the same name — compare on letters and
+// digits only, so casing, spacing and punctuation don't raise false alarms.
+// Anything beyond that (a "M/s." prefix, "Pvt Ltd" vs nothing) is a real
+// mismatch and blocks the conversion.
+function normalizeName(name) {
+  return String(name || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+}
+
+const leadOrgName = computed(() => props.lead.organization || '')
+
+// The lead's organization must match the legal name on the GST certificate.
+const orgNameMismatch = computed(() => {
+  if (chooseExistingOrganization.value || exempt.value) return false
+  if (!fetchedLegalName.value || !leadOrgName.value) return false
+  return (
+    normalizeName(fetchedLegalName.value) !== normalizeName(leadOrgName.value)
+  )
+})
+
 const errors = computed(() => {
   if (!attempted.value) return {}
   const e = {}
@@ -341,6 +383,7 @@ const errors = computed(() => {
   if (!legalName.value) e.legalName = __('Required')
   if (!exempt.value) {
     if (!valid.value) e.gstin = __('Enter a valid 15-character GSTIN')
+    if (orgNameMismatch.value) e.orgName = __('Organization name does not match')
   }
   if (!billing.address_line1) e.billingLine1 = __('Required')
   if (!billing.city) e.billingCity = __('Required')

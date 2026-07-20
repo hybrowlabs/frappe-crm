@@ -36,3 +36,4 @@ crm.patches.v1_0.set_organization_last_order # 07-07-2026
 crm.patches.v1_0.create_precious_alloys_roles # 07-07-2026
 crm.patches.v1_0.rebuild_previous_order_items_snapshot # 13-07-2026
 crm.patches.v1_0.migrate_deal_product_suggestions # 13-07-2026 - 2
+crm.patches.v1_0.set_status_active # 20-07-2026

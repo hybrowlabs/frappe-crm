@@ -1,5 +1,6 @@
 [
  {
+  "active": 1,
   "color": "blue",
   "deal_status": "Proposal/Quotation",
   "docstatus": 0,
@@ -12,6 +13,7 @@
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "yellow",
   "deal_status": "Negotiation",
   "docstatus": 0,
@@ -24,6 +26,7 @@
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "purple",
   "deal_status": "Ready to Close",
   "docstatus": 0,
@@ -36,6 +39,7 @@
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "red",
   "deal_status": "Lost",
   "docstatus": 0,
@@ -48,18 +52,7 @@
   "type": "Lost"
  },
  {
-  "color": "gray",
-  "deal_status": "Req. Discussion",
-  "docstatus": 0,
-  "doctype": "CRM Deal Status",
-  "label": "Req. Discussion",
-  "modified": "2026-06-13 12:09:23.203244",
-  "name": "Req. Discussion",
-  "position": 1,
-  "probability": 5.0,
-  "type": "Open"
- },
- {
+  "active": 1,
   "color": "green",
   "deal_status": "Evaluation Completed",
   "docstatus": 0,
@@ -72,6 +65,7 @@
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "gray",
   "deal_status": "Qualification",
   "docstatus": 0,
@@ -84,6 +78,7 @@
   "type": "Open"
  },
  {
+  "active": 1,
   "color": "green",
   "deal_status": "Won",
   "docstatus": 0,
@@ -96,18 +91,20 @@
   "type": "Won"
  },
  {
+  "active": 0,
   "color": "red",
   "deal_status": "Retrial",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
   "label": "Retrial",
-  "modified": "2026-06-13 12:09:23.221002",
+  "modified": "2026-07-20 13:11:58.411347",
   "name": "Retrial",
   "position": 5,
   "probability": 30.0,
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "orange",
   "deal_status": "Demo/Making",
   "docstatus": 0,
@@ -120,6 +117,7 @@
   "type": "Ongoing"
  },
  {
+  "active": 1,
   "color": "blue",
   "deal_status": "Tech Assignment",
   "docstatus": 0,
@@ -130,5 +128,18 @@
   "position": 3,
   "probability": 20.0,
   "type": "Ongoing"
+ },
+ {
+  "active": 0,
+  "color": "gray",
+  "deal_status": "Req. Discussion",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Req. Discussion",
+  "modified": "2026-07-20 13:11:58.427156",
+  "name": "Req. Discussion",
+  "position": 1,
+  "probability": 5.0,
+  "type": "Open"
  }
 ]
