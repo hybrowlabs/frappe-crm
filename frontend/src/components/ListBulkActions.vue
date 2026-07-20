@@ -34,6 +34,7 @@
 import EditValueModal from '@/components/Modals/EditValueModal.vue'
 import AssignmentModal from '@/components/Modals/AssignmentModal.vue'
 import { setupListCustomizations } from '@/utils'
+import { canDelete } from '@/composables/permissions'
 import { globalStore } from '@/stores/global'
 import { useTelemetry } from 'frappe-ui/frappe'
 import { call, toast } from 'frappe-ui'
@@ -172,7 +173,7 @@ function bulkActions(selections, unselectAll) {
     })
   }
 
-  if (!props.options.hideDelete) {
+  if (!props.options.hideDelete && canDelete(props.doctype)) {
     actions.push({
       label: __('Delete'),
       onClick: () => deleteValues(selections, unselectAll),
@@ -229,6 +230,9 @@ function reload(unselectAll) {
 }
 
 onMounted(async () => {
+  // warm the delete permission so the action list is correct on first open
+  canDelete(props.doctype)
+
   if (!list.value?.data) return
   let customization = await setupListCustomizations(list.value.data, {
     list: list.value,

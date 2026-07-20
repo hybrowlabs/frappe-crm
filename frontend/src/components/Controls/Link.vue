@@ -43,6 +43,15 @@
       </template>
 
       <template #footer="{ value: v, close }">
+        <div v-if="attrs.onCreate && showCreateNew">
+          <Button
+            variant="ghost"
+            class="w-full !justify-start"
+            :label="__('Create New')"
+            iconLeft="plus"
+            @click="() => attrs.onCreate(v, close)"
+          />
+        </div>
         <div>
           <Button
             variant="ghost"
@@ -74,6 +83,14 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change'])
 
 const attrs = useAttrs()
+
+// Doctypes that must not be created from a link dropdown.
+// Add a doctype name here and its "Create New" button disappears everywhere.
+const HIDE_CREATE_NEW_FOR = ['Territory']
+
+const showCreateNew = computed(
+  () => !HIDE_CREATE_NEW_FOR.includes(props.doctype),
+)
 
 const valuePropPassed = computed(() => 'value' in attrs)
 

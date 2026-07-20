@@ -331,6 +331,7 @@ import {
 import { flt, formatNumber, formatCurrency } from '@/utils/numberFormat.js'
 import { getMeta } from '@/stores/meta'
 import { parseLinkFilters } from '@/utils/fieldTransforms'
+import { isPhoneField as isPhoneFieldFor } from '@/utils/phoneFields'
 import { usersStore } from '@/stores/users'
 import { useDocument } from '@/data/document'
 import {
@@ -561,24 +562,13 @@ const resolvedHtml = computed(() => {
   return interpolateTemplate(field.value.options || '', data.value)
 })
 
-// Data fields that should render as a +91 prefixed 10 digit phone input
-const PHONE_FIELDS = {
-  'CRM Call Log': ['from', 'to'],
-}
-
 // Fields marked with a red * in the form only. The doctype keeps reqd off, so
 // imports, the API and existing records are not affected.
 const VIEW_REQUIRED_FIELDS = {
   'CRM Lead': ['territory'],
 }
 
-function isPhoneField(field) {
-  if (field.fieldtype !== 'Data') return false
-  return (
-    field.options === 'Phone' ||
-    PHONE_FIELDS[doctype]?.includes(field.fieldname)
-  )
-}
+const isPhoneField = (field) => isPhoneFieldFor(doctype, field)
 
 const getPlaceholder = (field) => {
   if (field.placeholder) {
