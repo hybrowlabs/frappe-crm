@@ -84,6 +84,7 @@
 
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
+import { isTenDigitPhone } from '@/utils/phoneFields'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
@@ -284,6 +285,10 @@ async function createDeal() {
         isNaN(deal.doc.mobile_no.replace(/[-+() ]/g, ''))
       ) {
         error.value = __('Mobile No. should be a number')
+        return error.value
+      }
+      if (deal.doc.mobile_no && !isTenDigitPhone(deal.doc.mobile_no)) {
+        error.value = __('Mobile No. must be a 10 digit number')
         return error.value
       }
       if (deal.doc.email && !deal.doc.email.includes('@')) {

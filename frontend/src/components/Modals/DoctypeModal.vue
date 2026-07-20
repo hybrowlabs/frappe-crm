@@ -68,7 +68,7 @@ import { usersStore } from '@/stores/users'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { isMobileView } from '@/composables/settings'
 import { setupCustomizations } from '@/utils'
-import { validatePhoneFields } from '@/utils/phoneFields'
+import { validatePhoneFieldsInLayout } from '@/utils/phoneFields'
 import { call, createResource, toast } from 'frappe-ui'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -127,7 +127,11 @@ const _create = createResource({
 })
 
 async function create() {
-  const phoneError = validatePhoneFields(props.doctype, document.doc, getLabel)
+  const phoneError = validatePhoneFieldsInLayout(
+    props.doctype,
+    document.doc,
+    layout.data,
+  )
   if (phoneError) {
     error.value = phoneError
     return
@@ -143,22 +147,12 @@ async function create() {
   })
 }
 
-// resolve a fieldname to the label shown in the form, for error messages
-function getLabel(fieldname) {
-  for (const tab of layout.data || []) {
-    for (const section of tab.sections || []) {
-      for (const column of section.columns || []) {
-        for (const field of column.fields || []) {
-          if (field.fieldname === fieldname) return field.label
-        }
-      }
-    }
-  }
-  return fieldname
-}
-
 function update() {
-  const phoneError = validatePhoneFields(props.doctype, document.doc, getLabel)
+  const phoneError = validatePhoneFieldsInLayout(
+    props.doctype,
+    document.doc,
+    layout.data,
+  )
   if (phoneError) {
     error.value = phoneError
     return

@@ -50,6 +50,7 @@
 
 <script setup>
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
+import { isTenDigitPhone } from '@/utils/phoneFields'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import { usersStore } from '@/stores/users'
 import { isMobileView } from '@/composables/settings'
@@ -115,6 +116,10 @@ function validateRequiredFields() {
     isNaN(_contact.doc.mobile_no.replace(/[-+() ]/g, ''))
   ) {
     return __('Mobile No. should be a number')
+  }
+
+  if (_contact.doc.mobile_no && !isTenDigitPhone(_contact.doc.mobile_no)) {
+    return __('Mobile No. must be a 10 digit number')
   }
 
   return null

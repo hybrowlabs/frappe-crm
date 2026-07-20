@@ -59,7 +59,8 @@
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import DataFieldsModal from '@/components/Modals/DataFieldsModal.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import { Badge, createResource } from 'frappe-ui'
+import { Badge, createResource, toast } from 'frappe-ui'
+import { validatePhoneFieldsInLayout } from '@/utils/phoneFields'
 import LoadingIndicator from '@/components/Icons/LoadingIndicator.vue'
 import { usersStore } from '@/stores/users'
 import { useDocument } from '@/data/document'
@@ -91,6 +92,16 @@ const tabs = createResource({
 
 function saveChanges() {
   if (!document.isDirty) return
+
+  const phoneError = validatePhoneFieldsInLayout(
+    props.doctype,
+    document.doc,
+    tabs.data,
+  )
+  if (phoneError) {
+    toast.error(phoneError)
+    return
+  }
 
   const updatedDoc = { ...document.doc }
   const oldDoc = { ...document.originalDoc }
