@@ -1,6 +1,8 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
+
 import frappe
 from frappe import _, generate_hash
 from frappe.model.document import Document
@@ -52,6 +54,32 @@ class CRMCallLog(Document):
 			self.id = generate_hash(length=12)
 		if not self.telephony_medium:
 			self.telephony_medium = "Manual"
+
+	def validate(self):
+		self.validate_phone_numbers()
+
+	def validate_phone_numbers(self):
+		# only manually logged calls are restricted, telephony providers send
+		# numbers in their own formats (short codes, international numbers)
+		if self.telephony_medium and self.telephony_medium != "Manual":
+			return
+
+		for fieldname in ("from", "to"):
+			number = (self.get(fieldname) or "").strip()
+			if not number:
+				continue
+
+			digits = re.sub(r"\D", "", number)
+			if digits.startswith("91") and len(digits) == 12:
+				digits = digits[2:]
+
+			if len(digits) != 10:
+				frappe.throw(
+					_("{0} must be a 10 digit number").format(_(self.meta.get_label(fieldname))),
+					title=_("Invalid Phone Number"),
+				)
+
+			self.set(fieldname, "+91" + digits)
 
 	@staticmethod
 	def default_list_data():

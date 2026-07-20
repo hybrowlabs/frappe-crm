@@ -22,13 +22,10 @@ class CRMLead(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.types import DF
-
 		from crm.fcrm.doctype.crm_products.crm_products import CRMProducts
-		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import (
-			CRMRollingResponseTime,
-		)
+		from crm.fcrm.doctype.crm_rolling_response_time.crm_rolling_response_time import CRMRollingResponseTime
 		from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import CRMStatusChangeLog
+		from frappe.types import DF
 
 		annual_revenue: DF.Currency
 		communication_status: DF.Link | None
@@ -51,7 +48,7 @@ class CRMLead(Document):
 		lost_notes: DF.Text | None
 		lost_reason: DF.Link | None
 		middle_name: DF.Data | None
-		mobile_no: DF.Data | None
+		mobile_no: DF.Data
 		naming_series: DF.Literal["CRM-LEAD-.YYYY.-"]
 		net_total: DF.Currency
 		no_of_employees: DF.Literal["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"]

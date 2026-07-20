@@ -1,44 +1,56 @@
 [
  {
+  "docstatus": 0,
   "doctype": "UOM",
+  "enabled": 1,
+  "modified": "2026-07-20 12:59:30.185849",
+  "must_be_whole_number": 1,
   "name": "Pieces",
-  "uom_name": "Pieces",
-  "enabled": 1,
-  "must_be_whole_number": 1
+  "uom_name": "Pieces"
  },
  {
+  "docstatus": 0,
   "doctype": "UOM",
+  "enabled": 1,
+  "modified": "2026-07-20 12:59:30.195692",
+  "must_be_whole_number": 1,
   "name": "Nos",
-  "uom_name": "Nos",
-  "enabled": 1,
-  "must_be_whole_number": 1
+  "uom_name": "Nos"
  },
  {
+  "docstatus": 0,
   "doctype": "UOM",
+  "enabled": 1,
+  "modified": "2026-07-20 12:59:30.204465",
+  "must_be_whole_number": 0,
   "name": "Gram",
-  "uom_name": "Gram",
-  "enabled": 1,
-  "must_be_whole_number": 0
+  "uom_name": "Gram"
  },
  {
+  "docstatus": 0,
   "doctype": "UOM",
+  "enabled": 1,
+  "modified": "2026-07-20 12:59:30.213707",
+  "must_be_whole_number": 0,
   "name": "Kg",
-  "uom_name": "Kg",
-  "enabled": 1,
-  "must_be_whole_number": 0
+  "uom_name": "Kg"
  },
  {
+  "docstatus": 0,
   "doctype": "UOM",
+  "enabled": 1,
+  "modified": "2026-07-20 12:59:30.222197",
+  "must_be_whole_number": 0,
   "name": "Millilitre",
-  "uom_name": "Millilitre",
-  "enabled": 1,
-  "must_be_whole_number": 0
+  "uom_name": "Millilitre"
  },
  {
+  "docstatus": 0,
   "doctype": "UOM",
-  "name": "Litre",
-  "uom_name": "Litre",
   "enabled": 1,
-  "must_be_whole_number": 0
+  "modified": "2026-07-20 12:59:30.230523",
+  "must_be_whole_number": 0,
+  "name": "Litre",
+  "uom_name": "Litre"
  }
 ]

@@ -14,7 +14,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const leadStatuses = createListResource({
     doctype: 'CRM Lead Status',
-    fields: ['name', 'label', 'color', 'position', 'type'],
+    fields: ['name', 'label', 'color', 'position', 'type', 'active'],
     orderBy: 'position asc',
     cache: 'lead-statuses',
     initialData: [],
@@ -30,7 +30,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const dealStatuses = createListResource({
     doctype: 'CRM Deal Status',
-    fields: ['name', 'label', 'color', 'position', 'type'],
+    fields: ['name', 'label', 'color', 'position', 'type', 'active'],
     orderBy: 'position asc',
     cache: 'deal-statuses',
     initialData: [],
@@ -96,6 +96,10 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
     let options = []
     for (const status in statusesByName) {
+      // inactive statuses stay resolvable for existing records, but can't be picked.
+      // checked against 0 explicitly so a stale cache without `active` still shows
+      if (statusesByName[status]?.active === 0) continue
+
       let statusLabel =
         statusesByName[status]?.label || statusesByName[status]?.name
       options.push({
