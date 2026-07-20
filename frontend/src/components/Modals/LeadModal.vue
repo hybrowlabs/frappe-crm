@@ -51,6 +51,7 @@ import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
 import { sessionStore } from '@/stores/session'
 import { isMobileView } from '@/composables/settings'
+import { isTenDigitPhone } from '@/utils/phoneFields'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { createResource } from 'frappe-ui'
@@ -152,6 +153,10 @@ async function createNewLead() {
           isNaN(lead.doc.mobile_no.replace(/[-+() ]/g, ''))
         ) {
           error.value = __('Mobile No. should be a number')
+          return error.value
+        }
+        if (lead.doc.mobile_no && !isTenDigitPhone(lead.doc.mobile_no)) {
+          error.value = __('Mobile No. must be a 10 digit number')
           return error.value
         }
         if (lead.doc.email && !lead.doc.email.includes('@')) {
