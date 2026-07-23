@@ -86,7 +86,12 @@ const attrs = useAttrs()
 
 // Doctypes that must not be created from a link dropdown.
 // Add a doctype name here and its "Create New" button disappears everywhere.
-const HIDE_CREATE_NEW_FOR = ['Territory']
+const HIDE_CREATE_NEW_FOR = [
+  'Territory',
+  'Salutation',
+  'Gender',
+  'CRM Industry',
+]
 
 const showCreateNew = computed(
   () => !HIDE_CREATE_NEW_FOR.includes(props.doctype),
