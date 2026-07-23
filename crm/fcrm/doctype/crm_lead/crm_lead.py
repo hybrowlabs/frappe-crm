@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import json
+import re
 
 import frappe
 from frappe import _
@@ -100,6 +101,7 @@ class CRMLead(Document):
 		self.set_lead_name()
 		self.set_title()
 		self.validate_email()
+		self.validate_mobile_no()
 		self.validate_lost_reason()
 		if not self.is_new() and self.has_value_changed("lead_owner") and self.lead_owner:
 			self.share_with_agent(self.lead_owner)
@@ -174,6 +176,60 @@ class CRMLead(Document):
 
 			if self.is_new() or not self.image:
 				self.image = has_gravatar(self.email)
+
+	def validate_mobile_no(self):
+		"""
+		Accept only a real phone number and store it in a clean, consistent form.
+
+		Indian numbers (10 digits, or 10 digits behind a 91/+91 country code) must
+		start with 6-9 and are normalised to "+91XXXXXXXXXX". Any other country code
+		is kept as typed, as long as it looks like a phone number (8-15 digits).
+		"""
+		if not self.mobile_no:
+			return
+
+		raw = self.mobile_no.strip()
+
+		# Drop the "+" and the usual separators people type.
+		digits = re.sub(r"\D", "", raw)
+
+		if not digits:
+			frappe.throw(_("Mobile No. must be a valid phone number"), title=_("Invalid Mobile No."))
+
+		# Drop the trunk prefix people type before a national number.
+		digits = digits.lstrip("0") or digits
+
+		# Figure out whether this is meant to be an Indian number. A bare 10-digit
+		# number is one; so is anything behind a 91 country code. Note that a valid
+		# national number can itself start with "91" (e.g. 9123456789), which is why
+		# the 10-digit case is checked first.
+		national = None
+		if len(digits) == 10:
+			national = digits
+		elif digits.startswith("91"):
+			national = digits[2:]
+
+		if national is not None:
+			if not re.fullmatch(r"[6-9]\d{9}", national):
+				frappe.throw(
+					_("{0} is not a valid mobile number. An Indian mobile number has 10 digits and starts with 6, 7, 8 or 9.").format(
+						frappe.bold(raw)
+					),
+					title=_("Invalid Mobile No."),
+				)
+			self.mobile_no = "+91" + national
+			return
+
+		# Some other country code - just make sure it is plausible.
+		if not 8 <= len(digits) <= 15:
+			frappe.throw(
+				_("{0} is not a valid phone number. Please enter the number with its country code.").format(
+					frappe.bold(raw)
+				),
+				title=_("Invalid Mobile No."),
+			)
+
+		self.mobile_no = "+" + digits
 
 	def validate_lost_reason(self):
 		"""
