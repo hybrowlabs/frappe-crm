@@ -341,6 +341,7 @@ import Icon from '@/components/Icon.vue'
 import Resizer from '@/components/Resizer.vue'
 import LoadingIndicator from '@/components/Icons/LoadingIndicator.vue'
 import ActivityIcon from '@/components/Icons/ActivityIcon.vue'
+import DashboardIcon from '@/components/Icons/DashboardIcon.vue'
 import EmailIcon from '@/components/Icons/EmailIcon.vue'
 import Email2Icon from '@/components/Icons/Email2Icon.vue'
 import CommentIcon from '@/components/Icons/CommentIcon.vue'
@@ -556,6 +557,11 @@ usePageMeta(() => {
 
 const tabs = computed(() => {
   let tabOptions = [
+    {
+      name: 'Dashboard',
+      label: __('Dashboard'),
+      icon: DashboardIcon,
+    },
     {
       name: 'Activity',
       label: __('Activity'),
