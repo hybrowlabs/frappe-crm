@@ -43,7 +43,9 @@ let pinia = createPinia()
 let app = createApp(App)
 
 setConfig('resourceFetcher', frappeRequest)
-app.use(FrappeUI)
+// socketio: false — main.js sets up its own $socket below with the correct
+// port; the plugin's default socket points at :9000 and retries forever
+app.use(FrappeUI, { socketio: false })
 app.use(pinia)
 app.use(router)
 app.use(translationPlugin)

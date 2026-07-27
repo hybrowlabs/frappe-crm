@@ -9,9 +9,10 @@ export function initSocket() {
   let protocol = port ? 'http' : 'https'
   let url = `${protocol}://${host}${port}/${siteName}`
 
+  // no reconnectionAttempts cap — with a cap, a bench restart kills realtime
+  // for every open tab until a full page reload
   let socket = io(url, {
     withCredentials: true,
-    reconnectionAttempts: 5,
   })
   socket.on('refetch_resource', (data) => {
     if (data.cache_key) {
