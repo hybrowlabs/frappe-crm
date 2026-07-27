@@ -99,6 +99,7 @@ import {
   visible,
   notifications,
   notificationsStore,
+  getNotificationRoute as getRoute,
 } from '@/stores/notifications'
 import { useEventNotificationAlert } from '@/data/notifications'
 import { globalStore } from '@/stores/global'
@@ -150,21 +151,4 @@ onMounted(() => {
   $socket.on('crm_notification', () => notifications.reload())
   $socket.on('event_notification', (data) => handleEventNotification(data))
 })
-
-function getRoute(notification) {
-  let params = {
-    leadId: notification.reference_name,
-  }
-  if (notification.route_name === 'Deal') {
-    params = {
-      dealId: notification.reference_name,
-    }
-  }
-
-  return {
-    name: notification.route_name,
-    params: params,
-    hash: notification.hash,
-  }
-}
 </script>
