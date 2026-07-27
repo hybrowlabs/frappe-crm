@@ -21,6 +21,16 @@
     <div v-else-if="title == 'Events'" class="h-full activity">
       <EventArea :doctype="doctype" :docname="docname" />
     </div>
+    <div v-else-if="title == 'Dashboard'" class="activity">
+      <DashboardArea
+        v-model="all_activities"
+        :doctype="doctype"
+        :docname="docname"
+        :modalRef="modalRef"
+        :emailBox="emailBox"
+        @changeTab="changeTabTo"
+      />
+    </div>
     <div
       v-else-if="
         activities?.length ||
@@ -452,6 +462,7 @@
 <script setup>
 import ActivityHeader from '@/components/Activities/ActivityHeader.vue'
 import EmailArea from '@/components/Activities/EmailArea.vue'
+import DashboardArea from '@/components/Activities/DashboardArea.vue'
 import CommentArea from '@/components/Activities/CommentArea.vue'
 import CallArea from '@/components/Activities/CallArea.vue'
 import NoteArea from '@/components/Activities/NoteArea.vue'
