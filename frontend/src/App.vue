@@ -14,11 +14,17 @@ import NotPermitted from '@/pages/NotPermitted.vue'
 import DoctypeModals from '@/components/Modals/DoctypeModals.vue'
 import { Dialogs } from '@/utils/dialogs'
 import { sessionStore } from '@/stores/session'
+import { purgeOtherStageDrafts } from '@/composables/useStageFormDraft'
 import { FrappeUIProvider, setConfig, useTheme } from 'frappe-ui'
 import { computed, defineAsyncComponent, provide } from 'vue'
 
 const session = sessionStore()
 provide('session', session)
+
+// Stage-form drafts don't outlive the page they were typed on. A fresh execution
+// context means a reload, a new tab or a reopened browser — none of which should
+// restore one. Runs before any deal page mounts and reads its draft.
+purgeOtherStageDrafts(null)
 
 const { setTheme } = useTheme()
 if (!localStorage.getItem('theme')) {

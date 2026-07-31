@@ -4,6 +4,8 @@
     :statusLabel="statusLabel"
     :subtitle="subtitle"
     :steps="steps"
+    :initialStep="initialStep"
+    @update:step="currentStep = $event"
   >
     <template #default="{ step }">
     <div v-show="step === 0">
@@ -168,12 +170,21 @@
     <!-- Commercial Context -->
     <StageSection :title="__('Commercial Context')" icon="fileText">
       <FieldGrid :cols="2">
-        <FieldSelect
-          v-model="supplier"
-          :label="__('Current Supplier')"
-          :options="supplierOptions"
-          :placeholder="__('Select supplier')"
-        />
+        <div>
+          <FieldSelect
+            v-model="supplier"
+            :label="__('Current Supplier')"
+            :options="supplierOptions"
+            :placeholder="__('Select supplier')"
+          />
+          <FieldSelect
+            v-model="sampleType"
+            :label="__('Sample Type')"
+            :options="sampleTypeOptions"
+            :placeholder="__('Select sample type')"
+            class="mt-3"
+          />
+        </div>
         <div>
           <div class="mb-1.5 text-sm text-ink-gray-5">
             {{ __('Decision Maker') }} <span class="text-ink-red-3">*</span>
@@ -194,9 +205,17 @@
       <div class="my-3.5 h-px bg-outline-gray-2" />
       <FieldRadioGroup
         v-model="credit"
-        :label="__('Credit Check')"
+        :label="__('Credit Required')"
         inline
         :options="creditOptions"
+        class="mb-3"
+      />
+      <FieldSelect
+        v-if="credit"
+        v-model="paymentTerms"
+        :label="__('Payment Terms')"
+        :options="paymentTermsOptions"
+        :placeholder="__('Select payment terms')"
         class="mb-3"
       />
       <StageCallout v-if="credit" theme="amber" icon="lock">
@@ -263,8 +282,9 @@ import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import Link from '@/components/Controls/Link.vue'
+import { useStageFormDraft } from '@/composables/useStageFormDraft'
 import { Button, createListResource, toast } from 'frappe-ui'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 
 const props = defineProps({
   statusLabel: { type: String, default: '' },
@@ -296,9 +316,18 @@ const REQUIRED_FIELDS = [
 const freqOptions = ['Every Production Cycle', 'Weekly', 'Monthly', 'Occasional']
 const severityOptions = ['Critical', 'High', 'Medium', 'Low']
 const supplierOptions = ['Indian Supplier', 'Imported', 'In-house', 'None / New']
+const sampleTypeOptions = ['Paid', 'Free']
 const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
+]
+const paymentTermsOptions = [
+  '100% Advance',
+  '3 Days',
+  '7 Days',
+  '15 Days',
+  '30 Days',
+  '45 Days',
 ]
 const OTHER_PAIN_POINT = 'Other'
 // ---- live master data ----
@@ -424,8 +453,57 @@ const otherOperationalImpactSelected = ref(false)
 const otherOperationalImpact = ref('')
 const requirementNote = ref('')
 const supplier = ref('')
+const sampleType = ref('')
 const decisionMaker = ref('')
 const credit = ref(false)
+const paymentTerms = ref('')
+
+// ---- draft cache ----
+// Every field that should survive closing and reopening the popup. Keyed by the
+// local ref name — buildValues() still owns the mapping to server fieldnames.
+const draftableRefs = {
+  cat,
+  sub,
+  variant,
+  pains,
+  otherPainPoint,
+  freq,
+  severity,
+  opImpacts,
+  otherOperationalImpactSelected,
+  otherOperationalImpact,
+  requirementNote,
+  supplier,
+  sampleType,
+  decisionMaker,
+  credit,
+  paymentTerms,
+}
+const draft = useStageFormDraft(props.deal?.name, props.deal?.status)
+// Read during setup, not onMounted: StageFormDialog seeds its step from
+// `initialStep` while it is being set up, which happens before this component's
+// onMounted runs.
+const cachedDraft = draft.read()
+// Which step the wizard is on, and which one to reopen at after a restore.
+const currentStep = ref(cachedDraft?.step || 0)
+const initialStep = cachedDraft?.step || 0
+// Suppresses the autosave watcher while onMounted seeds the fields, so restoring a
+// draft doesn't immediately rewrite it.
+const restoring = ref(true)
+
+function snapshot() {
+  let values = {}
+  for (let [key, r] of Object.entries(draftableRefs)) {
+    values[key] = Array.isArray(r.value) ? [...r.value] : r.value
+  }
+  return values
+}
+
+function applySnapshot(values) {
+  for (let [key, r] of Object.entries(draftableRefs)) {
+    if (key in values) r.value = values[key]
+  }
+}
 
 // validation — errors only surface after a qualify attempt, then clear live
 const attempted = ref(false)
@@ -479,8 +557,14 @@ onMounted(() => {
   otherOperationalImpactSelected.value = !!otherOperationalImpact.value
   requirementNote.value = d.requirement_note || ''
   supplier.value = d.current_supplier || ''
+  sampleType.value = d.sample_type || ''
   decisionMaker.value = d.decision_maker || ''
   credit.value = !!d.credit_check
+  paymentTerms.value = d.payment_terms || ''
+
+  // A cached draft is newer than what's saved on the deal, so it wins over the
+  // prefill above.
+  if (cachedDraft?.values) applySnapshot(cachedDraft.values)
 
   // hydrate dependent dropdowns for the already-selected values
   if (cat.value) {
@@ -491,6 +575,22 @@ onMounted(() => {
     loadVariants(sub.value)
     loadPains(sub.value)
   }
+
+  nextTick(() => (restoring.value = false))
+})
+
+watch(
+  [snapshot, currentStep],
+  ([values, step]) => {
+    if (restoring.value) return
+    draft.save({ values, step })
+  },
+  { deep: true },
+)
+
+// The debounced save would otherwise drop the last edits made before closing.
+onBeforeUnmount(() => {
+  if (!restoring.value) draft.flush({ values: snapshot(), step: currentStep.value })
 })
 
 function onCategoryChange(v) {
@@ -555,8 +655,12 @@ function buildValues() {
       : '',
     requirement_note: requirementNote.value.trim(),
     current_supplier: supplier.value || '',
+    sample_type: sampleType.value || '',
     decision_maker: decisionMaker.value || null,
     credit_check: credit.value ? 1 : 0,
+    // payment terms only apply when credit is required — clear it otherwise so a
+    // stale selection doesn't linger after switching back to No
+    payment_terms: credit.value ? paymentTerms.value || '' : '',
   }
   return values
 }
@@ -564,7 +668,9 @@ function buildValues() {
 function saveDraft() {
   // drafts persist as-is — no required-field validation
   attempted.value = false
-  emit('save', { values: buildValues(), advance: false })
+  // The cached copy is only a safety net until the values reach the server, so it
+  // is dropped once the save succeeds — not before, in case the request fails.
+  emit('save', { values: buildValues(), advance: false, onSaved: discardDraft })
   show.value = false
 }
 
@@ -598,7 +704,14 @@ function markReadyToQualify() {
     return
   }
   // advance: true → Deal.vue moves the deal to the next stage (Qualified)
-  emit('save', { values: buildValues(), advance: true })
+  emit('save', { values: buildValues(), advance: true, onSaved: discardDraft })
   show.value = false
+}
+
+// Stop the autosave watcher and the unmount flush from writing the draft back after
+// it has been handed to the server.
+function discardDraft() {
+  restoring.value = true
+  draft.clear()
 }
 </script>

@@ -43,8 +43,10 @@
   "commercial_context_section",
   "current_supplier",
   "credit_check",
+  "payment_terms",
   "column_break_qnga",
   "decision_maker",
+  "sample_type",
   "trial_qualification_tab",
   "qualification_section",
   "opportunity_type",
@@ -647,6 +649,13 @@
    "label": "Credit Check"
   },
   {
+   "depends_on": "eval:doc.credit_check",
+   "fieldname": "payment_terms",
+   "fieldtype": "Select",
+   "label": "Payment Terms",
+   "options": "\n100% Advance\n3 Days\n7 Days\n15 Days\n30 Days\n45 Days"
+  },
+  {
    "fieldname": "trial_qualification_tab",
    "fieldtype": "Tab Break",
    "label": "Trial / Qualification"
@@ -1029,12 +1038,18 @@
    "fieldtype": "Link",
    "label": "Shipping Address",
    "options": "Address"
+  },
+  {
+   "fieldname": "sample_type",
+   "fieldtype": "Select",
+   "label": "Sample Type",
+   "options": "\nPaid\nFree"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-13 23:48:02.612936",
+ "modified": "2026-07-30 22:37:50.105139",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",
