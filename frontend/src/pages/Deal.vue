@@ -565,6 +565,7 @@ import {
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
+import { purgeOtherStageDrafts } from '@/composables/useStageFormDraft'
 
 const { on } = useBroadcast()
 const { brand } = getSettings()
@@ -880,7 +881,7 @@ function nextStageName() {
   return next?.name || null
 }
 
-function saveRequirements({ values, advance, status }) {
+function saveRequirements({ values, advance, status, onSaved }) {
   Object.assign(doc.value, values)
   // Advance to the next stage in the same save so the status reliably persists.
   // `status`, when provided, is a status name (PK).
@@ -894,6 +895,8 @@ function saveRequirements({ values, advance, status }) {
     onSuccess: () => {
       reload.value = true
       if (values?.assigned_tech_member) assignees.reload()
+      // Lets a stage form drop its cached draft only once the values are persisted.
+      onSaved?.()
       toast.success(__('Requirements saved'))
     },
     onError: (err) => {
@@ -970,6 +973,19 @@ const tabs = computed(() => {
 })
 
 const { tabIndex } = useActiveTabManager(tabs, 'lastDealTab')
+
+// Stage-form drafts are scoped to a single visit to a single deal. Opening another
+// deal drops the previous one's draft, so at most one is ever cached. `immediate`
+// matters: navigating between deals reuses this component instead of remounting it.
+watch(
+  () => props.dealId,
+  (id) => purgeOtherStageDrafts(id),
+  { immediate: true },
+)
+
+// Leaving the deal's current tab discards the draft as well. No `immediate` here —
+// this must only react to a real tab change, not to the initial render.
+watch(tabIndex, () => purgeOtherStageDrafts(null))
 
 const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',

@@ -168,6 +168,7 @@ class CRMDeal(Document):
         pain_frequency: DF.Literal["", "Every Production Cycle", "Weekly", "Monthly", "Occasional"]
         pain_points: DF.TableMultiSelect[CRMPainPointSelect]
         pain_severity: DF.Literal["", "Critical", "High", "Medium", "Low"]
+        payment_terms: DF.Literal["", "100% Advance", "3 Days", "7 Days", "15 Days", "30 Days", "45 Days"]
         performance_baseline: DF.Data | None
         performance_trial: DF.Data | None
         phone: DF.Data | None
@@ -183,6 +184,8 @@ class CRMDeal(Document):
         sales_manager_approval_required: DF.Check
         sales_manager_approved: DF.Check
         salutation: DF.Link | None
+        sample_type: DF.Literal["", "Paid", "Free"]
+        sent_back_by_tech_team: DF.Check
         shipping_address: DF.Link | None
         sla: DF.Link | None
         sla_creation: DF.Datetime | None
@@ -198,7 +201,6 @@ class CRMDeal(Document):
         trial_required: DF.Check
         trial_required_before_decision: DF.Check
         website: DF.Data | None
-
     # end: auto-generated types
 
     def before_validate(self):

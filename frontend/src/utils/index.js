@@ -863,7 +863,8 @@ export function clearCache() {
     if (
       key.startsWith('_page:') ||
       key.startsWith('_doctype:') ||
-      key.startsWith('preferred_breadcrumbs:')
+      key.startsWith('preferred_breadcrumbs:') ||
+      key.startsWith('stageFormDraft:')
     ) {
       localStorage.removeItem(key)
     }

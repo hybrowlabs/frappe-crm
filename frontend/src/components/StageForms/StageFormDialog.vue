@@ -75,18 +75,25 @@ const props = defineProps({
   // Optional wizard steps: [{ label }]. When 2+ entries, the dialog renders a
   // step header and exposes `step`/`next`/`back` slot props. Empty → single-step.
   steps: { type: Array, default: () => [] },
+  // Step to open on. Lets a restored draft reopen the wizard where it was left,
+  // instead of always returning to the first step.
+  initialStep: { type: Number, default: 0 },
 })
 
 const show = defineModel({ type: Boolean })
+const emit = defineEmits(['update:step'])
 
-const current = ref(0)
+const current = ref(props.initialStep)
 const isMultiStep = computed(() => props.steps.length > 1)
 const isLast = computed(() => current.value >= props.steps.length - 1)
 
 // restart the wizard each time the dialog opens
 watch(show, (open) => {
-  if (open) current.value = 0
+  if (open) current.value = props.initialStep
 })
+
+// keep the parent in sync so the current step can be cached with the draft
+watch(current, (step) => emit('update:step', step), { immediate: true })
 
 function next() {
   if (current.value < props.steps.length - 1) current.value++
