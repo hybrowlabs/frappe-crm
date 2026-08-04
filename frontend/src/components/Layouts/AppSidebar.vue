@@ -232,6 +232,11 @@ const links = [
     to: 'Leads',
   },
   {
+    label: 'Pending Conversions',
+    icon: ConvertIcon,
+    to: 'PendingConversions',
+  },
+  {
     label: 'Deals',
     icon: DealsIcon,
     to: 'Deals',

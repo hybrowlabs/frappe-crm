@@ -25,6 +25,11 @@ const routes = [
     component: () => import('@/pages/Leads.vue'),
   },
   {
+    path: '/pending-conversions',
+    name: 'PendingConversions',
+    component: () => import('@/pages/PendingConversions.vue'),
+  },
+  {
     path: '/leads/:leadId',
     name: 'Lead',
     component: () => import(`@/pages/${handleMobileView('Lead')}.vue`),

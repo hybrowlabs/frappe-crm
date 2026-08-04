@@ -182,6 +182,7 @@
         v-model="doc"
         @updateField="updateField"
       />
+      <PendingVerticalsBanner v-if="doc.converted" :lead="doc.name" />
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -259,6 +260,7 @@ import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
+import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
 import {

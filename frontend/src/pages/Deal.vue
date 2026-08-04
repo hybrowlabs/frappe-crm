@@ -132,6 +132,7 @@
         v-model="doc"
         @updateField="updateField"
       />
+      <PendingVerticalsBanner v-if="doc.lead" :lead="doc.lead" />
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -367,6 +368,7 @@ import Link from '@/components/Controls/Link.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
+import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import {
   openWebsite,
