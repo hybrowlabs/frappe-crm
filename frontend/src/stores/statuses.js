@@ -30,7 +30,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const dealStatuses = createListResource({
     doctype: 'CRM Deal Status',
-    fields: ['name', 'color', 'position', 'type'],
+    fields: ['name', 'color', 'position', 'type', 'custom_verticals'],
     orderBy: 'position asc',
     cache: 'deal-statuses',
     initialData: [],
@@ -79,6 +79,21 @@ export const statusesStore = defineStore('crm-statuses', () => {
     return communicationStatuses[name]
   }
 
+  // Endovia: statuses applicable to a deal's vertical
+  // (CRM Deal Status.custom_verticals — empty = all verticals)
+  function dealStatusesForVertical(vertical) {
+    if (!vertical) return []
+    return (dealStatuses.data || [])
+      .filter((status) => {
+        if (!status.custom_verticals) return true
+        return status.custom_verticals
+          .split(',')
+          .map((v) => v.trim())
+          .includes(vertical)
+      })
+      .map((status) => status.name)
+  }
+
   function statusOptions(doctype, statuses = [], triggerStatusChange = null) {
     let statusesByName =
       doctype == 'deal' ? dealStatusesByName : leadStatusesByName
@@ -118,6 +133,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
     getLeadStatus,
     getDealStatus,
     getCommunicationStatus,
+    dealStatusesForVertical,
     statusOptions,
   }
 })

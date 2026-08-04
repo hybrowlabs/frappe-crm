@@ -412,7 +412,8 @@ import { useActiveTabManager } from '@/composables/useActiveTabManager'
 const { on } = useBroadcast()
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getDealStatus } = statusesStore()
+const { statusOptions, getDealStatus, dealStatusesForVertical } =
+  statusesStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const { updateOnboardingStep, isOnboardingStepsCompleted } =
@@ -547,6 +548,10 @@ const statuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
     : document._statuses || []
+  // Endovia: no form-script override → offer only this vertical's pipeline
+  if (!customStatuses.length && doc.value?.primary_vertical) {
+    customStatuses = dealStatusesForVertical(doc.value.primary_vertical)
+  }
   return statusOptions('deal', customStatuses, triggerStatusChange)
 })
 
