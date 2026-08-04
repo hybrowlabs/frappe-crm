@@ -2,7 +2,7 @@ import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import { parseColor, isTranslatable } from '@/utils'
 import { defineStore } from 'pinia'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { createListResource } from 'frappe-ui'
+import { createListResource, createResource } from 'frappe-ui'
 import { reactive, h } from 'vue'
 
 export const statusesStore = defineStore('crm-statuses', () => {
@@ -30,7 +30,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
 
   const dealStatuses = createListResource({
     doctype: 'CRM Deal Status',
-    fields: ['name', 'color', 'position', 'type', 'custom_verticals'],
+    fields: ['name', 'color', 'position', 'type'],
     orderBy: 'position asc',
     cache: 'deal-statuses',
     initialData: [],
@@ -79,19 +79,21 @@ export const statusesStore = defineStore('crm-statuses', () => {
     return communicationStatuses[name]
   }
 
-  // Endovia: statuses applicable to a deal's vertical
-  // (CRM Deal Status.custom_verticals — empty = all verticals)
+  // Endovia: vertical status pipelines from ERPNext CRM Settings →
+  // Vertical Status Config (JSON), served via a whitelisted getter
+  const verticalStatusConfig = createResource({
+    url: 'endovia_finance.api.vertical_status.get_vertical_status_config',
+    cache: 'vertical-status-config',
+    initialData: {},
+    auto: true,
+  })
+
   function dealStatusesForVertical(vertical) {
     if (!vertical) return []
-    return (dealStatuses.data || [])
-      .filter((status) => {
-        if (!status.custom_verticals) return true
-        return status.custom_verticals
-          .split(',')
-          .map((v) => v.trim())
-          .includes(vertical)
-      })
-      .map((status) => status.name)
+    const allowed = verticalStatusConfig.data?.[vertical]?.statuses
+    if (!allowed?.length) return []
+    // keep only statuses that actually exist, in configured order
+    return allowed.filter((name) => dealStatusesByName[name])
   }
 
   function statusOptions(doctype, statuses = [], triggerStatusChange = null) {
