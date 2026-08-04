@@ -123,7 +123,6 @@ import Link from '@/components/Controls/Link.vue'
 import { useDocument } from '@/data/document'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
-import { statusesStore } from '@/stores/statuses'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { isMobileView } from '@/composables/settings'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
@@ -157,7 +156,6 @@ const show = defineModel({ type: Boolean })
 
 const router = useRouter()
 
-const { statusOptions, getDealStatus } = statusesStore()
 const { isManager } = usersStore()
 const { user } = sessionStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
@@ -266,7 +264,6 @@ function notifySkippedVerticals() {
     .catch(() => {})
 }
 
-const dealStatuses = computed(() => statusOptions('deal'))
 
 const dealTabs = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
@@ -278,14 +275,14 @@ const dealTabs = createResource({
     let parsedTabs = _tabs?.forEach((tab) => {
       tab.sections?.forEach((section) => {
         section.columns?.forEach((column) => {
+          // Endovia: no status picker on convert — each vertical's deal
+          // starts in its configured default status (server-side,
+          // CRM Deal Status.custom_default_for_verticals)
+          column.fields = column.fields?.filter(
+            (field) => field.fieldname !== 'status',
+          )
           column.fields?.forEach((field) => {
             hasFields = true
-            if (field.fieldname == 'status') {
-              field.fieldtype = 'Select'
-              field.options = dealStatuses.value
-              field.prefix = getDealStatus(deal.doc.status).color
-            }
-
             if (field.fieldtype === 'Table') {
               deal.doc[field.fieldname] = []
             }
