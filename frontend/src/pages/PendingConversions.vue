@@ -10,185 +10,219 @@
         ]"
       />
     </template>
-    <template #right-header>
-      <Button :label="__('Refresh')" icon-left="refresh-cw" @click="leads.reload()" />
-    </template>
   </LayoutHeader>
-
-  <div class="flex-1 overflow-y-auto p-5">
-    <div
-      v-if="!rows.length && !leads.loading"
-      class="flex h-full flex-col items-center justify-center gap-2 text-ink-gray-4"
-    >
-      <ConvertIcon class="h-8 w-8" />
-      <span class="text-lg">{{ __('No pending conversions') }}</span>
-    </div>
-
-    <table v-else class="w-full border-separate border-spacing-0 text-base">
-      <thead>
-        <tr class="text-left text-sm text-ink-gray-5">
-          <th class="border-b px-3 py-2 font-medium">{{ __('Lead') }}</th>
-          <th class="border-b px-3 py-2 font-medium">{{ __('Vertical') }}</th>
-          <th class="border-b px-3 py-2 font-medium">{{ __('Documents') }}</th>
-          <th class="border-b px-3 py-2 font-medium">
-            {{ __('Relationship Manager') }}
-          </th>
-          <th class="border-b px-3 py-2 font-medium">{{ __('Mobile') }}</th>
-          <th class="border-b px-3 py-2 font-medium">
-            {{ __('Last Modified') }}
-          </th>
-          <th class="border-b px-3 py-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="row in rows"
-          :key="row.lead + row.vertical"
-          class="text-ink-gray-8"
-        >
-          <td class="border-b px-3 py-2">
-            <router-link
-              class="font-medium text-ink-gray-9 hover:underline"
-              :to="{ name: 'Lead', params: { leadId: row.lead } }"
-            >
-              {{ row.lead_name || row.lead }}
-            </router-link>
-          </td>
-          <td class="border-b px-3 py-2">{{ __(row.vertical) }}</td>
-          <td class="border-b px-3 py-2">
-            <Badge
-              v-if="row.requiresDocuments"
-              :label="__('Not shared')"
-              theme="orange"
-              variant="subtle"
-            />
-            <Badge
-              v-else
-              :label="__('Ready')"
-              theme="green"
-              variant="subtle"
-            />
-          </td>
-          <td class="border-b px-3 py-2">{{ row.lead_owner }}</td>
-          <td class="border-b px-3 py-2">{{ row.mobile_no }}</td>
-          <td class="border-b px-3 py-2 text-ink-gray-5">
-            {{ timeAgo(row.modified) }}
-          </td>
-          <td class="border-b px-3 py-2 text-right">
-            <Button
-              :label="__('Create Deal')"
-              :loading="creating === row.lead + row.vertical"
-              @click="create(row)"
-            />
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <CreateVerticalDealDialog
-      v-model="showDialog"
-      :lead="selected?.lead || ''"
-      :vertical="selectedVertical"
-      @created="onCreated"
-    />
-  </div>
+  <ViewControls
+    ref="viewControls"
+    v-model="leads"
+    v-model:loadMore="loadMore"
+    v-model:resizeColumn="triggerResize"
+    v-model:updatedPageCount="updatedPageCount"
+    doctype="CRM Lead"
+    :filters="{ pending_verticals: ['is', 'set'] }"
+    :options="{
+      allowedViews: ['list'],
+      defaultViewName: 'Pending Conversions',
+    }"
+  />
+  <LeadsListView
+    v-if="leads.data && rows.length"
+    ref="leadsListView"
+    v-model="leads.data.page_length_count"
+    v-model:list="leads"
+    :rows="rows"
+    :columns="columns"
+    :options="{
+      showTooltip: false,
+      resizeColumn: true,
+      rowCount: leads.data.row_count,
+      totalCount: leads.data.total_count,
+    }"
+    @loadMore="() => loadMore++"
+    @columnWidthUpdated="() => triggerResize++"
+    @updatePageCount="(count) => (updatedPageCount = count)"
+    @applyFilter="(data) => viewControls.applyFilter(data)"
+    @applyLikeFilter="(data) => viewControls.applyLikeFilter(data)"
+    @likeDoc="(data) => viewControls.likeDoc(data)"
+    @selectionsChanged="
+      (selections) => viewControls.updateSelections(selections)
+    "
+  />
+  <EmptyState
+    v-else-if="leads.data && !rows.length"
+    name="Pending Conversions"
+    :icon="ConvertIcon"
+  />
 </template>
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import LeadsListView from '@/components/ListViews/LeadsListView.vue'
+import EmptyState from '@/components/ListViews/EmptyState.vue'
+import ViewControls from '@/components/ViewControls.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
-import CreateVerticalDealDialog from '@/components/Endovia/CreateVerticalDealDialog.vue'
-import { timeAgo } from '@/utils'
-import {
-  Breadcrumbs,
-  Badge,
-  Button,
-  createResource,
-  call,
-  toast,
-} from 'frappe-ui'
-import { ref, computed } from 'vue'
+import { getMeta } from '@/stores/meta'
+import { usersStore } from '@/stores/users'
+import { statusesStore } from '@/stores/statuses'
+import { viewsStore } from '@/stores/views'
+import { formatDate, timeAgo, website, formatTime } from '@/utils'
+import { Breadcrumbs } from 'frappe-ui'
+import { ref, computed, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const VERTICAL_FIELD = {
-  'Wealth Management': 'wealth_management',
-  Quant: 'quant',
-  Vault: 'vault',
-  Books: 'books',
-}
+const route = useRoute()
+const router = useRouter()
+const { getPublicViews } = viewsStore()
 
-const creating = ref('')
-const showDialog = ref(false)
-const selected = ref(null)
-
-const leads = createResource({
-  url: 'frappe.client.get_list',
-  params: {
-    doctype: 'CRM Lead',
-    filters: { pending_verticals: ['is', 'set'] },
-    fields: [
-      'name',
-      'lead_name',
-      'pending_verticals',
-      'lead_owner',
-      'mobile_no',
-      'vault_documents_shared',
-      'modified',
-    ],
-    order_by: 'modified desc',
-    limit_page_length: 0,
-  },
-  auto: true,
+// Load the seeded "Pending Conversions" saved view (columns + filters) via
+// the stock view mechanism — same as clicking a public view on the Leads page.
+watchEffect(() => {
+  if (route.query.view) return
+  const view = getPublicViews().find(
+    (v) => v.label === 'Pending Conversions' && v.dt === 'CRM Lead',
+  )
+  if (view) {
+    router.replace({ query: { ...route.query, view: view.name } })
+  }
 })
 
-// one row per (lead, pending vertical)
-const rows = computed(() =>
-  (leads.data || []).flatMap((lead) =>
-    (lead.pending_verticals || '')
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .map((vertical) => ({
-        lead: lead.name,
-        lead_name: lead.lead_name,
-        lead_owner: lead.lead_owner,
-        mobile_no: lead.mobile_no,
-        modified: lead.modified,
-        vertical,
-        requiresDocuments: vertical === 'Vault' && !lead.vault_documents_shared,
-      })),
-  ),
-)
+const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
+  getMeta('CRM Lead')
+const { getUser } = usersStore()
+const { getLeadStatus } = statusesStore()
 
-const selectedVertical = computed(() =>
-  selected.value
-    ? {
-        field: VERTICAL_FIELD[selected.value.vertical],
-        label: selected.value.vertical,
+const leadsListView = ref(null)
+
+// leads data is loaded in the ViewControls component
+const leads = ref({})
+const loadMore = ref(1)
+const triggerResize = ref(1)
+const updatedPageCount = ref(20)
+const viewControls = ref(null)
+
+// Rows — same parsing as pages/Leads.vue (list view only)
+const rows = computed(() => {
+  if (!leads.value?.data?.data) return []
+  return parseRows(leads.value?.data.data, leads.value.data.columns)
+})
+
+const columns = computed(() => {
+  let _columns = leads.value?.data?.columns || []
+
+  if (_columns.length) {
+    _columns = _columns.map((col, index) => {
+      if (index === _columns.length - 1) {
+        return { ...col, align: 'right' }
       }
-    : null,
-)
-
-function create(row) {
-  if (row.requiresDocuments) {
-    selected.value = row
-    showDialog.value = true
-    return
+      return col
+    })
   }
-  creating.value = row.lead + row.vertical
-  call('endovia_finance.api.conversion.convert_for_vertical', {
-    lead: row.lead,
-    vertical_field: VERTICAL_FIELD[row.vertical],
-  })
-    .then((deal) => onCreated(deal))
-    .catch((err) =>
-      toast.error(err.messages?.[0] || __('Could not create the deal')),
-    )
-    .finally(() => (creating.value = ''))
-}
 
-function onCreated(deal) {
-  showDialog.value = false
-  toast.success(__('Deal {0} created', [deal]))
-  leads.reload()
+  return _columns
+})
+
+function parseRows(rows, columns = []) {
+  return rows.map((lead) => {
+    let _rows = {}
+    leads.value?.data.rows.forEach((row) => {
+      _rows[row] = lead[row]
+
+      let fieldType = columns?.find((col) => (col.key || col.value) == row)
+        ?.type
+
+      if (
+        fieldType &&
+        ['Date', 'Datetime'].includes(fieldType) &&
+        !['modified', 'creation'].includes(row)
+      ) {
+        _rows[row] = formatDate(lead[row], '', true, fieldType == 'Datetime')
+      }
+
+      if (fieldType && fieldType == 'Currency') {
+        _rows[row] = getFormattedCurrency(row, lead)
+      }
+
+      if (fieldType && fieldType == 'Float') {
+        _rows[row] = getFormattedFloat(row, lead)
+      }
+
+      if (fieldType && fieldType == 'Percent') {
+        _rows[row] = getFormattedPercent(row, lead)
+      }
+
+      if (row == 'lead_name') {
+        _rows[row] = {
+          label: lead.lead_name,
+          image: lead.image,
+          image_label: lead.first_name,
+        }
+      } else if (row == 'organization') {
+        _rows[row] = lead.organization
+      } else if (row === 'website') {
+        _rows[row] = website(lead.website)
+      } else if (row == 'status') {
+        _rows[row] = {
+          label: lead.status,
+          color: getLeadStatus(lead.status)?.color,
+        }
+      } else if (row == 'sla_status') {
+        let value = lead.sla_status
+        let tooltipText = value
+        let color =
+          lead.sla_status == 'Failed'
+            ? 'red'
+            : lead.sla_status == 'Fulfilled'
+              ? 'green'
+              : 'orange'
+        if (value == 'First Response Due' || value == 'Rolling Response Due') {
+          value = __(timeAgo(lead.response_by))
+          tooltipText = formatDate(lead.response_by)
+          if (new Date(lead.response_by) < new Date()) {
+            color = 'red'
+          }
+        }
+        _rows[row] = {
+          label: tooltipText,
+          value: value,
+          color: color,
+        }
+      } else if (row == 'lead_owner') {
+        _rows[row] = {
+          label: lead.lead_owner && getUser(lead.lead_owner).full_name,
+          ...(lead.lead_owner && getUser(lead.lead_owner)),
+        }
+      } else if (row == '_assign') {
+        let assignees = JSON.parse(lead._assign || '[]')
+        _rows[row] = assignees.map((user) => ({
+          name: user,
+          image: getUser(user).user_image,
+          label: getUser(user).full_name,
+        }))
+      } else if (['modified', 'creation'].includes(row)) {
+        _rows[row] = {
+          label: formatDate(lead[row]),
+          timeAgo: __(timeAgo(lead[row])),
+        }
+      } else if (
+        ['first_response_time', 'first_responded_on', 'response_by'].includes(
+          row,
+        )
+      ) {
+        let field = row == 'response_by' ? 'response_by' : 'first_responded_on'
+        _rows[row] = {
+          label: lead[field] ? formatDate(lead[field]) : '',
+          timeAgo: lead[row]
+            ? row == 'first_response_time'
+              ? formatTime(lead[row])
+              : __(timeAgo(lead[row]))
+            : '',
+        }
+      }
+    })
+    _rows['_email_count'] = lead._email_count
+    _rows['_note_count'] = lead._note_count
+    _rows['_task_count'] = lead._task_count
+    _rows['_comment_count'] = lead._comment_count
+    return _rows
+  })
 }
 </script>

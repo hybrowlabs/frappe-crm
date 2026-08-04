@@ -287,11 +287,15 @@ const allViews = computed(() => {
       }),
     },
   ]
-  if (getPublicViews().length) {
+  // Endovia: views with a dedicated sidebar entry are skipped here
+  const publicViews = getPublicViews().filter(
+    (v) => v.route_name !== 'PendingConversions',
+  )
+  if (publicViews.length) {
     _views.push({
       name: 'Public Views',
       opened: true,
-      views: parseView(getPublicViews()),
+      views: parseView(publicViews),
     })
   }
 
