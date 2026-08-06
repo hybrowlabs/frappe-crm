@@ -182,6 +182,7 @@
         v-model="doc"
         @updateField="updateField"
       />
+      <PendingVerticalsBanner v-if="doc.converted" :lead="doc.name" />
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -259,6 +260,7 @@ import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
+import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
 import {
@@ -344,26 +346,27 @@ watch(error, (err) => {
   }
 })
 
+// re-evaluated on status change too — form-script actions can be status-gated
 watch(
-  () => document.doc,
-  async (_doc) => {
-    if (scripts.data?.length) {
-      let s = await setupCustomizations(scripts.data, {
-        doc: _doc,
-        $dialog,
-        $socket,
-        router,
-        toast,
-        updateField,
-        createToast: toast.create,
-        deleteDoc: deleteLead,
-        call,
-      })
-      document._actions = s.actions || []
-      document._statuses = s.statuses || []
-    }
+  () => [document.doc?.name, document.doc?.status, scripts.data],
+  async () => {
+    const _doc = document.doc
+    if (!_doc?.name || !scripts.data?.length) return
+    let s = await setupCustomizations(scripts.data, {
+      doc: _doc,
+      $dialog,
+      $socket,
+      router,
+      toast,
+      updateField,
+      createToast: toast.create,
+      deleteDoc: deleteLead,
+      call,
+    })
+    document._actions = s.actions || []
+    document._statuses = s.statuses || []
   },
-  { once: true },
+  { immediate: true },
 )
 
 const breadcrumbs = computed(() => {

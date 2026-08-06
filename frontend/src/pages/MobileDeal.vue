@@ -361,26 +361,27 @@ watch(error, (err) => {
   }
 })
 
+// re-evaluated on status change too — form-script actions can be status-gated
 watch(
-  () => document.doc,
-  async (_doc) => {
-    if (scripts.data?.length) {
-      let s = await setupCustomizations(scripts.data, {
-        doc: _doc,
-        $dialog,
-        $socket,
-        router,
-        toast,
-        updateField,
-        createToast: toast.create,
-        deleteDoc: deleteDeal,
-        call,
-      })
-      document._actions = s.actions || []
-      document._statuses = s.statuses || []
-    }
+  () => [document.doc?.name, document.doc?.status, scripts.data],
+  async () => {
+    const _doc = document.doc
+    if (!_doc?.name || !scripts.data?.length) return
+    let s = await setupCustomizations(scripts.data, {
+      doc: _doc,
+      $dialog,
+      $socket,
+      router,
+      toast,
+      updateField,
+      createToast: toast.create,
+      deleteDoc: deleteDeal,
+      call,
+    })
+    document._actions = s.actions || []
+    document._statuses = s.statuses || []
   },
-  { once: true },
+  { immediate: true },
 )
 
 const reload = ref(false)

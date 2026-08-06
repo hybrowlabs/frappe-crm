@@ -6,12 +6,16 @@ import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { runSequentially, parseAssignees, sanitizeText } from '@/utils'
 import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { createDocumentResource, createResource, toast } from 'frappe-ui'
-import { ref, reactive, getCurrentInstance } from 'vue'
+import { ref, reactive, getCurrentInstance, watch } from 'vue'
 
 const documentsCache = {}
 const controllersCache = {}
 const assigneesCache = {}
 const permissionsCache = {}
+// one status-watcher per doctype:docname — class-style form-script
+// controllers are cached and their onLoad runs once, so status-gated
+// actions (e.g. Vault's Create Quotation) must rebuild on status change
+const statusWatchersCache = {}
 
 export function useDocument(doctype, docname, resourceOverrides = {}) {
   if (typeof docname === 'number') docname = String(docname)
@@ -143,6 +147,30 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
       },
       initialData: { permissions: {} },
     })
+  }
+
+  const watcherKey = `${doctype}:${docname || ''}`
+  if (docname && !statusWatchersCache[watcherKey]) {
+    statusWatchersCache[watcherKey] = watch(
+      () => documentsCache[doctype][docname]?.doc?.status,
+      (newStatus, oldStatus) => {
+        if (oldStatus === undefined || newStatus === oldStatus) return
+        resetFormScript()
+      },
+    )
+  }
+
+  async function resetFormScript() {
+    if (controllersCache[doctype]) {
+      delete controllersCache[doctype][docname || '']
+    }
+    const document = documentsCache[doctype][docname || '']
+    if (document) {
+      // controllers append into these — start clean or actions duplicate
+      document.actions = []
+      document.statuses = []
+    }
+    await setupFormScript()
   }
 
   async function setupFormScript() {
@@ -390,6 +418,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     triggerOnRowAdd,
     triggerOnRowRemove,
     setupFormScript,
+    resetFormScript,
     triggerOnCreateLead,
     triggerConvertToDeal,
     setFieldHtml,

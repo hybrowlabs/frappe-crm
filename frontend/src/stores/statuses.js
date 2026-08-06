@@ -2,7 +2,7 @@ import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import { parseColor, isTranslatable } from '@/utils'
 import { defineStore } from 'pinia'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { createListResource } from 'frappe-ui'
+import { createListResource, createResource } from 'frappe-ui'
 import { reactive, h } from 'vue'
 
 export const statusesStore = defineStore('crm-statuses', () => {
@@ -79,6 +79,23 @@ export const statusesStore = defineStore('crm-statuses', () => {
     return communicationStatuses[name]
   }
 
+  // Endovia: vertical status pipelines from ERPNext CRM Settings →
+  // Vertical Status Config (JSON), served via a whitelisted getter
+  const verticalStatusConfig = createResource({
+    url: 'endovia_finance.api.vertical_status.get_vertical_status_config',
+    cache: 'vertical-status-config',
+    initialData: {},
+    auto: true,
+  })
+
+  function dealStatusesForVertical(vertical) {
+    if (!vertical) return []
+    const allowed = verticalStatusConfig.data?.[vertical]?.statuses
+    if (!allowed?.length) return []
+    // keep only statuses that actually exist, in configured order
+    return allowed.filter((name) => dealStatusesByName[name])
+  }
+
   function statusOptions(doctype, statuses = [], triggerStatusChange = null) {
     let statusesByName =
       doctype == 'deal' ? dealStatusesByName : leadStatusesByName
@@ -118,6 +135,7 @@ export const statusesStore = defineStore('crm-statuses', () => {
     getLeadStatus,
     getDealStatus,
     getCommunicationStatus,
+    dealStatusesForVertical,
     statusOptions,
   }
 })

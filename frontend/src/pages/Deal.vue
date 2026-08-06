@@ -132,6 +132,7 @@
         v-model="doc"
         @updateField="updateField"
       />
+      <PendingVerticalsBanner v-if="doc.lead" :lead="doc.lead" />
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -367,6 +368,7 @@ import Link from '@/components/Controls/Link.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
+import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import {
   openWebsite,
@@ -410,7 +412,8 @@ import { useActiveTabManager } from '@/composables/useActiveTabManager'
 const { on } = useBroadcast()
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getDealStatus } = statusesStore()
+const { statusOptions, getDealStatus, dealStatusesForVertical } =
+  statusesStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const { updateOnboardingStep, isOnboardingStepsCompleted } =
@@ -455,26 +458,28 @@ watch(error, (err) => {
   }
 })
 
+// re-evaluated on status change too — form-script actions can be
+// status-gated (e.g. Vault's Create Quotation appears at Sheet Presentation)
 watch(
-  () => document.doc,
-  async (_doc) => {
-    if (scripts.data?.length) {
-      let s = await setupCustomizations(scripts.data, {
-        doc: _doc,
-        $dialog,
-        $socket,
-        router,
-        toast,
-        updateField,
-        createToast: toast.create,
-        deleteDoc: deleteDeal,
-        call,
-      })
-      document._actions = s.actions || []
-      document._statuses = s.statuses || []
-    }
+  () => [document.doc?.name, document.doc?.status, scripts.data],
+  async () => {
+    const _doc = document.doc
+    if (!_doc?.name || !scripts.data?.length) return
+    let s = await setupCustomizations(scripts.data, {
+      doc: _doc,
+      $dialog,
+      $socket,
+      router,
+      toast,
+      updateField,
+      createToast: toast.create,
+      deleteDoc: deleteDeal,
+      call,
+    })
+    document._actions = s.actions || []
+    document._statuses = s.statuses || []
   },
-  { once: true },
+  { immediate: true },
 )
 
 const organizationDocument = ref(null)
@@ -545,6 +550,10 @@ const statuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
     : document._statuses || []
+  // Endovia: no form-script override → offer only this vertical's pipeline
+  if (!customStatuses.length && doc.value?.primary_vertical) {
+    customStatuses = dealStatusesForVertical(doc.value.primary_vertical)
+  }
   return statusOptions('deal', customStatuses, triggerStatusChange)
 })
 
