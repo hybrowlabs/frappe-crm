@@ -30,6 +30,7 @@
   "product_sub_category",
   "column_break_bjad",
   "product_variant",
+  "karatage",
   "pain_point_deatils_section",
   "pain_frequency",
   "pain_severity",
@@ -1044,12 +1045,19 @@
    "fieldtype": "Select",
    "label": "Sample Type",
    "options": "\nPaid\nFree"
+  },
+  {
+   "depends_on": "eval:doc.product_category == 'Alloys'",
+   "fieldname": "karatage",
+   "fieldtype": "Select",
+   "label": "Karatage",
+   "options": "\n9Kt\n14 Kt\n18Kt\n22Kt"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-30 22:37:50.105139",
+ "modified": "2026-08-07 10:08:22.392363",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",
