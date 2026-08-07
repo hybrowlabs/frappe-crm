@@ -38,6 +38,13 @@
           :placeholder="__('Select variant')"
           :error="errors.variant"
         />
+        <FieldSelect
+          v-if="showKaratage"
+          v-model="karatage"
+          :label="__('Karatage')"
+          :options="karatageOptions"
+          :placeholder="__('Select karatage')"
+        />
       </FieldGrid>
     </StageSection>
 
@@ -317,6 +324,10 @@ const freqOptions = ['Every Production Cycle', 'Weekly', 'Monthly', 'Occasional'
 const severityOptions = ['Critical', 'High', 'Medium', 'Low']
 const supplierOptions = ['Indian Supplier', 'Imported', 'In-house', 'None / New']
 const sampleTypeOptions = ['Paid', 'Free']
+const karatageOptions = ['9Kt', '14 Kt', '18Kt', '22Kt']
+// Karatage only applies to alloy products — mirrors the CRM Deal field's
+// depends_on condition so the desk form and this stage form stay in sync.
+const KARATAGE_CATEGORY = 'Alloys'
 const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
@@ -401,6 +412,7 @@ const opImpactOpts = computed(() =>
   (operationImpactList.data || []).filter((d) => d.name !== OTHER_PAIN_POINT),
 )
 const otherPainSelected = computed(() => pains.value.includes(OTHER_PAIN_POINT))
+const showKaratage = computed(() => cat.value === KARATAGE_CATEGORY)
 
 function loadSubs(category) {
   if (!category) return
@@ -444,6 +456,7 @@ function loadOpImpacts(category) {
 const cat = ref('')
 const sub = ref('')
 const variant = ref('')
+const karatage = ref('')
 const pains = ref([])
 const otherPainPoint = ref('')
 const freq = ref('')
@@ -465,6 +478,7 @@ const draftableRefs = {
   cat,
   sub,
   variant,
+  karatage,
   pains,
   otherPainPoint,
   freq,
@@ -545,6 +559,7 @@ onMounted(() => {
   cat.value = d.product_category || ''
   sub.value = d.product_sub_category || ''
   variant.value = d.product_variant || ''
+  karatage.value = d.karatage || ''
   pains.value = (d.pain_points || []).map((r) => r.pain_point)
   otherPainPoint.value = d.other_pain_point || ''
   if (otherPainPoint.value && !pains.value.includes(OTHER_PAIN_POINT)) {
@@ -597,6 +612,7 @@ function onCategoryChange(v) {
   cat.value = v
   sub.value = ''
   variant.value = ''
+  karatage.value = ''
   pains.value = []
   otherPainPoint.value = ''
   opImpacts.value = []
@@ -645,6 +661,9 @@ function buildValues() {
     product_category: cat.value || null,
     product_sub_category: sub.value || null,
     product_variant: variant.value || null,
+    // karatage only applies to alloys — clear it otherwise so a stale selection
+    // doesn't linger after switching category
+    karatage: showKaratage.value ? karatage.value || '' : '',
     pain_points: pains.value.map((p) => ({ pain_point: p })),
     other_pain_point: otherPainSelected.value ? otherPainPoint.value.trim() : '',
     pain_frequency: freq.value || '',

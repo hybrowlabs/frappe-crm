@@ -142,6 +142,7 @@ class CRMDeal(Document):
         industry: DF.Link | None
         info_questions: DF.SmallText | None
         job_title: DF.Data | None
+        karatage: DF.Literal["", "9Kt", "14 Kt", "18Kt", "22Kt"]
         last_name: DF.Data | None
         last_responded_on: DF.Datetime | None
         last_response_time: DF.Duration | None
