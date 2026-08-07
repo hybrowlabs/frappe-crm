@@ -325,9 +325,11 @@ const severityOptions = ['Critical', 'High', 'Medium', 'Low']
 const supplierOptions = ['Indian Supplier', 'Imported', 'In-house', 'None / New']
 const sampleTypeOptions = ['Paid', 'Free']
 const karatageOptions = ['9Kt', '14 Kt', '18Kt', '22Kt']
-// Karatage only applies to alloy products — mirrors the CRM Deal field's
-// depends_on condition so the desk form and this stage form stay in sync.
+// Karatage only applies to alloy products, and not to the Brass variant —
+// mirrors the CRM Deal field's depends_on condition so the desk form and this
+// stage form stay in sync.
 const KARATAGE_CATEGORY = 'Alloys'
+const KARATAGE_EXCLUDED_VARIANT = 'Brass'
 const creditOptions = [
   { label: __('Yes — credit assessed'), value: true },
   { label: __('No — pending'), value: false },
@@ -412,7 +414,11 @@ const opImpactOpts = computed(() =>
   (operationImpactList.data || []).filter((d) => d.name !== OTHER_PAIN_POINT),
 )
 const otherPainSelected = computed(() => pains.value.includes(OTHER_PAIN_POINT))
-const showKaratage = computed(() => cat.value === KARATAGE_CATEGORY)
+const showKaratage = computed(
+  () =>
+    cat.value === KARATAGE_CATEGORY &&
+    variant.value !== KARATAGE_EXCLUDED_VARIANT,
+)
 
 function loadSubs(category) {
   if (!category) return
@@ -592,6 +598,13 @@ onMounted(() => {
   }
 
   nextTick(() => (restoring.value = false))
+})
+
+// Drop a karatage selection as soon as the field stops applying (category moved
+// off Alloys, or variant switched to Brass), so a hidden value can't reappear
+// when the field comes back into view.
+watch(showKaratage, (visible) => {
+  if (!visible) karatage.value = ''
 })
 
 watch(

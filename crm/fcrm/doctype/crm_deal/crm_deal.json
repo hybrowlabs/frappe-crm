@@ -1047,7 +1047,7 @@
    "options": "\nPaid\nFree"
   },
   {
-   "depends_on": "eval:doc.product_category == 'Alloys'",
+   "depends_on": "eval:doc.product_category == 'Alloys' && doc.product_variant != 'Brass'",
    "fieldname": "karatage",
    "fieldtype": "Select",
    "label": "Karatage",
