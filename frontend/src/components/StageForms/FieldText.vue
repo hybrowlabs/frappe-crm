@@ -8,6 +8,8 @@
       :modelValue="modelValue"
       :placeholder="placeholder"
       :readonly="readonly"
+      :min="min || undefined"
+      :max="max || undefined"
       :class="error ? 'rounded [&_input]:!border-outline-red-2' : ''"
       @update:modelValue="$emit('update:modelValue', $event)"
     />
@@ -28,6 +30,9 @@ defineProps({
   readonly: { type: Boolean, default: false },
   help: { type: String, default: '' },
   error: { type: String, default: '' },
+  // Passed through to the native input — for type="date" these bound the picker.
+  min: { type: [String, Number], default: '' },
+  max: { type: [String, Number], default: '' },
 })
 
 defineEmits(['update:modelValue'])

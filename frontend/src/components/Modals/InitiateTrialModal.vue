@@ -196,6 +196,7 @@
           type="date"
           :label="__('Trial Start Date')"
           :required="trialRequired === 'y'"
+          :min="today()"
           :error="errors.evalStart"
         />
       </FieldGrid>
@@ -263,6 +264,13 @@ const steps = [
   { label: __('Commercial Qualification') },
   { label: __('Impact & Technical Assignment') },
 ]
+
+// local YYYY-MM-DD for the date input
+function today() {
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
 const oppType = ref('')
 const dmInvolved = ref('')
@@ -435,12 +443,22 @@ function techCategoryError() {
     return __('Select a configured Tech Team category')
   return ''
 }
+function evalStartError() {
+  // A trial can't start in the past — guards typed/pasted dates, which the
+  // input's `min` alone doesn't block.
+  if (trialRequired.value !== 'y') return ''
+  if (!evalStart.value) return __('Required')
+  if (evalStart.value < today()) return __('Cannot be before today')
+  return ''
+}
 const errors = computed(() => {
   if (!attempted.value) return {}
   const e = {}
   for (const f of requiredFields) if (!f.val()) e[f.key] = __('Required')
   const techErr = techCategoryError()
   if (techErr) e.techCategory = techErr
+  const startErr = evalStartError()
+  if (startErr) e.evalStart = startErr
   return e
 })
 
@@ -452,6 +470,10 @@ async function assignAndNotify() {
   }
   if (missing.length) {
     toast.error(__('Please fill all required fields: {0}', [missing.join(', ')]))
+    return
+  }
+  if (evalStartError()) {
+    toast.error(__('Trial Start Date cannot be before today'))
     return
   }
 
