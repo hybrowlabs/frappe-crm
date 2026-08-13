@@ -69,6 +69,45 @@ def get_ordered_items(organization: str) -> dict:
 	}
 
 
+CATEGORY_ROOT = "Stock"
+
+
+def get_category_resolver():
+	"""Map any item group to the top-level category it sits under.
+
+	Categories are the groups directly below CATEGORY_ROOT (Plating, Machine,
+	Alloy). Item Group is a nested set, so a leaf belongs to the category whose
+	lft..rgt range contains it — which keeps the mapping live: re-parent a group
+	in ERPNext and past orders re-categorise with it, at any tree depth.
+	"""
+	if not frappe.db.exists("DocType", "Item Group"):
+		return lambda item_group: item_group or "Uncategorized"
+
+	categories = frappe.get_all(
+		"Item Group",
+		filters={"is_group": 1, "parent_item_group": CATEGORY_ROOT},
+		fields=["name", "lft", "rgt"],
+		order_by="lft",
+	)
+	if not categories:
+		return lambda item_group: item_group or "Uncategorized"
+
+	lft_by_group = {
+		g.name: g.lft for g in frappe.get_all("Item Group", fields=["name", "lft"])
+	}
+
+	def to_category(item_group):
+		lft = lft_by_group.get(item_group)
+		if lft is None:
+			return "Uncategorized"
+		for c in categories:
+			if c.lft <= lft <= c.rgt:
+				return c.name
+		return "Uncategorized"
+
+	return to_category
+
+
 @frappe.whitelist()
 def get_analytics(organization: str) -> dict:
 	"""KPI tiles, 12-week trade volume, top items and spend-by-category for the Analytics tab."""
@@ -112,9 +151,10 @@ def get_analytics(organization: str) -> dict:
 		entry["qty"] += flt(it.qty)
 	top_items = sorted(item_val.values(), key=lambda r: r["value"], reverse=True)[:5]
 
+	to_category = get_category_resolver()
 	cat_val = {}
 	for it in items:
-		cat = it.item_group or "Uncategorized"
+		cat = to_category(it.item_group)
 		cat_val[cat] = cat_val.get(cat, 0) + flt(it.base_amount)
 	spend_by_category = [
 		{
