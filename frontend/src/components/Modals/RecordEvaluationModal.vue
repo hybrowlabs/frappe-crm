@@ -78,7 +78,7 @@
         </div>
       </FieldStatic>
       <FieldCheckbox
-        :label="__('Testimonial Captured?')"
+        :label="__('Evaluation Report?')"
         :checked="testimonialCaptured"
         @change="testimonialCaptured = !testimonialCaptured"
       />
