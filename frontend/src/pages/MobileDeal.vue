@@ -26,6 +26,7 @@
               v-if="doc.status"
               :label="statusLabel(doc.status)"
               :iconRight="open ? 'chevron-up' : 'chevron-down'"
+              class="pointer-events-none"
             >
               <template #prefix>
                 <IndicatorIcon :class="getDealStatus(doc.status).color" />

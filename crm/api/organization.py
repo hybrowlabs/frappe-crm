@@ -108,10 +108,48 @@ def get_category_resolver():
 	return to_category
 
 
+def get_payment_status(customer):
+	"""Unpaid invoice balance for the customer, split into overdue and total outstanding.
+
+	Overdue is the part of the outstanding whose due date has already passed, so it
+	is always a subset of outstanding — never a separate bucket to add on top.
+	"""
+	empty = {"outstanding": 0, "overdue": 0, "overdue_count": 0, "max_overdue_days": 0}
+	if not customer or not frappe.db.exists("DocType", "Sales Invoice"):
+		return empty
+
+	rows = frappe.get_all(
+		"Sales Invoice",
+		filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]},
+		fields=["outstanding_amount", "due_date"],
+	)
+	if not rows:
+		return empty
+
+	today = getdate()
+	outstanding = overdue = overdue_count = max_days = 0
+	for r in rows:
+		amount = flt(r.outstanding_amount)
+		outstanding += amount
+		if r.due_date and getdate(r.due_date) < today:
+			overdue += amount
+			overdue_count += 1
+			max_days = max(max_days, (today - getdate(r.due_date)).days)
+
+	return {
+		"outstanding": outstanding,
+		"overdue": overdue,
+		"overdue_count": overdue_count,
+		"max_overdue_days": max_days,
+	}
+
+
 @frappe.whitelist()
 def get_analytics(organization: str) -> dict:
 	"""KPI tiles, 12-week trade volume, top items and spend-by-category for the Analytics tab."""
-	items = get_order_items(get_customer(organization))
+	customer = get_customer(organization)
+	items = get_order_items(customer)
+	payments = get_payment_status(customer)
 	org = (
 		frappe.db.get_value(
 			"CRM Organization",
@@ -174,6 +212,10 @@ def get_analytics(organization: str) -> dict:
 			"wow": round(wow),
 			"repeat_revenue": flt(org.get("repeat_revenue")),
 			"health_score": flt(org.get("health_score")),
+			"outstanding": payments["outstanding"],
+			"overdue": payments["overdue"],
+			"overdue_count": payments["overdue_count"],
+			"max_overdue_days": payments["max_overdue_days"],
 		},
 		"weekly_volume": list(reversed(weeks)),
 		"top_items": top_items,

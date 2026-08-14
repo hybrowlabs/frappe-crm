@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 py-4">
     <!-- KPI tiles -->
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       <div
         v-for="tile in tiles"
         :key="tile.label"
@@ -193,6 +193,8 @@ const tiles = computed(() => {
     { label: __('Week-on-Week'), value: `${sign}${fmtNum(k.wow)}%`, sub: __('vs last week') },
     { label: __('Repeat Revenue'), value: `${fmtNum(k.repeat_revenue)}%`, sub: __('of account revenue') },
     { label: __('Health Score'), value: `${k.health_score || 0}`, sub: __('out of 10') },
+    { label: __('Outstanding Payment'), value: fmtCurrency(k.outstanding), sub: __('unpaid invoices') },
+    { label: __('Overdue Payment'), value: fmtCurrency(k.overdue), sub: __('past due date') },
   ]
 })
 
