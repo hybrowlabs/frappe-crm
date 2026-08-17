@@ -7,7 +7,7 @@
         </template>
       </Breadcrumbs>
     </template>
-    <template v-if="!errorTitle" #right-header>
+    <template v-if="!errorTitle" value na change #right-header>
       <CustomActions
         v-if="document._actions?.length"
         :actions="document._actions"
@@ -60,17 +60,12 @@
         <template #prefix><RupeeIcon class="h-4 w-4" /></template>
       </Button>
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
-      <Dropdown
-        v-if="doc && document.statuses"
-        :options="statuses"
-        placement="right"
-      >
+      <Dropdown v-if="doc && statuses.length" :options="statuses" placement="right">
         <template #default="{ open }">
           <Button
             v-if="doc.status"
             :label="statusLabel(doc.status)"
             :iconRight="open ? 'chevron-up' : 'chevron-down'"
-            class="pointer-events-none"
           >
             <template #prefix>
               <IndicatorIcon :class="getDealStatus(doc.status).color" />
@@ -719,7 +714,12 @@ const statuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
     : document._statuses || []
-  return statusOptions('deal', customStatuses, triggerStatusChange)
+  // Status is read-only from the header: the dropdown still opens so the full
+  // pipeline stays visible, but picking an option must not change the deal.
+  // Status moves only through the stage actions (Capture Requirements, etc).
+  return statusOptions('deal', customStatuses, triggerStatusChange).map(
+    (option) => ({ ...option, onClick: null }),
+  )
 })
 
 // Stage-wise contextual action shown in the header, keyed by status name (PK).

@@ -9,24 +9,12 @@
         </template>
       </Breadcrumbs>
       <div class="absolute right-0">
-        <Dropdown
-          v-if="doc"
-          :options="
-            statusOptions(
-              'deal',
-              document.statuses?.length
-                ? document.statuses
-                : document._statuses,
-              triggerStatusChange,
-            )
-          "
-        >
+        <Dropdown v-if="doc" :options="statuses">
           <template #default="{ open }">
             <Button
               v-if="doc.status"
               :label="statusLabel(doc.status)"
               :iconRight="open ? 'chevron-up' : 'chevron-down'"
-              class="pointer-events-none"
             >
               <template #prefix>
                 <IndicatorIcon :class="getDealStatus(doc.status).color" />
@@ -511,6 +499,17 @@ const {
 } = useDocument('CRM Deal', props.dealId)
 
 const doc = computed(() => document.doc || {})
+
+const statuses = computed(() => {
+  let customStatuses = document.statuses?.length
+    ? document.statuses
+    : document._statuses || []
+  // Read-only, same as the desktop header: the dropdown opens to show the
+  // pipeline, but selecting an option must not change the deal.
+  return statusOptions('deal', customStatuses, triggerStatusChange).map(
+    (option) => ({ ...option, onClick: null }),
+  )
+})
 
 onMounted(async () => {
   if (document.doc) await triggerOnRender()
