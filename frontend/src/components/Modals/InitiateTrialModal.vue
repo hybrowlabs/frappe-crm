@@ -30,6 +30,13 @@
           readonly
           :help="__('Carried forward from Requirements')"
         />
+        <FieldText
+          v-if="karatage"
+          :label="__('Karatage')"
+          :modelValue="karatage"
+          readonly
+          :help="__('Carried forward from Requirements')"
+        />
       </FieldGrid>
     </StageSection>
 
@@ -247,6 +254,7 @@ import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
 import Link from '@/components/Controls/Link.vue'
+import { productChain } from '@/components/StageForms/productContext'
 import { Button, call, createResource, toast } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
@@ -336,12 +344,10 @@ const techCategoryValues = computed(() =>
   (techTeamResource.data || []).map((o) => o.value),
 )
 
-const productSummary = computed(() => {
-  const d = props.deal || {}
-  return [d.product_category, d.product_sub_category, d.product_variant]
-    .filter(Boolean)
-    .join(' → ')
-})
+const productSummary = computed(() => productChain(props.deal))
+// Alloy-only attribute; Req. Discussion clears it whenever it stops applying,
+// so an empty value simply hides the field in the later stages.
+const karatage = computed(() => props.deal?.karatage || '')
 const volumeUplift = computed(() => {
   const expected = parseFloat(volume.value) || 0
   const current = parseFloat(currentVolume.value) || 0
