@@ -12,6 +12,7 @@
       <FieldGrid :cols="2">
         <FieldStatic :label="__('Assigned to')" :value="assignedTo" />
         <FieldStatic :label="__('Product context')" :value="productSummary || '—'" />
+        <FieldStatic v-if="karatage" :label="__('Karatage')" :value="karatage" />
       </FieldGrid>
     </StageSection>
 
@@ -297,6 +298,7 @@ import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import FieldStatic from '@/components/StageForms/FieldStatic.vue'
 import Link from '@/components/Controls/Link.vue'
+import { productChain } from '@/components/StageForms/productContext'
 import { Button, call, createListResource, toast } from 'frappe-ui'
 import { ref, computed, onMounted } from 'vue'
 
@@ -358,12 +360,10 @@ const assignedTo = computed(() => {
   return d.technical_person || d.assigned_tech_member || '—'
 })
 
-const productSummary = computed(() => {
-  const d = props.deal || {}
-  return [d.product_category, d.product_sub_category, d.product_variant]
-    .filter(Boolean)
-    .join(' → ')
-})
+const productSummary = computed(() => productChain(props.deal))
+// Alloy-only attribute; Req. Discussion clears it whenever it stops applying,
+// so an empty value simply hides the field in the later stages.
+const karatage = computed(() => props.deal?.karatage || '')
 
 const sub = computed(() => props.deal?.product_sub_category || '')
 const painFrequency = computed(() => props.deal?.pain_frequency || '')
