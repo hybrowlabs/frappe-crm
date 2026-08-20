@@ -4,15 +4,26 @@
   >
     <div class="flex flex-1 items-center justify-between gap-7">
       <div v-show="!editMode">{{ option.value }}</div>
-      <TextInput
+      <div
         v-show="editMode"
-        ref="inputRef"
-        v-model="localOption.value"
+        ref="fieldRef"
         class="w-full"
-        :placeholder="option.placeholder"
-        @blur.stop="saveOption"
+        @focusout.stop="saveOption"
         @keydown.enter.stop="(e) => e.target.blur()"
-      />
+      >
+        <PhoneInput
+          v-if="option.isPhone"
+          :value="localOption.value"
+          :placeholder="option.placeholder"
+          @change="(v) => (localOption.value = v)"
+        />
+        <TextInput
+          v-else
+          v-model="localOption.value"
+          class="w-full"
+          :placeholder="option.placeholder"
+        />
+      </div>
 
       <div class="actions flex items-center justify-center">
         <Button
@@ -56,6 +67,7 @@
 <script setup>
 import SuccessIcon from '@/components/Icons/SuccessIcon.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
+import PhoneInput from '@/components/Controls/PhoneInput.vue'
 import { TextInput } from 'frappe-ui'
 import { nextTick, ref, onMounted, reactive, watch } from 'vue'
 
@@ -72,25 +84,30 @@ watch(
 
 const editMode = ref(false)
 const isNew = ref(false)
-const inputRef = ref(null)
+const fieldRef = ref(null)
+
+// the control is a TextInput or a PhoneInput, so reach for the inner input
+// rather than a component ref
+const focusInput = () =>
+  nextTick(() => fieldRef.value?.querySelector('input')?.focus())
 
 onMounted(() => {
   if (!props.option?.value) {
     editMode.value = true
     isNew.value = true
-    nextTick(() => inputRef.value.el.focus())
+    focusInput()
   }
 })
 
 const toggleEditMode = () => {
   editMode.value = !editMode.value
-  if (editMode.value) {
-    nextTick(() => inputRef.value.el.focus())
-  }
+  if (editMode.value) focusInput()
 }
 
-const saveOption = (e) => {
-  if (!e.target.value) return
+const saveOption = () => {
+  // focusout and the Save button can both fire for one edit
+  if (!editMode.value) return
+  if (!localOption.value) return
   toggleEditMode()
   props.option.onSave(
     { ...props.option, value: localOption.value },

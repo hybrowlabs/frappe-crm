@@ -327,6 +327,14 @@
     :deal="doc"
     @done="reloadDeal"
   />
+  <AnswerInfoRequestModal
+    v-if="showAnswerInfoRequestModal && isSalesTeam()"
+    v-model="showAnswerInfoRequestModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @done="reloadDeal"
+  />
   <RecordEvaluationModal
     v-if="showRecordEvaluationModal && isTechnicalPerson()"
     v-model="showRecordEvaluationModal"
@@ -418,6 +426,7 @@ import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsMod
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
 import TechnicalResponseModal from '@/components/Modals/TechnicalResponseModal.vue'
 import ReviewEscalationModal from '@/components/Modals/ReviewEscalationModal.vue'
+import AnswerInfoRequestModal from '@/components/Modals/AnswerInfoRequestModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
 import ApproveEvaluationModal from '@/components/Modals/ApproveEvaluationModal.vue'
 import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
@@ -578,6 +587,7 @@ watch(
 const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
   Qualification: { label: __('Initiate Trial'), icon: BeakerIcon },
+  'Request for Info': { label: __('Answer Questions'), icon: EmailIcon },
   'Tech Assignment': { label: __('Technical Response'), icon: BeakerIcon },
   'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
@@ -599,10 +609,7 @@ const stageCta = computed(() => {
       ? { label: __('Review Escalation'), icon: AlertIcon }
       : null
   }
-  const cta =
-    status === 'Qualification' && doc.value.sent_back_by_tech_team
-      ? { ...STAGE_CTA[status], label: __('Continue Trial') }
-      : STAGE_CTA[status] || null
+  const cta = STAGE_CTA[status] || null
   if (!cta) return null
   // Technical Response is a technical-team action — visible to the tech team only.
   if (status === 'Tech Assignment') {
@@ -632,6 +639,7 @@ const dealValueLabel = computed(() =>
 const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualification: 'showInitiateTrialModal',
+  'Request for Info': 'showAnswerInfoRequestModal',
   'Tech Assignment': 'showTechnicalResponseModal',
   'Demo/Making': 'showRecordEvaluationModal',
   Retrial: 'showRecordEvaluationModal',
@@ -642,6 +650,7 @@ const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
 const showTechnicalResponseModal = ref(false)
 const showReviewEscalationModal = ref(false)
+const showAnswerInfoRequestModal = ref(false)
 const showRecordEvaluationModal = ref(false)
 const showApproveEvaluationModal = ref(false)
 
@@ -691,6 +700,7 @@ const showPreQuotationModal = ref(false)
 const stageModals = {
   showCaptureRequirementsModal,
   showInitiateTrialModal,
+  showAnswerInfoRequestModal,
   showTechnicalResponseModal,
   showRecordEvaluationModal,
   showRetrialStageModal,
@@ -1013,7 +1023,7 @@ function statusLabel(status) {
 
 // A forward move is "single step" when no required stage sits between the current
 // and target status. Retrial is an optional branch, so it may be skipped.
-const SKIPPABLE_STAGES = ['Retrial']
+const SKIPPABLE_STAGES = ['Retrial', 'Request for Info']
 function isSingleStepForward(current, target) {
   const ordered = dealStatuses.data || []
   const positions = Object.fromEntries(ordered.map((s) => [s.name, s.position]))

@@ -187,6 +187,7 @@ import {
   setupCustomizations,
 } from '@/utils'
 import { getView } from '@/utils/view'
+import { isTenDigitPhone } from '@/utils/phoneFields'
 import { useDocument } from '@/data/document'
 import { getSettings } from '@/stores/settings'
 import { getMeta } from '@/stores/meta'
@@ -380,10 +381,12 @@ const parsedSections = computed(() => {
           return {
             ...field,
             read_only: false,
+            reqd: 1,
             fieldtype: 'Dropdown',
             options: (contact.doc?.phone_nos || []).map((phone) => ({
               name: phone.name,
               value: phone.phone,
+              isPhone: true,
               selected: phone.phone === contact.doc.mobile_no,
               onClick: () => setAsPrimary('mobile_no', phone.phone),
               onSave: (option, isNew) =>
@@ -396,6 +399,13 @@ const parsedSections = computed(() => {
                       option.value,
                     ),
               onDelete: async (option, isNew) => {
+                const saved = (contact.doc.phone_nos || []).filter(
+                  (p) => !p.isNew,
+                )
+                if (!isNew && saved.length <= 1) {
+                  toast.error(__('{0} is required', [__('Mobile Number')]))
+                  return
+                }
                 contact.doc.phone_nos = contact.doc.phone_nos.filter(
                   (p) => p.name !== option.name,
                 )
@@ -455,6 +465,10 @@ async function setAsPrimary(field, value) {
 
 async function createNew(field, value) {
   if (!value) return
+  if (field === 'phone' && !isTenDigitPhone(value)) {
+    toast.error(__('{0} must be a 10 digit number', [__('Mobile Number')]))
+    return
+  }
   let d = await call('crm.api.contact.create_new', {
     contact: contact.doc.name,
     field,
@@ -467,6 +481,10 @@ async function createNew(field, value) {
 }
 
 async function editOption(doctype, name, fieldname, value) {
+  if (doctype === 'Contact Phone' && !isTenDigitPhone(value)) {
+    toast.error(__('{0} must be a 10 digit number', [__('Mobile Number')]))
+    return
+  }
   let d = await call('frappe.client.set_value', {
     doctype,
     name,
