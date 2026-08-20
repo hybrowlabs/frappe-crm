@@ -214,20 +214,36 @@ def _email_row(label, value, border=True):
 	"""
 
 
+def _log_info_round(doc, action_label, text):
+	"""Keep the Q&A rounds readable on the deal timeline. The fields only ever hold the
+	latest round, so every question and every answer is also posted as a comment."""
+	who = frappe.get_cached_value("User", frappe.session.user, "full_name") or frappe.session.user
+	body = frappe.utils.escape_html(text).replace("\n", "<br>")
+	doc.add_comment(
+		"Comment",
+		f"<b>{frappe.utils.escape_html(who)}</b> {action_label}:<br>{body}",
+	)
+
+
 @frappe.whitelist()
 def request_more_info(deal: str, questions: str):
 	"""Tech team asks the salesperson for more info before recommending a product.
-	The questions are saved on the deal and emailed to the salesperson; the deal returns
-	to Qualification while the waiting-time clock pauses on Sales."""
+	The questions are saved on the deal and emailed to the salesperson; the deal parks in
+	the Request for Info stage, so the waiting-time clock pauses on Tech and the deal drops
+	out of the technical pending queue until the salesperson answers."""
 	if not questions or not questions.strip():
 		frappe.throw(_("Please enter the questions for the salesperson."))
 
 	doc = frappe.get_doc("CRM Deal", deal)
 	doc.info_questions = questions
+	# The previous round's answer belongs to the previous question — start clean.
+	doc.info_answers = None
 	doc.technical_response = "Request More Info"
 	doc.sent_back_by_tech_team = 1
-	doc.status = "Qualification"
+	doc.status = "Request for Info"
 	doc.save(ignore_permissions=True)
+
+	_log_info_round(doc, _("asked the salesperson"), questions)
 
 	from crm.api.sales_manager import _deal_sales_person_user
 
@@ -281,6 +297,85 @@ def request_more_info(deal: str, questions: str):
 		)
 
 	return sales_user
+
+
+@frappe.whitelist()
+def answer_info_request(deal: str, answer: str):
+	"""Salesperson answers the tech team's questions. The answer is saved on the deal and
+	emailed to the assigned tech member, and the deal returns to Tech Assignment so the
+	tech team can recommend a product, ask again, or mark the enquiry not suitable."""
+	if not answer or not answer.strip():
+		frappe.throw(_("Please enter your answer for the technical team."))
+
+	doc = frappe.get_doc("CRM Deal", deal)
+	if doc.status != "Request for Info":
+		frappe.throw(_("This deal is not waiting on an answer from Sales."))
+
+	doc.info_answers = answer
+	doc.sent_back_by_tech_team = 0
+	doc.status = "Tech Assignment"
+	doc.save(ignore_permissions=True)
+
+	_log_info_round(doc, _("answered the technical team"), answer)
+
+	tech_user = doc.assigned_tech_member
+	if not tech_user and doc.technical_person:
+		tech_user = frappe.db.get_value("CRM Tech Team", doc.technical_person, "team_member")
+	if not tech_user:
+		return None
+
+	answered_by = frappe.get_cached_value("User", frappe.session.user, "full_name") or frappe.session.user
+	notification_text = f"""
+		<div class="mb-2 leading-5 text-ink-gray-5">
+			<span class="font-medium text-ink-gray-9">{ frappe.utils.escape_html(answered_by) }</span>
+			<span>{ _('answered your questions on this deal') }</span>
+		</div>
+	"""
+	notify_user(
+		{
+			"owner": frappe.session.user,
+			"assigned_to": tech_user,
+			"notification_type": "Mention",
+			"message": _("Salesperson answered your questions on deal {0}").format(deal),
+			"notification_text": notification_text,
+			"reference_doctype": "CRM Deal",
+			"reference_docname": deal,
+			"redirect_to_doctype": "CRM Deal",
+			"redirect_to_docname": deal,
+		}
+	)
+
+	recipient = frappe.db.get_value("User", tech_user, "email") or tech_user
+	if recipient and tech_user != frappe.session.user:
+		rows = _email_row(_("Deal"), frappe.utils.escape_html(deal))
+		if doc.info_questions:
+			rows += _email_row(
+				_("You asked"),
+				frappe.utils.escape_html(doc.info_questions).replace("\n", "<br>"),
+			)
+		rows += _email_row(
+			_("Answer"),
+			frappe.utils.escape_html(answer).replace("\n", "<br>"),
+			border=False,
+		)
+		frappe.sendmail(
+			recipients=[recipient],
+			subject=_("Salesperson answered your questions on deal {0}").format(deal),
+			content=_render_deal_email(
+				_("Answer Received"),
+				_("The salesperson has answered you"),
+				_("{0} replied with the details you asked for. The deal is back in Tech Assignment.").format(
+					frappe.utils.escape_html(answered_by)
+				),
+				rows,
+				frappe.utils.get_url(f"/crm/deals/{deal}"),
+				_("Open the Deal"),
+			),
+			reference_doctype="CRM Deal",
+			reference_name=deal,
+		)
+
+	return tech_user
 
 
 @frappe.whitelist()

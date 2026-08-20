@@ -8,6 +8,22 @@
       }}
     </StageCallout>
 
+    <!-- Last Q&A round, shown whenever the salesperson has answered a question. -->
+    <StageSection
+      v-if="deal.info_answers"
+      :title="__('Salesperson\'s Answer')"
+      icon="mail"
+    >
+      <div class="text-sm text-ink-gray-5">{{ __('You asked') }}</div>
+      <div class="mt-1 whitespace-pre-line rounded-lg bg-surface-gray-2 px-3.5 py-2.5 text-p-sm text-ink-gray-7">
+        {{ deal.info_questions || '—' }}
+      </div>
+      <div class="mt-2.5 text-sm text-ink-gray-5">{{ __('They answered') }}</div>
+      <div class="mt-1 whitespace-pre-line rounded-lg bg-surface-gray-2 px-3.5 py-2.5 text-p-sm text-ink-gray-7">
+        {{ deal.info_answers }}
+      </div>
+    </StageSection>
+
     <StageSection :title="__('Assignment')" icon="checkSquare">
       <FieldGrid :cols="2">
         <FieldStatic :label="__('Assigned to')" :value="assignedTo" />
@@ -213,7 +229,7 @@
       <StageCallout theme="amber" icon="mail" class="mt-1">
         {{
           __(
-            'Questions are emailed to the salesperson. The waiting-time clock pauses and the deal returns to Qualified until they continue the trial.',
+            'Questions are emailed to the salesperson. The waiting-time clock pauses and the deal moves to Request for Info until they answer.',
           )
         }}
       </StageCallout>
@@ -265,7 +281,7 @@
         <Button
           v-else-if="response === 'info'"
           variant="solid"
-          :label="__('Send questions → pause clock')"
+          :label="__('Send Questions')"
           :loading="sending"
           @click="sendQuestions"
         >

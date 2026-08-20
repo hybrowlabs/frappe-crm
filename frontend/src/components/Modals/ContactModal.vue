@@ -206,7 +206,10 @@ const tabs = createResource({
             } else if (field.fieldtype === 'Table') {
               _contact.doc[field.fieldname] = []
             }
-            if (field.fieldname === 'first_name') {
+            if (
+              field.fieldname === 'first_name' ||
+              field.fieldname === 'mobile_no'
+            ) {
               field.reqd = 1
             }
           })

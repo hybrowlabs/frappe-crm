@@ -140,6 +140,7 @@ class CRMDeal(Document):
         gstin: DF.Data | None
         impact_notes: DF.SmallText | None
         industry: DF.Link | None
+        info_answers: DF.SmallText | None
         info_questions: DF.SmallText | None
         job_title: DF.Data | None
         karatage: DF.Literal["", "9Kt", "14 Kt", "18Kt", "22Kt"]
