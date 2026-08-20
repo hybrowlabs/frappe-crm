@@ -704,6 +704,9 @@ def create_organization(doc):
             "territory": doc.get("territory"),
             "industry": doc.get("industry"),
             "annual_revenue": doc.get("annual_revenue"),
+            # Carry the deal's GSTIN onto the new organization, else it stays blank
+            # unless an ERPNext customer is linked later.
+            "gstin": doc.get("gstin"),
         }
     )
     organization.insert(ignore_permissions=True)

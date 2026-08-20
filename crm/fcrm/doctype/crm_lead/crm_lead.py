@@ -403,7 +403,7 @@ class CRMLead(Document):
 
 		return contact.name
 
-	def create_organization(self, existing_organization=None, fallback_name=None):
+	def create_organization(self, existing_organization=None, fallback_name=None, gstin=None):
 		# Organization is mandatory on the deal. Use the lead's organization, else
 		# fall back to the GST legal name captured during conversion, so an org is
 		# always created.
@@ -426,6 +426,10 @@ class CRMLead(Document):
 				"territory": self.territory,
 				"industry": self.industry,
 				"annual_revenue": self.annual_revenue,
+				# GSTIN is captured in the convert modal and stamped on the deal and its
+				# addresses; carry it onto the organization too, else it stays blank
+				# unless an ERPNext customer is linked later.
+				"gstin": gstin,
 			}
 		)
 		organization.insert(ignore_permissions=True)
@@ -755,9 +759,12 @@ def convert_to_deal(
 	# is mandatory on CRM Organization too, so carry the modal's territory when the
 	# lead itself has none.
 	legal_name = deal.get("legal_name") if isinstance(deal, dict) else None
+	gstin = deal.get("gstin") if isinstance(deal, dict) else None
 	if isinstance(deal, dict) and deal.get("territory") and not lead.territory:
 		lead.territory = deal.get("territory")
-	organization = lead.create_organization(existing_organization, fallback_name=legal_name)
+	organization = lead.create_organization(
+		existing_organization, fallback_name=legal_name, gstin=gstin
+	)
 	# Carry the org onto the lead so the connected contact's company_name is set to
 	# it and the contact shows up in the organization's contact list.
 	if organization and not lead.organization:
