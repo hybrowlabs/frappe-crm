@@ -1039,6 +1039,7 @@
    "fieldname": "billing_address",
    "fieldtype": "Link",
    "label": "Billing Address",
+   "mandatory_depends_on": "eval:doc.status != \"Req. Discussion\"",
    "options": "Address"
   },
   {
@@ -1064,7 +1065,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-07 10:08:22.392363",
+ "modified": "2026-08-24 16:10:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

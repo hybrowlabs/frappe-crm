@@ -416,6 +416,12 @@ class CRMLead(Document):
 		)
 		if existing_organization:
 			self.db_set("organization", existing_organization)
+			# The org already exists (matched by name, or picked in the convert modal),
+			# so the insert below is skipped and its GSTIN would stay blank. Backfill it
+			# from the GSTIN captured during conversion, but never overwrite one that is
+			# already set — the stored value wins.
+			if gstin and not frappe.db.get_value("CRM Organization", existing_organization, "gstin"):
+				frappe.db.set_value("CRM Organization", existing_organization, "gstin", gstin)
 			return existing_organization
 
 		organization = frappe.new_doc("CRM Organization")
