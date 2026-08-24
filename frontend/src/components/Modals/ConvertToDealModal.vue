@@ -32,6 +32,42 @@
       v-model="existingOrganization"
     />
 
+    <!-- An existing organization only carries a GSTIN if one was captured when it
+         was created, so a picked org is often blank. Ask for it here rather than
+         letting the deal and the organization both stay without one. -->
+    <template
+      v-if="chooseExistingOrganization && existingOrganization && !existingOrgLoading"
+    >
+      <StageCallout v-if="existingOrgGstin" theme="green" icon="check" class="mb-4">
+        {{ __('GSTIN') }} <b>{{ existingOrgGstin }}</b>
+        {{ __('· already on the selected organization.') }}
+      </StageCallout>
+      <template v-else>
+        <FieldSelect
+          v-model="gstType"
+          :label="__('GST Registration Type')"
+          required
+          :options="gstTypeOptions"
+        />
+        <FieldText
+          v-if="!exempt"
+          v-model="gstin"
+          :label="__('GSTIN')"
+          required
+          placeholder="27AABCM1234E1Z5"
+          :help="gstinHelp"
+          :error="errors.gstin"
+        />
+        <StageCallout v-else theme="amber" icon="alert" class="mb-4 mt-1">
+          {{
+            __(
+              'Unregistered — quotation allowed on advance payment only. No input tax credit; credit terms blocked.',
+            )
+          }}
+        </StageCallout>
+      </template>
+    </template>
+
     <template v-if="!chooseExistingOrganization">
     <FieldSelect
       v-model="gstType"
@@ -234,6 +270,9 @@ const fetchedLegalName = ref('')
 const territory = ref(props.lead.territory || '')
 const chooseExistingOrganization = ref(false)
 const existingOrganization = ref('')
+// GSTIN already stored on the picked organization ('' when it has none)
+const existingOrgGstin = ref('')
+const existingOrgLoading = ref(false)
 const chooseExistingContact = ref(false)
 const existingContact = ref('')
 let lastFetchedGstin = ''
@@ -250,6 +289,39 @@ const contactLinkFilters = computed(() => {
   if (!dealOrgName.value) return {}
   return { company_name: ['in', [dealOrgName.value, '']] }
 })
+
+// Load the picked organization's GSTIN so we only ask for one when it is missing.
+watch(existingOrganization, async (name) => {
+  existingOrgGstin.value = ''
+  gstin.value = ''
+  gstType.value = 'Registered — Regular'
+  lastFetchedGstin = ''
+  if (!name) return
+  existingOrgLoading.value = true
+  try {
+    const value = await call('frappe.client.get_value', {
+      doctype: 'CRM Organization',
+      filters: { name },
+      fieldname: 'gstin',
+    })
+    existingOrgGstin.value = value?.gstin || ''
+  } catch {
+    // Treat an unreadable org as "no GSTIN" and ask for one — the worst case is
+    // re-entering a GSTIN the org already has, which the backend never overwrites.
+    existingOrgGstin.value = ''
+  } finally {
+    existingOrgLoading.value = false
+  }
+})
+
+// True when the picked organization has no GSTIN and the user must supply one.
+const needsGstinForExistingOrg = computed(
+  () =>
+    chooseExistingOrganization.value &&
+    !!existingOrganization.value &&
+    !existingOrgLoading.value &&
+    !existingOrgGstin.value,
+)
 
 const billing = reactive({
   address_line1: '',
@@ -297,6 +369,8 @@ watch(show, (val) => {
     sameAsBilling.value = true
     chooseExistingOrganization.value = false
     existingOrganization.value = ''
+    existingOrgGstin.value = ''
+    existingOrgLoading.value = false
     chooseExistingContact.value = false
     existingContact.value = ''
   }
@@ -377,7 +451,11 @@ const errors = computed(() => {
   const e = {}
   // Territory is mandatory on the deal — required here regardless of the org choice.
   if (!territory.value) e.territory = __('Required')
-  if (chooseExistingOrganization.value) return e
+  if (chooseExistingOrganization.value) {
+    if (needsGstinForExistingOrg.value && !exempt.value && !valid.value)
+      e.gstin = __('Enter a valid 15-character GSTIN')
+    return e
+  }
   // Organization is mandatory on the deal, so the legal/organization name is
   // always required when creating a new organization (even GST-exempt).
   if (!legalName.value) e.legalName = __('Required')
@@ -406,6 +484,10 @@ async function convertToDeal() {
     // Always carry the org name so the backend always creates an organization.
     deal.doc.legal_name = legalName.value
     if (!exempt.value) deal.doc.gstin = clean.value
+  } else if (!exempt.value) {
+    // Either the GSTIN already on the org, or the one just entered for it. The
+    // backend stamps it on the deal and backfills the org when the org has none.
+    deal.doc.gstin = existingOrgGstin.value || clean.value
   }
 
   await triggerConvertToDeal?.(props.lead, deal.doc, () => (show.value = false))
