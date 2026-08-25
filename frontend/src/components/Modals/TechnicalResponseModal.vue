@@ -235,6 +235,42 @@
       </StageCallout>
     </StageSection>
 
+    <!-- New Product Development (Alloys only) -->
+    <StageSection
+      v-if="response === 'npd'"
+      :title="__('New Product Development')"
+      icon="beaker"
+    >
+      <FieldGrid :cols="2">
+        <FieldText
+          v-model="npdComposition"
+          type="number"
+          :label="__('Composition (%)')"
+        />
+        <FieldText v-model="npdHardness" type="number" :label="__('Hardness')" />
+        <!-- XRF and ICP only mean something alongside a composition -->
+        <FieldText
+          v-if="hasComposition"
+          v-model="npdXrf"
+          type="number"
+          :label="__('XRF (%)')"
+        />
+        <FieldText
+          v-if="hasComposition"
+          v-model="npdIcp"
+          type="number"
+          :label="__('ICP')"
+        />
+      </FieldGrid>
+      <StageCallout theme="blue" icon="arrowRight" class="mt-1">
+        {{
+          __(
+            'The proposal goes to the salesperson and their Sales Manager. The Sales Manager decides whether the deal proceeds to Tech Evaluation. All figures are optional.',
+          )
+        }}
+      </StageCallout>
+    </StageSection>
+
     <!-- Not Suitable -->
     <StageSection
       v-if="response === 'unsuitable'"
@@ -288,6 +324,15 @@
           <template #suffix><StageIcon name="mail" class="h-4 w-4" /></template>
         </Button>
         <Button
+          v-else-if="response === 'npd'"
+          variant="solid"
+          :label="__('Send for NPD Approval')"
+          :loading="proposingNpd"
+          @click="proposeNpd"
+        >
+          <template #suffix><StageIcon name="arrowRight" class="h-4 w-4" /></template>
+        </Button>
+        <Button
           v-else-if="response === 'unsuitable'"
           variant="solid"
           theme="red"
@@ -316,7 +361,7 @@ import FieldStatic from '@/components/StageForms/FieldStatic.vue'
 import Link from '@/components/Controls/Link.vue'
 import { productChain } from '@/components/StageForms/productContext'
 import { Button, call, createListResource, toast } from 'frappe-ui'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 const props = defineProps({
   statusLabel: { type: String, default: '' },
@@ -334,12 +379,23 @@ const appNotes = ref('')
 const questions = ref('')
 const unsuitReason = ref('')
 const unsuitNotes = ref('')
+// NPD lab figures — every one of them is optional.
+const npdComposition = ref(null)
+const npdHardness = ref(null)
+const npdXrf = ref(null)
+const npdIcp = ref(null)
 const sending = ref(false)
 const escalating = ref(false)
+const proposingNpd = ref(false)
 
 const trialRequired = computed(() => props.deal?.trial_required !== 0)
 
-const respOptions = [
+// Proposing a new alloy only makes sense for the Alloys category — the card is
+// hidden entirely on Plating and Machines deals.
+const NPD_CATEGORY = 'Alloys'
+const isNpdCategory = computed(() => props.deal?.product_category === NPD_CATEGORY)
+
+const respOptions = computed(() => [
   {
     key: 'recommend',
     icon: 'check',
@@ -354,6 +410,17 @@ const respOptions = [
     desc: __('Email specific questions to the salesperson → waiting-time pauses until they respond'),
     badgeClass: 'bg-surface-amber-2 text-ink-amber-3',
   },
+  ...(isNpdCategory.value
+    ? [
+        {
+          key: 'npd',
+          icon: 'beaker',
+          title: __('New Product Development'),
+          desc: __('Propose a new alloy → Sales Manager approves before Tech Evaluation'),
+          badgeClass: 'bg-surface-blue-2 text-ink-blue-3',
+        },
+      ]
+    : []),
   {
     key: 'unsuitable',
     icon: 'alert',
@@ -361,7 +428,7 @@ const respOptions = [
     desc: __('Sales Manager notified → deal reviewed for closure or alternative product'),
     badgeClass: 'bg-surface-red-2 text-ink-red-3',
   },
-]
+])
 
 const unsuitReasonOptions = [
   'No matching product for required spec',
@@ -420,6 +487,28 @@ const technicalPainsToShow = computed(() =>
 )
 const otherPainSelected = computed(() => selectedPains.value.has(OTHER_PAIN_POINT))
 
+// XRF and ICP only apply alongside a composition. Clearing it hides them, so drop
+// their values too — the same guard the karatage watcher uses in the capture form.
+const hasComposition = computed(
+  () => npdComposition.value !== null && npdComposition.value !== '',
+)
+
+watch(npdComposition, (value) => {
+  if (value === null || value === '') {
+    npdXrf.value = null
+    npdIcp.value = null
+  }
+})
+
+function npdValues() {
+  return {
+    composition: parseFloat(npdComposition.value) || 0,
+    hardness: parseInt(npdHardness.value) || 0,
+    xrf: parseFloat(npdXrf.value) || 0,
+    icp: parseInt(npdIcp.value) || 0,
+  }
+}
+
 function newSuggestion(row = {}) {
   return {
     key: row.name || `suggestion-${suggestionKey++}`,
@@ -455,9 +544,14 @@ onMounted(() => {
   questions.value = d.info_questions || ''
   unsuitReason.value = d.not_suitable_reason || ''
   unsuitNotes.value = d.not_suitable_notes || ''
+  npdComposition.value = d.npd_composition || null
+  npdHardness.value = d.npd_hardness || null
+  npdXrf.value = d.npd_xrf || null
+  npdIcp.value = d.npd_icp || null
   const map = {
     'Recommend & Approve': 'recommend',
     'Request More Info': 'info',
+    'New Product Development': 'npd',
     'Not Suitable': 'unsuitable',
   }
   response.value = map[d.technical_response] || null
@@ -516,6 +610,14 @@ function saveDraft() {
       technical_response: 'Request More Info',
       info_questions: questions.value || '',
     })
+  else if (response.value === 'npd')
+    Object.assign(values, {
+      technical_response: 'New Product Development',
+      npd_composition: parseFloat(npdComposition.value) || 0,
+      npd_hardness: parseInt(npdHardness.value) || 0,
+      npd_xrf: parseFloat(npdXrf.value) || 0,
+      npd_icp: parseInt(npdIcp.value) || 0,
+    })
   else if (response.value === 'unsuitable')
     Object.assign(values, {
       not_suitable_reason: unsuitReason.value || null,
@@ -561,6 +663,24 @@ async function sendQuestions() {
     toast.error(err.messages?.[0] || __('Error sending questions'))
   } finally {
     sending.value = false
+  }
+}
+
+async function proposeNpd() {
+  // Nothing to validate — every NPD figure is optional by design.
+  proposingNpd.value = true
+  try {
+    await call('crm.api.tech_team.request_npd', {
+      deal: props.deal?.name,
+      ...npdValues(),
+    })
+    toast.success(__('Sent to the Sales Manager for approval'))
+    emit('done')
+    show.value = false
+  } catch (err) {
+    toast.error(err.messages?.[0] || __('Error sending the proposal'))
+  } finally {
+    proposingNpd.value = false
   }
 }
 

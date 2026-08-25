@@ -94,8 +94,18 @@ export const statusesStore = defineStore('crm-statuses', () => {
       doctype == 'deal' ? 'CRM Deal Status' : 'CRM Lead Status',
     )
 
+    // Order by the pipeline position, never by key-insertion order: `statusesByName`
+    // is filled from the cached list first and refreshed in place afterwards, so a
+    // status added to the middle of the pipeline later would otherwise sort last for
+    // anyone with a warm cache.
+    let ordered = Object.keys(statusesByName).sort(
+      (a, b) =>
+        (statusesByName[a]?.position ?? Number.MAX_SAFE_INTEGER) -
+        (statusesByName[b]?.position ?? Number.MAX_SAFE_INTEGER),
+    )
+
     let options = []
-    for (const status in statusesByName) {
+    for (const status of ordered) {
       // inactive statuses stay resolvable for existing records, but can't be picked.
       // checked against 0 explicitly so a stale cache without `active` still shows
       if (statusesByName[status]?.active === 0) continue

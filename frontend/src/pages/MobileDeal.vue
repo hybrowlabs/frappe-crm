@@ -328,6 +328,14 @@
     :deal="doc"
     @done="reloadDeal"
   />
+  <NpdResponseModal
+    v-if="showNpdResponseModal && isSalesManager()"
+    v-model="showNpdResponseModal"
+    :statusLabel="statusLabel(doc.status)"
+    :subtitle="`${title} · ${dealId}`"
+    :deal="doc"
+    @done="reloadDeal"
+  />
   <RecordEvaluationModal
     v-if="showRecordEvaluationModal && isTechnicalPerson()"
     v-model="showRecordEvaluationModal"
@@ -419,6 +427,7 @@ import CaptureRequirementsModal from '@/components/Modals/CaptureRequirementsMod
 import InitiateTrialModal from '@/components/Modals/InitiateTrialModal.vue'
 import TechnicalResponseModal from '@/components/Modals/TechnicalResponseModal.vue'
 import ReviewEscalationModal from '@/components/Modals/ReviewEscalationModal.vue'
+import NpdResponseModal from '@/components/Modals/NpdResponseModal.vue'
 import RecordEvaluationModal from '@/components/Modals/RecordEvaluationModal.vue'
 import ApproveEvaluationModal from '@/components/Modals/ApproveEvaluationModal.vue'
 import RetrialStageModal from '@/components/Modals/RetrialStageModal.vue'
@@ -580,6 +589,7 @@ const STAGE_CTA = {
   'Req. Discussion': { label: __('Capture Requirements'), icon: PackageIcon },
   Qualification: { label: __('Initiate Trial'), icon: BeakerIcon },
   'Tech Assignment': { label: __('Technical Response'), icon: BeakerIcon },
+  'New Product Development': { label: __('NPD Response'), icon: BeakerIcon },
   'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
@@ -614,6 +624,12 @@ const stageCta = computed(() => {
   if (status === 'Tech Assignment') {
     return isTechnicalTeam() ? cta : null
   }
+  // The NPD proposal is answered by the Sales Manager alone. Once declined the flow
+  // has stopped, so there is no onward action for anyone.
+  if (status === 'New Product Development') {
+    if (doc.value.npd_declined) return null
+    return isSalesManager() ? cta : null
+  }
   // Record Evaluation is a technical-team action — visible to Technical Person only.
   if (['Demo/Making', 'Retrial'].includes(status)) {
     return isTechnicalPerson() ? cta : null
@@ -639,6 +655,7 @@ const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualification: 'showInitiateTrialModal',
   'Tech Assignment': 'showTechnicalResponseModal',
+  'New Product Development': 'showNpdResponseModal',
   'Demo/Making': 'showRecordEvaluationModal',
   Retrial: 'showRecordEvaluationModal',
   'Proposal/Quotation': 'showProposalStageModal',
@@ -648,6 +665,7 @@ const showCaptureRequirementsModal = ref(false)
 const showInitiateTrialModal = ref(false)
 const showTechnicalResponseModal = ref(false)
 const showReviewEscalationModal = ref(false)
+const showNpdResponseModal = ref(false)
 const showRecordEvaluationModal = ref(false)
 const showApproveEvaluationModal = ref(false)
 
@@ -698,6 +716,7 @@ const stageModals = {
   showCaptureRequirementsModal,
   showInitiateTrialModal,
   showTechnicalResponseModal,
+  showNpdResponseModal,
   showRecordEvaluationModal,
   showRetrialStageModal,
   showProposalStageModal,
