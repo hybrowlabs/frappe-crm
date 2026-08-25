@@ -11,6 +11,10 @@ from crm.fcrm.doctype.crm_status_change_log.crm_status_change_log import add_sta
 from crm.fcrm.doctype.utils import add_or_remove_lost_reason_section_in_sidepanel
 
 # Data that must already be captured for a deal to reach a given pipeline stage.
+# Terminal stage for a deal that was stopped rather than lost (currently: the Sales
+# Manager declined a new-product proposal). Lost-typed, but not a lost deal.
+CLOSED_STATUS = "Closed"
+
 # Each gate is keyed by the status it guards; moving a deal forward into (or past)
 # that status requires every listed field — and every field of earlier gates — to
 # be filled. The "step" label tells the user which stage form collects the data.
@@ -161,6 +165,14 @@ class CRMDeal(Document):
         not_suitable: DF.Check
         not_suitable_notes: DF.SmallText | None
         not_suitable_reason: DF.Literal["", "No matching product for required spec", "Spec outside our range", "Volume too low to serve", "Better served by alternative product", "Technically not feasible"]
+        npd_composition: DF.Percent
+        npd_decision: DF.Literal["", "Yes", "No"]
+        npd_declined: DF.Check
+        npd_hardness: DF.Int
+        npd_icp: DF.Int
+        npd_pending: DF.Check
+        npd_remarks: DF.SmallText | None
+        npd_xrf: DF.Percent
         operational_impacts: DF.TableMultiSelect[CRMOperationImpactSelect]
         opportunity_type: DF.Literal["", "New Business", "New Product", "Expansion", "Win-back"]
         organization: DF.Link
@@ -196,7 +208,7 @@ class CRMDeal(Document):
         status: DF.Link
         status_change_log: DF.Table[CRMStatusChangeLog]
         technical_person: DF.Link | None
-        technical_response: DF.Literal["", "Recommend & Approve", "Request More Info", "Not Suitable"]
+        technical_response: DF.Literal["", "Recommend & Approve", "Request More Info", "New Product Development", "Not Suitable"]
         territory: DF.Link
         testimonial_captured: DF.Check
         trial_outcome: DF.Literal["", "Successful", "Partial", "Unsuccessful"]
@@ -332,6 +344,11 @@ class CRMDeal(Document):
                 continue
             # No trial required → the evaluation isn't recorded, so its gate doesn't apply.
             if gate["status"] == "Evaluation Completed" and not self.trial_required:
+                continue
+            # NPD route: the tech team proposed a new alloy instead of recommending an
+            # existing item, so there are no product suggestions or application notes
+            # to gate on when the approved deal moves into Tech Evaluation.
+            if gate["status"] == "Demo/Making" and self.npd_decision == "Yes":
                 continue
             missing = []
             for fieldname, label in gate["fields"]:
@@ -556,8 +573,16 @@ class CRMDeal(Document):
     def validate_lost_reason(self):
         """
         Validate the lost reason if the status is set to "Lost".
+
+        `Closed` is Lost-typed too, but it is not a lost deal — it never reached a
+        commercial decision — and it records its own remarks instead of a Lost Reason,
+        so it is exempt.
         """
-        if self.status and frappe.get_cached_value("CRM Deal Status", self.status, "type") == "Lost":
+        if (
+            self.status
+            and self.status != CLOSED_STATUS
+            and frappe.get_cached_value("CRM Deal Status", self.status, "type") == "Lost"
+        ):
             if not self.lost_reason:
                 frappe.throw(_("Please specify a reason for losing the deal."), frappe.ValidationError)
             elif self.lost_reason == "Other" and not self.lost_notes:

@@ -520,3 +520,230 @@ def resolve_escalation(deal: str, action: str, notes: str | None = None):
 	doc.save(ignore_permissions=True)
 
 	return doc.status
+
+
+def _npd_stakeholders(doc):
+	"""The salesperson on the deal and their immediate manager — the two people an NPD
+	proposal is handed to. Either may be missing (no sales person set, or no parent in
+	the Sales Person tree); callers simply skip whoever isn't resolvable."""
+	from crm.api.sales_manager import (
+		_deal_sales_person_user,
+		_user_from_sales_person,
+		sales_person_from_user,
+	)
+
+	sales_user = _deal_sales_person_user(doc)
+	manager_user = None
+	if sales_user:
+		sales_person = sales_person_from_user(sales_user)
+		if sales_person:
+			parent = frappe.db.get_value("Sales Person", sales_person, "parent_sales_person")
+			manager_user = _user_from_sales_person(parent)
+
+	# dict.fromkeys keeps order and drops the duplicate when the salesperson is their
+	# own manager.
+	return list(dict.fromkeys(u for u in (sales_user, manager_user) if u))
+
+
+def _npd_figures(doc):
+	"""The lab figures as email rows. Every field is optional, so only what the tech
+	team actually filled in is shown."""
+	rows = ""
+	if doc.npd_composition:
+		rows += _email_row(_("Composition (%)"), doc.npd_composition)
+	if doc.npd_hardness:
+		rows += _email_row(_("Hardness"), doc.npd_hardness)
+	if doc.npd_xrf:
+		rows += _email_row(_("XRF (%)"), doc.npd_xrf)
+	if doc.npd_icp:
+		rows += _email_row(_("ICP"), doc.npd_icp)
+	return rows
+
+
+@frappe.whitelist()
+def request_npd(
+	deal: str,
+	composition: float | None = None,
+	hardness: int | None = None,
+	xrf: float | None = None,
+	icp: int | None = None,
+):
+	"""Tech team proposes developing a new alloy instead of recommending an existing item.
+
+	Every figure is optional — the proposal can be sent with as much or as little lab data
+	as the tech team has. The deal moves to the New Product Development stage and is
+	assigned to both the salesperson and their manager, but only the manager can answer it.
+	"""
+	doc = frappe.get_doc("CRM Deal", deal)
+	doc.technical_response = "New Product Development"
+	doc.npd_composition = composition or 0
+	doc.npd_hardness = hardness or 0
+	# XRF and ICP only apply alongside a composition — mirrors the form hiding them.
+	doc.npd_xrf = (xrf or 0) if composition else 0
+	doc.npd_icp = (icp or 0) if composition else 0
+	# A resubmission starts a clean round: the previous answer belonged to the previous
+	# proposal.
+	doc.npd_decision = None
+	doc.npd_remarks = None
+	doc.npd_declined = 0
+	doc.npd_pending = 1
+	doc.status = "New Product Development"
+	doc.save(ignore_permissions=True)
+
+	summary = ", ".join(
+		f"{label}: {value}"
+		for label, value in (
+			(_("Composition (%)"), doc.npd_composition),
+			(_("Hardness"), doc.npd_hardness),
+			(_("XRF (%)"), doc.npd_xrf),
+			(_("ICP"), doc.npd_icp),
+		)
+		if value
+	)
+	_log_info_round(doc, _("proposed a new product development"), summary or _("No figures recorded"))
+
+	stakeholders = _npd_stakeholders(doc)
+	if not stakeholders:
+		return None
+
+	proposed_by = frappe.get_cached_value("User", frappe.session.user, "full_name") or frappe.session.user
+	notification_text = f"""
+		<div class="mb-2 leading-5 text-ink-gray-5">
+			<span class="font-medium text-ink-gray-9">{ frappe.utils.escape_html(proposed_by) }</span>
+			<span>{ _('proposed a new product development on this deal') }</span>
+		</div>
+	"""
+	rows = _email_row(_("Deal"), frappe.utils.escape_html(deal)) + _npd_figures(doc)
+
+	for user in stakeholders:
+		assign_to_user(
+			"CRM Deal",
+			deal,
+			user,
+			_("New product development proposed — awaiting the Sales Manager's decision"),
+		)
+		notify_user(
+			{
+				"owner": frappe.session.user,
+				"assigned_to": user,
+				"notification_type": "Mention",
+				"message": _("New product development proposed on deal {0}").format(deal),
+				"notification_text": notification_text,
+				"reference_doctype": "CRM Deal",
+				"reference_docname": deal,
+				"redirect_to_doctype": "CRM Deal",
+				"redirect_to_docname": deal,
+			}
+		)
+
+		recipient = frappe.db.get_value("User", user, "email") or user
+		if not recipient or user == frappe.session.user:
+			continue
+		frappe.sendmail(
+			recipients=[recipient],
+			subject=_("New product development proposed on deal {0}").format(deal),
+			content=_render_deal_email(
+				_("New Product Development"),
+				_("A new product has been proposed"),
+				_("{0} could not match an existing product and proposed developing a new one.").format(
+					frappe.utils.escape_html(proposed_by)
+				),
+				rows,
+				frappe.utils.get_url(f"/crm/deals/{deal}"),
+				_("Open the Deal"),
+			),
+			reference_doctype="CRM Deal",
+			reference_name=deal,
+		)
+
+	return stakeholders
+
+
+@frappe.whitelist()
+def respond_npd(deal: str, decision: str, remarks: str | None = None):
+	"""Sales Manager answers an NPD proposal.
+
+	'Yes' sends the deal on to Tech Evaluation. 'No' closes the deal — it moves to the
+	terminal `Closed` stage with the manager's remarks on record. Closed rather than
+	Lost: the deal never reached a commercial decision, so counting it as a lost deal
+	would overstate losses.
+	"""
+	if decision not in ("Yes", "No"):
+		frappe.throw(_("Please select Yes or No."))
+
+	doc = frappe.get_doc("CRM Deal", deal)
+	if not doc.npd_pending:
+		frappe.throw(_("This deal is not awaiting a new product development decision."))
+
+	doc.npd_decision = decision
+	doc.npd_remarks = remarks or ""
+	doc.npd_pending = 0
+	if decision == "Yes":
+		doc.status = "Demo/Making"
+	else:
+		doc.npd_declined = 1
+		doc.status = "Closed"
+	doc.save(ignore_permissions=True)
+
+	_log_info_round(
+		doc,
+		_("approved the new product development")
+		if decision == "Yes"
+		else _("declined the new product development"),
+		remarks or _("No remarks"),
+	)
+
+	tech_user = doc.assigned_tech_member
+	if not tech_user and doc.technical_person:
+		tech_user = frappe.db.get_value("CRM Tech Team", doc.technical_person, "team_member")
+	if not tech_user:
+		return doc.status
+
+	answered_by = frappe.get_cached_value("User", frappe.session.user, "full_name") or frappe.session.user
+	verb = _("approved") if decision == "Yes" else _("declined")
+	notification_text = f"""
+		<div class="mb-2 leading-5 text-ink-gray-5">
+			<span class="font-medium text-ink-gray-9">{ frappe.utils.escape_html(answered_by) }</span>
+			<span>{ _('{0} your new product development proposal').format(verb) }</span>
+		</div>
+	"""
+	notify_user(
+		{
+			"owner": frappe.session.user,
+			"assigned_to": tech_user,
+			"notification_type": "Mention",
+			"message": _("New product development {0} on deal {1}").format(verb, deal),
+			"notification_text": notification_text,
+			"reference_doctype": "CRM Deal",
+			"reference_docname": deal,
+			"redirect_to_doctype": "CRM Deal",
+			"redirect_to_docname": deal,
+		}
+	)
+
+	recipient = frappe.db.get_value("User", tech_user, "email") or tech_user
+	if recipient and tech_user != frappe.session.user:
+		rows = _email_row(_("Deal"), frappe.utils.escape_html(deal))
+		rows += _email_row(_("Decision"), decision, border=bool(remarks))
+		if remarks:
+			rows += _email_row(
+				_("Remarks"), frappe.utils.escape_html(remarks).replace("\n", "<br>"), border=False
+			)
+		frappe.sendmail(
+			recipients=[recipient],
+			subject=_("New product development {0} on deal {1}").format(verb, deal),
+			content=_render_deal_email(
+				_("New Product Development"),
+				_("Your proposal was {0}").format(verb),
+				_("{0} reviewed the new product you proposed for this deal.").format(
+					frappe.utils.escape_html(answered_by)
+				),
+				rows,
+				frappe.utils.get_url(f"/crm/deals/{deal}"),
+				_("Open the Deal"),
+			),
+			reference_doctype="CRM Deal",
+			reference_name=deal,
+		)
+
+	return doc.status

@@ -92,6 +92,16 @@
   "not_suitable",
   "not_suitable_reason",
   "not_suitable_notes",
+  "npd_section",
+  "npd_composition",
+  "npd_hardness",
+  "npd_xrf",
+  "npd_icp",
+  "column_break_npd_1",
+  "npd_pending",
+  "npd_decision",
+  "npd_declined",
+  "npd_remarks",
   "evaluation_tab",
   "trial_logistics_section",
   "evaluation_start",
@@ -846,7 +856,7 @@
    "fieldname": "technical_response",
    "fieldtype": "Select",
    "label": "Technical Response",
-   "options": "\nRecommend & Approve\nRequest More Info\nNot Suitable"
+   "options": "\nRecommend & Approve\nRequest More Info\nNew Product Development\nNot Suitable"
   },
   {
    "fieldname": "product_suggestions",
@@ -897,6 +907,64 @@
    "fieldname": "not_suitable_notes",
    "fieldtype": "Small Text",
    "label": "Not Suitable \u2014 Comments"
+  },
+  {
+   "fieldname": "npd_section",
+   "fieldtype": "Section Break",
+   "label": "New Product Development"
+  },
+  {
+   "fieldname": "npd_composition",
+   "fieldtype": "Percent",
+   "label": "Composition (%)"
+  },
+  {
+   "fieldname": "npd_hardness",
+   "fieldtype": "Int",
+   "label": "Hardness"
+  },
+  {
+   "depends_on": "eval:doc.npd_composition",
+   "fieldname": "npd_xrf",
+   "fieldtype": "Percent",
+   "label": "XRF (%)"
+  },
+  {
+   "depends_on": "eval:doc.npd_composition",
+   "fieldname": "npd_icp",
+   "fieldtype": "Int",
+   "label": "ICP"
+  },
+  {
+   "fieldname": "column_break_npd_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "npd_pending",
+   "fieldtype": "Check",
+   "label": "NPD Awaiting Sales Approval",
+   "read_only": 1
+  },
+  {
+   "fieldname": "npd_decision",
+   "fieldtype": "Select",
+   "label": "NPD Decision",
+   "options": "\nYes\nNo",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "npd_declined",
+   "fieldtype": "Check",
+   "label": "NPD Declined",
+   "read_only": 1
+  },
+  {
+   "fieldname": "npd_remarks",
+   "fieldtype": "Small Text",
+   "label": "NPD Remarks",
+   "read_only": 1
   },
   {
    "fieldname": "evaluation_tab",
@@ -1066,7 +1134,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-24 16:45:00.000000",
+ "modified": "2026-08-25 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Deal",

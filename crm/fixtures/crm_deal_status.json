@@ -8,7 +8,7 @@
   "label": "Quotation",
   "modified": "2026-06-13 12:09:23.221820",
   "name": "Proposal/Quotation",
-  "position": 7,
+  "position": 8,
   "probability": 50.0,
   "type": "Ongoing"
  },
@@ -21,7 +21,7 @@
   "label": "Negotiation",
   "modified": "2026-06-13 12:09:23.222157",
   "name": "Negotiation",
-  "position": 8,
+  "position": 9,
   "probability": 70.0,
   "type": "Ongoing"
  },
@@ -34,7 +34,7 @@
   "label": "Ready to Close",
   "modified": "2026-06-13 12:09:23.222521",
   "name": "Ready to Close",
-  "position": 9,
+  "position": 10,
   "probability": 90.0,
   "type": "Ongoing"
  },
@@ -47,7 +47,7 @@
   "label": "Lost",
   "modified": "2026-06-13 12:09:23.223195",
   "name": "Lost",
-  "position": 11,
+  "position": 12,
   "probability": 0.0,
   "type": "Lost"
  },
@@ -60,7 +60,7 @@
   "label": "Evaluation Completed",
   "modified": "2026-06-13 12:09:23.221475",
   "name": "Evaluation Completed",
-  "position": 6,
+  "position": 7,
   "probability": 50.0,
   "type": "Ongoing"
  },
@@ -86,7 +86,7 @@
   "label": "Won",
   "modified": "2026-06-13 12:09:23.222856",
   "name": "Won",
-  "position": 10,
+  "position": 11,
   "probability": 100.0,
   "type": "Won"
  },
@@ -99,7 +99,7 @@
   "label": "Retrial",
   "modified": "2026-07-20 13:11:58.411347",
   "name": "Retrial",
-  "position": 5,
+  "position": 6,
   "probability": 30.0,
   "type": "Ongoing"
  },
@@ -112,7 +112,7 @@
   "label": "Tech Evaluation",
   "modified": "2026-06-13 12:09:23.220570",
   "name": "Demo/Making",
-  "position": 4,
+  "position": 5,
   "probability": 25.0,
   "type": "Ongoing"
  },
@@ -141,5 +141,31 @@
   "position": 1,
   "probability": 5.0,
   "type": "Open"
+ },
+ {
+  "active": 1,
+  "color": "violet",
+  "deal_status": "New Product Development",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "New Product Development",
+  "modified": "2026-08-25 12:00:00.000000",
+  "name": "New Product Development",
+  "position": 4,
+  "probability": 22.0,
+  "type": "Ongoing"
+ },
+ {
+  "active": 1,
+  "color": "gray",
+  "deal_status": "Closed",
+  "docstatus": 0,
+  "doctype": "CRM Deal Status",
+  "label": "Closed",
+  "modified": "2026-08-25 13:00:00.000000",
+  "name": "Closed",
+  "position": 13,
+  "probability": 0.0,
+  "type": "Lost"
  }
 ]
