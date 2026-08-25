@@ -7,6 +7,13 @@
   >
     <template #default="{ step }">
     <div v-show="step === 0">
+    <StageCallout v-if="awaitingAnswer" theme="amber" icon="mail" class="mb-3">
+      {{
+        __(
+          'The technical team needs a few more details before recommending a product. Answer their questions in the next step and the deal goes straight back to Tech Assignment.',
+        )
+      }}
+    </StageCallout>
     <StageCallout theme="green" icon="check" class="mb-3">
       {{
         __(
@@ -125,6 +132,30 @@
         )
       }}
     </StageCallout>
+
+    <StageSection
+      v-if="awaitingAnswer"
+      :title="__('Questions from the Technical Team')"
+      icon="beaker"
+    >
+      <FieldGrid :cols="1">
+        <FieldStatic :label="__('Asked by')" :value="askedBy" />
+      </FieldGrid>
+      <div
+        class="mt-2 whitespace-pre-line rounded-lg bg-surface-gray-2 px-3.5 py-2.5 text-p-sm text-ink-gray-7"
+      >
+        {{ deal.info_questions || __('No questions were recorded.') }}
+      </div>
+      <FieldTextarea
+        v-model="infoAnswer"
+        class="mt-3"
+        :label="__('Answer for the technical team')"
+        :rows="3"
+        required
+        :placeholder="__('Reply with the details the tech team asked for')"
+        :error="errors.infoAnswer"
+      />
+    </StageSection>
 
     <StageSection :title="__('Business Impact')" icon="trendingUp">
       <FieldGrid :cols="2">
@@ -253,6 +284,8 @@ import FieldSelect from '@/components/StageForms/FieldSelect.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import FieldRadioGroup from '@/components/StageForms/FieldRadioGroup.vue'
+import FieldStatic from '@/components/StageForms/FieldStatic.vue'
+import FieldTextarea from '@/components/StageForms/FieldTextarea.vue'
 import Link from '@/components/Controls/Link.vue'
 import { productChain } from '@/components/StageForms/productContext'
 import { Button, call, createResource, toast } from 'frappe-ui'
@@ -265,7 +298,7 @@ const props = defineProps({
 })
 
 const show = defineModel({ type: Boolean })
-const emit = defineEmits(['save'])
+const emit = defineEmits(['save', 'done'])
 
 // wizard steps: commercial qualification first, technical assignment last
 const steps = [
@@ -299,7 +332,17 @@ const assignTech = ref('y')
 const techCategory = ref('')
 const evalStart = ref('')
 const assignNotes = ref('')
+const infoAnswer = ref('')
 const assigning = ref(false)
+
+// The tech team can bounce a deal back here for more details instead of recommending a
+// product. The deal waits in Qualification with `sent_back_by_tech_team` set, and the
+// answer is collected in this form rather than in a stage form of its own.
+const awaitingAnswer = computed(() => !!props.deal?.sent_back_by_tech_team)
+const askedBy = computed(() => {
+  const d = props.deal || {}
+  return d.assigned_tech_member || d.technical_person || '—'
+})
 
 const oppTypeOptions = ['New Business', 'New Product', 'Expansion', 'Win-back']
 const dmOptions = [
@@ -440,6 +483,11 @@ const requiredFields = [
   { key: 'businessPriority', label: __('Business Priority'), val: () => businessPriority.value },
   { key: 'forecast', label: __('Forecast Category'), val: () => forecast.value },
   { key: 'evalStart', label: __('Trial Start Date'), val: () => trialRequired.value !== 'y' || evalStart.value },
+  {
+    key: 'infoAnswer',
+    label: __('Answer for the technical team'),
+    val: () => !awaitingAnswer.value || infoAnswer.value.trim(),
+  },
 ]
 function techCategoryError() {
   // Technical Person is only required when assigning to the tech team.
@@ -484,6 +532,7 @@ async function assignAndNotify() {
   }
 
   const values = buildValues()
+
   if (assignTech.value === 'y') {
     assigning.value = true
     try {
@@ -500,6 +549,28 @@ async function assignAndNotify() {
       return
     }
     assigning.value = false
+  }
+
+  // An answer round is saved server-side in one go — the form values, the answer and
+  // the move back to Tech Assignment — because the tech team has touched the deal since
+  // this page loaded, and saving the browser's copy would fail on a timestamp mismatch.
+  if (awaitingAnswer.value) {
+    assigning.value = true
+    try {
+      await call('crm.api.tech_team.answer_info_request', {
+        deal: props.deal?.name,
+        answer: infoAnswer.value,
+        values,
+      })
+      toast.success(__('Answer sent — deal is back with the technical team'))
+      emit('done')
+      show.value = false
+    } catch (err) {
+      toast.error(err.messages?.[0] || __('Error sending the answer'))
+    } finally {
+      assigning.value = false
+    }
+    return
   }
 
   // Every deal advances to Tech Assignment next, where the tech team recommends a

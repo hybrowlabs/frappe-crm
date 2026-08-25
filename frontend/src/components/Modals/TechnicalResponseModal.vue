@@ -229,7 +229,7 @@
       <StageCallout theme="amber" icon="mail" class="mt-1">
         {{
           __(
-            'Questions are emailed to the salesperson. The waiting-time clock pauses and the deal moves to Request for Info until they answer.',
+            'Questions are emailed to the salesperson. The waiting-time clock pauses and the deal drops back to Qualified until they answer them in the stage form.',
           )
         }}
       </StageCallout>
