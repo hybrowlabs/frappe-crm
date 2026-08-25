@@ -228,9 +228,10 @@ def _log_info_round(doc, action_label, text):
 @frappe.whitelist()
 def request_more_info(deal: str, questions: str):
 	"""Tech team asks the salesperson for more info before recommending a product.
-	The questions are saved on the deal and emailed to the salesperson; the deal parks in
-	the Request for Info stage, so the waiting-time clock pauses on Tech and the deal drops
-	out of the technical pending queue until the salesperson answers."""
+	The questions are saved on the deal and emailed to the salesperson; the deal drops back
+	to Qualification with `sent_back_by_tech_team` set, so the waiting-time clock pauses on
+	Tech and the deal leaves the technical pending queue until the salesperson answers the
+	questions inside the Qualified stage form."""
 	if not questions or not questions.strip():
 		frappe.throw(_("Please enter the questions for the salesperson."))
 
@@ -240,7 +241,7 @@ def request_more_info(deal: str, questions: str):
 	doc.info_answers = None
 	doc.technical_response = "Request More Info"
 	doc.sent_back_by_tech_team = 1
-	doc.status = "Request for Info"
+	doc.status = "Qualification"
 	doc.save(ignore_permissions=True)
 
 	_log_info_round(doc, _("asked the salesperson"), questions)
@@ -299,17 +300,55 @@ def request_more_info(deal: str, questions: str):
 	return sales_user
 
 
+# The Qualified stage form's own fields. The answer round saves the whole form
+# server-side, so only these may come along for the ride.
+QUALIFICATION_FIELDS = {
+	"opportunity_type",
+	"decision_maker_involved",
+	"decision_timeline",
+	"current_monthly_volume",
+	"expected_monthly_volume",
+	"expected_monthly_volume_uom",
+	"deal_value",
+	"current_monthly_spend",
+	"expected_monthly_revenue",
+	"business_impact",
+	"business_priority",
+	"impact_notes",
+	"forecast_category",
+	"trial_required",
+	"assign_to_tech_team",
+	"technical_person",
+	"assigned_tech_member",
+	"evaluation_start",
+	"assignment_notes",
+	"dc_performance_metal_loss",
+	"dc_performance_colour",
+	"dc_price_competitive",
+	"dc_delivery_lead_time",
+}
+
+
 @frappe.whitelist()
-def answer_info_request(deal: str, answer: str):
-	"""Salesperson answers the tech team's questions. The answer is saved on the deal and
-	emailed to the assigned tech member, and the deal returns to Tech Assignment so the
-	tech team can recommend a product, ask again, or mark the enquiry not suitable."""
+def answer_info_request(deal: str, answer: str, values: dict | str | None = None):
+	"""Salesperson answers the tech team's questions from the Qualified stage form.
+
+	The whole round is saved here rather than by the browser: the answer, the stage
+	form's own fields and the move back to Tech Assignment land in one server-side save,
+	so a deal the tech team touched while the form was open can't fail on a timestamp
+	mismatch. The tech member is then notified and emailed the answer.
+	"""
 	if not answer or not answer.strip():
 		frappe.throw(_("Please enter your answer for the technical team."))
 
 	doc = frappe.get_doc("CRM Deal", deal)
-	if doc.status != "Request for Info":
+	if not doc.sent_back_by_tech_team:
 		frappe.throw(_("This deal is not waiting on an answer from Sales."))
+
+	if values:
+		if isinstance(values, str):
+			values = frappe.parse_json(values)
+		doc.update({k: v for k, v in values.items() if k in QUALIFICATION_FIELDS})
 
 	doc.info_answers = answer
 	doc.sent_back_by_tech_team = 0
