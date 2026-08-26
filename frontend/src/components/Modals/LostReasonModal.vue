@@ -30,7 +30,7 @@
         <div>
           <div class="mb-2 text-sm text-ink-gray-5">
             {{ __('Lost Notes') }}
-            <span v-if="lostReason == 'Other'" class="text-ink-red-2">*</span>
+            <span v-if="notesMandatory" class="text-ink-red-2">*</span>
           </div>
           <FormControl
             class="form-control flex-1 truncate"
@@ -56,7 +56,7 @@
 import Link from '@/components/Controls/Link.vue'
 import { createDocument } from '@/composables/document'
 import { Dialog } from 'frappe-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   doctype: { type: String, default: 'CRM Lead' },
@@ -71,6 +71,13 @@ const lostReason = ref(doc.lost_reason || '')
 const lostNotes = ref(doc.lost_notes || '')
 const error = ref('')
 
+// Endovia: server mandates lost_notes when a lead's status is Lost
+const notesMandatory = computed(
+  () =>
+    lostReason.value === 'Other' ||
+    (props.doctype === 'CRM Lead' && doc.status === 'Lost'),
+)
+
 function cancel() {
   show.value = false
   error.value = ''
@@ -84,8 +91,11 @@ function save() {
     error.value = __('Lost Reason is required')
     return
   }
-  if (lostReason.value === 'Other' && !lostNotes.value) {
-    error.value = __('Lost Notes are required when Lost Reason is "Other"')
+  if (notesMandatory.value && !lostNotes.value) {
+    error.value =
+      lostReason.value === 'Other'
+        ? __('Lost Notes are required when Lost Reason is "Other"')
+        : __('Lost Notes are mandatory when status is Lost')
     return
   }
 

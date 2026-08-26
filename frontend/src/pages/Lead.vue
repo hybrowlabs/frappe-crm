@@ -522,10 +522,11 @@ function openEmailBox() {
 const showLostReasonModal = ref(false)
 
 function setLostReason() {
+  let _doc = document.doc
+  let notesRequired = _doc.status === 'Lost' || _doc.lost_reason === 'Other'
   if (
-    getLeadStatus(document.doc.status).type !== 'Lost' ||
-    (document.doc.lost_reason && document.doc.lost_reason !== 'Other') ||
-    (document.doc.lost_reason === 'Other' && document.doc.lost_notes)
+    getLeadStatus(_doc.status).type !== 'Lost' ||
+    (_doc.lost_reason && (!notesRequired || _doc.lost_notes))
   ) {
     document.save.submit(null, {
       onSuccess: () => sections.reload(),
