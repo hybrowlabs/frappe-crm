@@ -20,57 +20,9 @@
       </div>
     </template>
     <template #body-content>
-      <div class="mb-4 flex items-center gap-2 text-ink-gray-5">
-        <OrganizationsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Organization') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingOrganizationChecked" />
-        </div>
-        <Link
-          v-if="existingOrganizationChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingOrganization"
-          doctype="CRM Organization"
-          @change="(data) => (existingOrganization = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{
-            __(
-              'New organization will be created based on the data in details section',
-            )
-          }}
-        </div>
-      </div>
-
-      <div class="mb-4 mt-6 flex items-center gap-2 text-ink-gray-5">
-        <ContactsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Contact') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingContactChecked" />
-        </div>
-        <Link
-          v-if="existingContactChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingContact"
-          doctype="Contact"
-          @change="(data) => (existingContact = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{ __("New contact will be created based on the person's details") }}
-        </div>
-      </div>
-
       <div
         v-if="vaultDocsPending"
-        class="mt-6 rounded-md border border-outline-gray-2 bg-surface-gray-2 p-3"
+        class="rounded-md border border-outline-gray-2 bg-surface-gray-2 p-3"
       >
         <div class="mb-1 text-base font-medium text-ink-gray-8">
           {{ __('Vault — shareholding documents not shared') }}
@@ -115,11 +67,8 @@
   </Dialog>
 </template>
 <script setup>
-import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import Link from '@/components/Controls/Link.vue'
 import { useDocument } from '@/data/document'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
@@ -160,11 +109,6 @@ const { isManager } = usersStore()
 const { user } = sessionStore()
 const { updateOnboardingStep } = useOnboarding('frappecrm')
 
-const existingContactChecked = ref(false)
-const existingOrganizationChecked = ref(false)
-
-const existingContact = ref('')
-const existingOrganization = ref('')
 const error = ref('')
 const { capture } = useTelemetry()
 
@@ -173,24 +117,6 @@ const { document: deal } = useDocument('CRM Deal')
 
 async function convertToDeal() {
   error.value = ''
-
-  if (existingContactChecked.value && !existingContact.value) {
-    error.value = __('Please select an existing contact')
-    return
-  }
-
-  if (existingOrganizationChecked.value && !existingOrganization.value) {
-    error.value = __('Please select an existing organization')
-    return
-  }
-
-  if (!existingContactChecked.value && existingContact.value) {
-    existingContact.value = ''
-  }
-
-  if (!existingOrganizationChecked.value && existingOrganization.value) {
-    existingOrganization.value = ''
-  }
 
   if (vaultDocsPending.value && markDocumentsShared.value) {
     try {
@@ -214,8 +140,6 @@ async function convertToDeal() {
   let _deal = await call('crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal', {
     lead: props.lead.name,
     deal: deal.doc,
-    existing_contact: existingContact.value,
-    existing_organization: existingOrganization.value,
   }).catch((err) => {
     if (err.exc_type == 'MandatoryError') {
       const errorMessage = err.messages
@@ -236,10 +160,6 @@ async function convertToDeal() {
   })
   if (_deal) {
     show.value = false
-    existingContactChecked.value = false
-    existingOrganizationChecked.value = false
-    existingContact.value = ''
-    existingOrganization.value = ''
     error.value = ''
     updateOnboardingStep('convert_lead_to_deal', true, false, () => {
       localStorage.setItem('firstDeal' + user, _deal)
