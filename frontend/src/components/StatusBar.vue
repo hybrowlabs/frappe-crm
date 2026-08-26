@@ -44,12 +44,17 @@ const props = defineProps({
   statuses: { type: Array, required: true },
   current: { type: String, required: true },
   statusDoctype: { type: String, default: 'CRM Lead Status' },
+  // deal pipelines come pre-ordered from the vertical config, where
+  // position sorting would interleave the verticals' stages
+  preserveOrder: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['change'])
 
 const sorted = computed(() =>
-  [...props.statuses].sort((a, b) => a.position - b.position),
+  props.preserveOrder
+    ? props.statuses
+    : [...props.statuses].sort((a, b) => a.position - b.position),
 )
 const stages = computed(() => sorted.value.filter((s) => s.type !== 'Lost'))
 const exits = computed(() => sorted.value.filter((s) => s.type === 'Lost'))

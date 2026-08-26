@@ -17,23 +17,14 @@
         :actions="document.actions"
       />
       <AssignTo v-model="assignees.data" doctype="CRM Deal" :docname="dealId" />
-      <Dropdown
-        v-if="doc && document.statuses"
-        :options="statuses"
-        placement="right"
-      >
-        <template #default="{ open }">
-          <Button
-            v-if="doc.status"
-            :label="statusLabel(doc.status)"
-            :iconRight="open ? 'chevron-up' : 'chevron-down'"
-          >
-            <template #prefix>
-              <IndicatorIcon :class="getDealStatus(doc.status).color" />
-            </template>
-          </Button>
-        </template>
-      </Dropdown>
+      <StatusBar
+        v-if="doc.status && document.statuses"
+        :statuses="availableStatuses"
+        :current="doc.status"
+        statusDoctype="CRM Deal Status"
+        preserveOrder
+        @change="changeStatus"
+      />
     </template>
   </LayoutHeader>
   <div v-if="doc.name" class="flex h-full overflow-hidden">
@@ -352,7 +343,6 @@ import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import LinkIcon from '@/components/Icons/LinkIcon.vue'
 import ArrowUpRightIcon from '@/components/Icons/ArrowUpRightIcon.vue'
 import SuccessIcon from '@/components/Icons/SuccessIcon.vue'
@@ -366,6 +356,7 @@ import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import ContactModal from '@/components/Modals/ContactModal.vue'
 import Link from '@/components/Controls/Link.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
+import StatusBar from '@/components/StatusBar.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
@@ -374,7 +365,6 @@ import {
   openWebsite,
   setupCustomizations,
   copyToClipboard,
-  isTranslatable,
 } from '@/utils'
 import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
@@ -396,7 +386,7 @@ import {
   usePageMeta,
   toast,
 } from 'frappe-ui'
-import { useOnboarding } from 'frappe-ui/frappe'
+import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import {
   ref,
   computed,
@@ -412,8 +402,9 @@ import { useActiveTabManager } from '@/composables/useActiveTabManager'
 const { on } = useBroadcast()
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getDealStatus, dealStatusesForVertical } =
+const { dealStatuses, getDealStatus, dealStatusesForVertical } =
   statusesStore()
+const { capture } = useTelemetry()
 const { doctypeMeta } = getMeta('CRM Deal')
 
 const { updateOnboardingStep, isOnboardingStepsCompleted } =
@@ -546,7 +537,7 @@ const title = computed(() => {
   return doc.value?.[t] || props.dealId
 })
 
-const statuses = computed(() => {
+const availableStatuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
     : document._statuses || []
@@ -554,8 +545,14 @@ const statuses = computed(() => {
   if (!customStatuses.length && doc.value?.primary_vertical) {
     customStatuses = dealStatusesForVertical(doc.value.primary_vertical)
   }
-  return statusOptions('deal', customStatuses, triggerStatusChange)
+  if (!customStatuses.length) return dealStatuses.data || []
+  return customStatuses.map((s) => getDealStatus(s)).filter(Boolean)
 })
+
+async function changeStatus(status) {
+  await triggerStatusChange(status)
+  capture('status_changed', { doctype: 'deal', status })
+}
 
 usePageMeta(() => {
   return {
@@ -795,11 +792,6 @@ function openEmailBox() {
     activities.value.changeTabTo('emails')
   }
   nextTick(() => (activities.value.emailBox.show = true))
-}
-
-function statusLabel(status) {
-  if (isTranslatable('CRM Deal Status')) return __(status)
-  return status
 }
 
 const showLostReasonModal = ref(false)
