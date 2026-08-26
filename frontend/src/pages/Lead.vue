@@ -17,23 +17,12 @@
         :actions="document.actions"
       />
       <AssignTo v-model="assignees.data" doctype="CRM Lead" :docname="leadId" />
-      <Dropdown
-        v-if="doc && document.statuses"
-        :options="statuses"
-        placement="right"
-      >
-        <template #default="{ open }">
-          <Button
-            v-if="doc.status"
-            :label="statusLabel(doc.status)"
-            :iconRight="open ? 'chevron-up' : 'chevron-down'"
-          >
-            <template #prefix>
-              <IndicatorIcon :class="getLeadStatus(doc.status).color" />
-            </template>
-          </Button>
-        </template>
-      </Dropdown>
+      <StatusBar
+        v-if="doc.status && document.statuses"
+        :statuses="availableStatuses"
+        :current="doc.status"
+        @change="changeStatus"
+      />
       <Button
         :label="__('Convert to Deal')"
         variant="solid"
@@ -249,7 +238,6 @@ import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import LinkIcon from '@/components/Icons/LinkIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
@@ -263,12 +251,12 @@ import SLASection from '@/components/SLASection.vue'
 import PendingVerticalsBanner from '@/components/Endovia/PendingVerticalsBanner.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
+import StatusBar from '@/components/StatusBar.vue'
 import {
   openWebsite,
   setupCustomizations,
   copyToClipboard,
   validateIsImageFile,
-  isTranslatable,
 } from '@/utils'
 import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
@@ -290,13 +278,15 @@ import {
   usePageMeta,
   toast,
 } from 'frappe-ui'
+import { useTelemetry } from 'frappe-ui/frappe'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
 
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getLeadStatus } = statusesStore()
+const { leadStatuses, getLeadStatus } = statusesStore()
+const { capture } = useTelemetry()
 const { doctypeMeta } = getMeta('CRM Lead')
 
 const route = useRoute()
@@ -399,12 +389,20 @@ const title = computed(() => {
   return doc.value?.[t] || props.leadId
 })
 
-const statuses = computed(() => {
+const availableStatuses = computed(() => {
   let customStatuses = document.statuses?.length
     ? document.statuses
     : document._statuses || []
-  return statusOptions('lead', customStatuses, triggerStatusChange)
+  let all = leadStatuses.data || []
+  return customStatuses.length
+    ? all.filter((s) => customStatuses.includes(s.name))
+    : all
 })
+
+async function changeStatus(status) {
+  await triggerStatusChange(status)
+  capture('status_changed', { doctype: 'lead', status })
+}
 
 usePageMeta(() => {
   return { title: title.value, icon: brand.favicon }
@@ -519,11 +517,6 @@ function openEmailBox() {
     activities.value.changeTabTo('emails')
   }
   nextTick(() => (activities.value.emailBox.show = true))
-}
-
-function statusLabel(status) {
-  if (isTranslatable('CRM Lead Status')) return __(status)
-  return status
 }
 
 const showLostReasonModal = ref(false)
