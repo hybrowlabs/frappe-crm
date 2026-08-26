@@ -282,6 +282,7 @@ import { useTelemetry } from 'frappe-ui/frappe'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard'
 
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
@@ -315,6 +316,8 @@ const {
 } = useDocument('CRM Lead', props.leadId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
+
+useUnsavedChangesGuard(document)
 
 const doc = computed(() => document.doc || {})
 

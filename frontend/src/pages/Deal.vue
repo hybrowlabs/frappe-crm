@@ -398,6 +398,7 @@ import {
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard'
 
 const { on } = useBroadcast()
 const { brand } = getSettings()
@@ -432,6 +433,8 @@ const {
 } = useDocument('CRM Deal', props.dealId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
+
+useUnsavedChangesGuard(document)
 
 const doc = computed(() => document.doc || {})
 
