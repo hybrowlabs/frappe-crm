@@ -28,7 +28,12 @@
       </div>
     </div>
     <div
-      class="rounded bg-surface-gray-1 px-3 py-[7.5px] text-base leading-6 transition-all duration-300 ease-in-out"
+      class="rounded px-3 py-[7.5px] text-base leading-6 transition-all duration-300 ease-in-out"
+      :class="
+        isHod(activity.owner)
+          ? 'bg-surface-amber-1 border-l-2 border-orange-500'
+          : 'bg-surface-gray-1'
+      "
     >
       <template v-if="editing">
         <TextEditor
@@ -71,6 +76,7 @@ import AttachmentItem from '@/components/AttachmentItem.vue'
 import { Tooltip, Dropdown, Button, TextEditor, call, toast } from 'frappe-ui'
 import { timeAgo, formatDate, sanitizeHTML, ConfirmDelete } from '@/utils'
 import { sessionStore } from '@/stores/session'
+import { usersStore } from '@/stores/users'
 import { computed, ref } from 'vue'
 
 const props = defineProps({
@@ -80,6 +86,7 @@ const props = defineProps({
 const emit = defineEmits(['reload'])
 
 const { user } = sessionStore()
+const { isHod } = usersStore()
 
 const isOwner = computed(() => props.activity.owner === user)
 

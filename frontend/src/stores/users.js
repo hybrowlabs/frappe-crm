@@ -69,6 +69,10 @@ export const usersStore = defineStore('crm-users', () => {
     return getUser(email).is_telphony_agent
   }
 
+  function isHod(email) {
+    return !!getUser(email).roles?.includes('HOD')
+  }
+
   function getUserRole(email) {
     const user = getUser(email)
     if (user && user.role) {
@@ -91,6 +95,7 @@ export const usersStore = defineStore('crm-users', () => {
     isManager,
     isSalesUser,
     isTelephonyAgent,
+    isHod,
     getUserRole,
     isWebsiteUser,
     isCrmUser,

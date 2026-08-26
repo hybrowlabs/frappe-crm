@@ -1,6 +1,11 @@
 <template>
   <div
-    class="activity group flex h-48 cursor-pointer flex-col justify-between gap-2 rounded-md bg-surface-gray-1 px-4 py-3 hover:bg-surface-gray-2"
+    class="activity group flex h-48 cursor-pointer flex-col justify-between gap-2 rounded-md px-4 py-3"
+    :class="
+      isHod(note.owner)
+        ? 'bg-surface-amber-1 border-l-2 border-orange-500'
+        : 'bg-surface-gray-1 hover:bg-surface-gray-2'
+    "
   >
     <div class="flex items-center justify-between">
       <div class="truncate text-lg font-medium text-ink-gray-8">
@@ -62,7 +67,7 @@ defineProps({
 
 const notes = defineModel({ type: Object })
 
-const { getUser } = usersStore()
+const { getUser, isHod } = usersStore()
 
 async function deleteNote(name) {
   await toast.promise(

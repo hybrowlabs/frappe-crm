@@ -459,6 +459,7 @@ def get_linked_calls(name: str):
 				"priority",
 				"status",
 				"modified",
+				"owner",
 			],
 		)
 
@@ -490,6 +491,7 @@ def get_linked_tasks(name: str):
 			"status",
 			"modified",
 			"creation",
+			"owner",
 		],
 	)
 	return tasks or []
