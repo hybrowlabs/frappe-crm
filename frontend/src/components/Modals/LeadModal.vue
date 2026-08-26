@@ -47,6 +47,7 @@
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
+import { applyFieldDefault } from '@/utils/fieldTransforms'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
 import { sessionStore } from '@/stores/session'
@@ -97,6 +98,8 @@ const tabs = createResource({
             if (field.fieldtype === 'Table') {
               lead.doc[field.fieldname] = []
             }
+
+            applyFieldDefault(lead.doc, field)
           })
         })
       })

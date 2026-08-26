@@ -75,6 +75,7 @@
 <script setup>
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
+import { applyFieldDefault } from '@/utils/fieldTransforms'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
 import { isMobileView } from '@/composables/settings'
@@ -158,6 +159,8 @@ const tabs = createResource({
             if (field.fieldtype === 'Table') {
               deal.doc[field.fieldname] = []
             }
+
+            applyFieldDefault(deal.doc, field)
           })
         })
       })

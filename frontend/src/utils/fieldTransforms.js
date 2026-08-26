@@ -14,6 +14,17 @@ export function parseLinkFilters(linkFilters) {
   }
 }
 
+// Dynamic defaults (":fieldname", "__user", "Today", "Now") are skipped — the server resolves those on insert.
+export function applyFieldDefault(doc, field) {
+  const d = field?.default
+  if (!d || typeof d !== 'string') return
+  if (d.startsWith(':') || d.startsWith('__') || ['Today', 'Now'].includes(d))
+    return
+  if (doc[field.fieldname] == null || doc[field.fieldname] === '') {
+    doc[field.fieldname] = field.fieldtype === 'Check' ? parseInt(d) : d
+  }
+}
+
 /**
  * Process a raw field meta object into a UI-ready field object.
  * Returns a NEW object — never mutates the input.
