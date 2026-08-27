@@ -130,13 +130,13 @@
   "type": "Ongoing"
  },
  {
-  "active": 0,
+  "active": 1,
   "color": "gray",
   "deal_status": "Req. Discussion",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
   "label": "Req. Discussion",
-  "modified": "2026-07-20 13:11:58.427156",
+  "modified": "2026-08-27 10:05:00.000000",
   "name": "Req. Discussion",
   "position": 1,
   "probability": 5.0,
@@ -171,7 +171,7 @@
  {
   "active": 1,
   "color": "amber",
-  "deal_status": "Request for Info",
+  "deal_status": "Request for New Info",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
   "label": "Request for Info",
