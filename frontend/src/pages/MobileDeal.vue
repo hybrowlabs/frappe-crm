@@ -604,11 +604,11 @@ const isEscalationReview = computed(
 const stageCta = computed(() => {
   const status = doc.value.status
   if (!status) return null
-  // A deal the tech team sent back parks in Request for Info until the salesperson
+  // A deal the tech team sent back parks in Request for New Info until the salesperson
   // answers the questions inside the Qualified stage form — the CTA reads as a resume,
   // not a fresh start.
   if (
-    status === 'Request for Info' ||
+    status === 'Request for New Info' ||
     (status === 'Qualification' && doc.value.sent_back_by_tech_team)
   ) {
     return isSalesTeam()
@@ -664,7 +664,7 @@ const STAGE_MODALS = {
   'Req. Discussion': 'showCaptureRequirementsModal',
   Qualification: 'showInitiateTrialModal',
   // Answered inside the Qualified stage form, so it opens the same modal.
-  'Request for Info': 'showInitiateTrialModal',
+  'Request for New Info': 'showInitiateTrialModal',
   'Tech Assignment': 'showTechnicalResponseModal',
   'New Product Development': 'showNpdResponseModal',
   'Demo/Making': 'showRecordEvaluationModal',
@@ -1048,9 +1048,9 @@ function statusLabel(status) {
 }
 
 // A forward move is "single step" when no required stage sits between the current
-// and target status. Retrial and Request for Info are optional branches, so they may
+// and target status. Retrial and Request for New Info are optional branches, so they may
 // be skipped.
-const SKIPPABLE_STAGES = ['Retrial', 'Request for Info']
+const SKIPPABLE_STAGES = ['Retrial', 'Request for New Info']
 function isSingleStepForward(current, target) {
   const ordered = dealStatuses.data || []
   const positions = Object.fromEntries(ordered.map((s) => [s.name, s.position]))

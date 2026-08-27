@@ -174,9 +174,9 @@
   "deal_status": "Request for New Info",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
-  "label": "Request for Info",
+  "label": "Request for New Info",
   "modified": "2026-08-27 10:00:00.000000",
-  "name": "Request for Info",
+  "name": "Request for New Info",
   "position": 3,
   "probability": 10.0,
   "type": "Ongoing"
