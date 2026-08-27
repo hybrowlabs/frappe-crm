@@ -10,10 +10,7 @@
     >
       {{ __(field.label) }}
       <span
-        v-if="
-          field.reqd ||
-          (field.mandatory_depends_on && field.mandatory_via_depends_on)
-        "
+        v-if="field.reqd || field.mandatory_depends_on"
         class="text-ink-red-2"
         >*</span
       >
@@ -86,7 +83,11 @@
         "
       >
         {{ __(field.label) }}
-        <span v-if="field.mandatory" class="text-ink-red-3">*</span>
+        <span
+          v-if="field.reqd || field.mandatory_depends_on"
+          class="text-ink-red-3"
+          >*</span
+        >
       </label>
     </div>
     <div
