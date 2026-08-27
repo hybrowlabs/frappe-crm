@@ -167,7 +167,7 @@ import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
-import { formatDate, timeAgo, validateIsImageFile } from '@/utils'
+import { getErrorMessage, formatDate, timeAgo, validateIsImageFile } from '@/utils'
 import { getView } from '@/utils/view'
 import { isTenDigitPhone } from '@/utils/phoneFields'
 import { useDocument } from '@/data/document'
@@ -462,11 +462,18 @@ async function createNew(field, value) {
     toast.error(__('{0} must be a 10 digit number', [__('Mobile Number')]))
     return
   }
-  let d = await call('crm.api.contact.create_new', {
-    contact: contact.doc.name,
-    field,
-    value,
-  })
+  let d
+  try {
+    d = await call('crm.api.contact.create_new', {
+      contact: contact.doc.name,
+      field,
+      value,
+    })
+  } catch (err) {
+    // the server rejects anything that is not a valid mobile number
+    toast.error(getErrorMessage(err))
+    return
+  }
   if (d) {
     contact.reload()
     toast.success(__('Contact Updated'))
@@ -478,12 +485,20 @@ async function editOption(doctype, name, fieldname, value) {
     toast.error(__('{0} must be a 10 digit number', [__('Mobile Number')]))
     return
   }
-  let d = await call('frappe.client.set_value', {
-    doctype,
-    name,
-    fieldname,
-    value,
-  })
+  let d
+  try {
+    d = await call('frappe.client.set_value', {
+      doctype,
+      name,
+      fieldname,
+      value,
+    })
+  } catch (err) {
+    // the server rejects anything that is not a valid mobile number
+    toast.error(getErrorMessage(err))
+    contact.reload()
+    return
+  }
   if (d) {
     contact.reload()
     toast.success(__('Contact Updated'))

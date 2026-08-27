@@ -150,11 +150,22 @@
       </template>
     </Link>
     <Combobox
-      v-else-if="field.fieldtype === 'Autocomplete'"
+      v-else-if="
+        field.fieldtype === 'Autocomplete' && autocompleteOptions.length
+      "
       v-model="data[field.fieldname]"
-      :options="getOptions(field.options)"
+      :options="autocompleteOptions"
       :placeholder="getPlaceholder(field)"
       :disabled="Boolean(field.read_only)"
+      @update:modelValue="(v) => fieldChange(v, field, data)"
+    />
+    <FormControl
+      v-else-if="field.fieldtype === 'Autocomplete'"
+      type="text"
+      :placeholder="getPlaceholder(field)"
+      v-model="data[field.fieldname]"
+      :disabled="Boolean(field.read_only)"
+      :description="field.description"
       @update:modelValue="(v) => fieldChange(v, field, data)"
     />
     <TimePicker
@@ -330,7 +341,7 @@ import {
 } from '@/utils'
 import { flt, formatNumber, formatCurrency } from '@/utils/numberFormat.js'
 import { getMeta } from '@/stores/meta'
-import { parseLinkFilters } from '@/utils/fieldTransforms'
+import { parseLinkFilters, isCountryScopedOut } from '@/utils/fieldTransforms'
 import { isPhoneField as isPhoneFieldFor } from '@/utils/phoneFields'
 import { usersStore } from '@/stores/users'
 import { useDocument } from '@/data/document'
@@ -592,6 +603,14 @@ const getOptions = (options) => {
     return []
   }
 }
+
+// Autocomplete options, minus any that are scoped to a country this doc isn't
+// in. An empty list makes the field render as free text — matching desk, where
+// Autocomplete extends ControlData and accepts whatever is typed.
+const autocompleteOptions = computed(() => {
+  if (isCountryScopedOut(doctype, props.field.fieldname, data.value)) return []
+  return getOptions(props.field.options)
+})
 
 async function handleButtonClick(field) {
   if (typeof field.click === 'function') {

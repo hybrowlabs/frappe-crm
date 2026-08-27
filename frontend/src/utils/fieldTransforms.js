@@ -123,3 +123,33 @@ export function findMissingMandatory(fields, doc, options = {}) {
 
   return missingFields
 }
+
+/**
+ * Autocomplete fields whose options only apply to a single country.
+ *
+ * India Compliance rewrites Address.state into an Autocomplete and feeds it the
+ * state list from desk JS (`india_compliance.set_state_options`), which clears
+ * the list for every country except India. This SPA never runs that JS — it
+ * reads options straight off the docfield — so the same scoping has to happen
+ * here, or a US address gets offered 37 Indian states.
+ *
+ * @type {Object<string, Object<string, string>>} doctype → fieldname → country
+ */
+const COUNTRY_SCOPED_OPTIONS = {
+  Address: { state: 'India' },
+}
+
+/**
+ * True when a field's options belong to a country the doc isn't in, meaning the
+ * field should fall back to free text.
+ *
+ * @param {string} doctype
+ * @param {string} fieldname
+ * @param {object} doc - the document data, read for its `country`
+ * @returns {boolean}
+ */
+export function isCountryScopedOut(doctype, fieldname, doc) {
+  const country = COUNTRY_SCOPED_OPTIONS[doctype]?.[fieldname]
+  if (!country) return false
+  return (doc?.country || '') !== country
+}

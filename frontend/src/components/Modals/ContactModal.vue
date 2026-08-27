@@ -133,7 +133,8 @@ const insertContact = createResource({
     _contact.doc = {}
   },
   onError: (err) => {
-    error.value = err.error?.messages?.[0]
+    // createResource hands back the Error itself, not call()'s { error } wrapper
+    error.value = err.messages?.length ? err.messages.join('\n') : err.message
   },
 })
 
