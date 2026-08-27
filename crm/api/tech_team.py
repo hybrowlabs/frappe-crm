@@ -228,10 +228,10 @@ def _log_info_round(doc, action_label, text):
 @frappe.whitelist()
 def request_more_info(deal: str, questions: str):
 	"""Tech team asks the salesperson for more info before recommending a product.
-	The questions are saved on the deal and emailed to the salesperson; the deal drops back
-	to Qualification with `sent_back_by_tech_team` set, so the waiting-time clock pauses on
-	Tech and the deal leaves the technical pending queue until the salesperson answers the
-	questions inside the Qualified stage form."""
+	The questions are saved on the deal and emailed to the salesperson; the deal parks in
+	the Request for Info stage with `sent_back_by_tech_team` set, so the waiting-time clock
+	pauses on Tech and the deal leaves the technical pending queue until the salesperson
+	answers the questions inside the Qualified stage form."""
 	if not questions or not questions.strip():
 		frappe.throw(_("Please enter the questions for the salesperson."))
 
@@ -241,7 +241,7 @@ def request_more_info(deal: str, questions: str):
 	doc.info_answers = None
 	doc.technical_response = "Request More Info"
 	doc.sent_back_by_tech_team = 1
-	doc.status = "Qualification"
+	doc.status = "Request for Info"
 	doc.save(ignore_permissions=True)
 
 	_log_info_round(doc, _("asked the salesperson"), questions)
@@ -332,6 +332,10 @@ QUALIFICATION_FIELDS = {
 @frappe.whitelist()
 def answer_info_request(deal: str, answer: str, values: dict | str | None = None):
 	"""Salesperson answers the tech team's questions from the Qualified stage form.
+
+	The deal waits in the Request for Info stage, but the answer is collected in the
+	Qualified stage form rather than in a stage form of its own — the header CTA on that
+	stage reads "Continue Trial" and reopens this form.
 
 	The whole round is saved here rather than by the browser: the answer, the stage
 	form's own fields and the move back to Tech Assignment land in one server-side save,
