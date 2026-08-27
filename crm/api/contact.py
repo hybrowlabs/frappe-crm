@@ -1,9 +1,47 @@
 import frappe
 from frappe import _
 
+from crm.utils.phone import normalize_mobile_no
+
 
 def validate(doc, method):
+	validate_phone_nos(doc)
 	update_deals_email_mobile_no(doc)
+
+
+def validate_phone_nos(doc):
+	"""
+	Hold Contact numbers to the same rule as CRM Lead's Mobile No.
+
+	The CRM renders every `phone_nos` row as a +91 mobile input, so each row is
+	normalised to "+91XXXXXXXXXX" (or "+<country code><number>") and anything that
+	is not a plausible number is rejected.
+
+	Only rows that are new or whose number actually changed are checked. Contact is
+	a core doctype shared with ERPNext and Helpdesk, so records already carrying a
+	legacy number must stay saveable.
+	"""
+	untouched = set()
+	if not doc.is_new():
+		untouched = set(
+			frappe.get_all(
+				"Contact Phone",
+				filters={"parent": doc.name, "parenttype": "Contact"},
+				pluck="phone",
+			)
+		)
+
+	changed = False
+	for row in doc.get("phone_nos") or []:
+		if not row.phone or row.phone in untouched:
+			continue
+		row.phone = normalize_mobile_no(row.phone, _("Mobile Number"))
+		changed = True
+
+	if changed:
+		# core Contact.validate() copied the pre-normalised numbers up already
+		doc.set_primary("phone")
+		doc.set_primary("mobile_no")
 
 
 def update_deals_email_mobile_no(doc):

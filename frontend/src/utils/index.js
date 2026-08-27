@@ -319,6 +319,19 @@ export function htmlToText(html) {
   return div.textContent || div.innerText || ''
 }
 
+/**
+ * Pull the readable message out of a frappe-ui request error.
+ *
+ * `call()` and `createResource()` both hand back an Error carrying a `messages`
+ * array built from `_server_messages`, so a `frappe.throw()` on the server ends
+ * up here. Server messages are HTML (`frappe.bold()` and friends), which a toast
+ * renders literally, so strip the tags.
+ */
+export function getErrorMessage(err) {
+  const message = err?.messages?.length ? err.messages.join('\n') : err?.message
+  return htmlToText(message || '') || __('Something went wrong')
+}
+
 export function startCase(str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
