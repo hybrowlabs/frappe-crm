@@ -336,7 +336,7 @@ const infoAnswer = ref('')
 const assigning = ref(false)
 
 // The tech team can bounce a deal back here for more details instead of recommending a
-// product. The deal waits in the Request for Info stage with `sent_back_by_tech_team`
+// product. The deal waits in the Request for New Info stage with `sent_back_by_tech_team`
 // set, and the answer is collected in this form rather than in a stage form of its own.
 const awaitingAnswer = computed(() => !!props.deal?.sent_back_by_tech_team)
 const askedBy = computed(() => {

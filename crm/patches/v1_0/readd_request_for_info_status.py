@@ -2,12 +2,12 @@ import frappe
 
 # The stage sits directly after Qualified (position 2), so every status from position 3
 # onwards shifts down by one.
-NEW_STATUS = "Request for Info"
+NEW_STATUS = "Request for New Info"
 NEW_POSITION = 3
 
 
 def execute():
-	"""Bring back the `Request for Info` deal stage between Qualified and Tech Assignment.
+	"""Bring back the `Request for New Info` deal stage between Qualified and Tech Assignment.
 
 	A deal the tech team sends back for more details used to drop into Qualification with
 	only the hidden `sent_back_by_tech_team` flag to mark it — invisible in the pipeline.
