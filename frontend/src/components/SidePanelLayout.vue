@@ -50,11 +50,7 @@
                           {{ __(field.label) }}
                         </div>
                         <div
-                          v-if="
-                            field.reqd ||
-                            (field.mandatory_depends_on &&
-                              field.mandatory_via_depends_on)
-                          "
+                          v-if="field.reqd || field.mandatory_depends_on"
                           class="text-ink-red-2"
                         >
                           *

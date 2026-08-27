@@ -782,6 +782,12 @@ const stageCta = computed(() => {
   if (['Demo/Making', 'Retrial'].includes(status)) {
     return isTechnicalPerson() ? cta : null
   }
+  // A quotation is raised against a billing address, so there is nothing to create
+  // until one is set — the CTA stays hidden rather than opening a form that cannot
+  // be completed.
+  if (status === 'Proposal/Quotation' && !doc.value.billing_address) {
+    return null
+  }
   // Every other stage action belongs to the sales team.
   return isSalesTeam() ? cta : null
 })
