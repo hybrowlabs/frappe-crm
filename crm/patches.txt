@@ -41,3 +41,4 @@ crm.patches.v1_0.add_request_for_info_status # 20-08-2026
 crm.patches.v1_0.remove_request_for_info_status # 25-08-2026
 crm.patches.v1_0.add_npd_status # 25-08-2026
 crm.patches.v1_0.add_closed_status # 25-08-2026
+crm.patches.v1_0.readd_request_for_info_status # 27-08-2026
