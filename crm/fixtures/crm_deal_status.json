@@ -171,7 +171,7 @@
  {
   "active": 1,
   "color": "amber",
-  "deal_status": "Request for Info",
+  "deal_status": "Request for New Info",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
   "label": "Request for Info",
