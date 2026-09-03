@@ -182,22 +182,45 @@ def send_assignment_email(deal, member, assigned_by, notes=None):
 	)
 
 
-def _render_deal_email(badge, heading, subtext, rows_html, deal_url, cta_label):
-	"""Shared branded shell for the tech-response stakeholder emails."""
+def _render_deal_email(
+	badge, heading, subtext, rows_html, deal_url, cta_label, greeting=None, signoff=None
+):
+	"""Shared branded shell for the tech-response stakeholder emails.
+
+	`greeting` and `signoff` are for the mails that read as a letter rather than a
+	notification; without them the shell renders exactly as it always has."""
+	greeting_html = (
+		f'''<p style="font-size:14px;color:#1f272e;margin:14px 0 8px 0;">{greeting}</p>'''
+		if greeting
+		else ""
+	)
+	# The sign-off carries the button's follow-up line, so the CTA sits tighter above it.
+	cta_padding = "24px 28px 16px 28px" if signoff else "24px 28px 28px 28px"
+	signoff_html = (
+		f'''
+			<tr><td style="padding:0 28px 28px 28px;">
+				<p style="font-size:14px;color:#6b7280;margin:0;white-space:pre-line;">{signoff}</p>
+			</td></tr>
+		'''
+		if signoff
+		else ""
+	)
 	return f"""
 	<div style="background:#f4f5f6;padding:24px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 		<table role="presentation" align="center" cellpadding="0" cellspacing="0" width="520" style="max-width:520px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e8eaed;">
 			<tr><td style="padding:28px 28px 0 28px;">
 				<div style="display:inline-block;font-size:12px;font-weight:600;color:#2490ef;background:#eef6ff;border-radius:20px;padding:5px 12px;">{badge}</div>
 				<h1 style="font-size:20px;line-height:1.35;color:#1f272e;margin:16px 0 6px 0;">{heading}</h1>
+				{greeting_html}
 				<p style="font-size:14px;color:#6b7280;margin:0;">{subtext}</p>
 			</td></tr>
 			<tr><td style="padding:20px 28px 0 28px;">
 				<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e8eaed;border-radius:8px;">{rows_html}</table>
 			</td></tr>
-			<tr><td style="padding:24px 28px 28px 28px;">
+			<tr><td style="padding:{cta_padding};">
 				<a href="{deal_url}" style="display:inline-block;background:#1f272e;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:8px;">{cta_label} &rarr;</a>
 			</td></tr>
+			{signoff_html}
 		</table>
 		<p style="text-align:center;font-size:12px;color:#9aa4b2;margin:18px 0 0 0;">{_('Sent from your CRM')}</p>
 	</div>
@@ -212,6 +235,98 @@ def _email_row(label, value, border=True):
 			<div style="font-size:15px;color:#1f272e;">{value}</div>
 		</td></tr>
 	"""
+
+
+# The handover that puts a deal in the technical user's hands for the site visit.
+SERVICE_HANDOVER_FROM = "Tech Assignment"
+SERVICE_HANDOVER_TO = "Tech Evaluation"
+
+
+def tech_member_on_deal(doc):
+	"""The technical user on a deal — the assigned member, falling back to the user
+	behind the CRM Tech Team entry when the assignment never resolved to one."""
+	if doc.get("assigned_tech_member"):
+		return doc.assigned_tech_member
+	if doc.get("technical_person"):
+		return frappe.db.get_value("CRM Tech Team", doc.technical_person, "team_member")
+	return None
+
+
+def deal_entered_tech_evaluation(doc):
+	"""True when this save is the Tech Assignment -> Tech Evaluation handover, the
+	moment the service assignment goes out. Also read by the sales-manager status
+	mailer, which stands down for the tech member so they get one mail, not two."""
+	if not doc.has_value_changed("status") or doc.status != SERVICE_HANDOVER_TO:
+		return False
+	before = doc.get_doc_before_save()
+	return bool(before and before.status == SERVICE_HANDOVER_FROM)
+
+
+def _service_value(value):
+	"""Deal fields that the sheet shows as NA rather than as an empty row."""
+	return frappe.utils.escape_html(str(value)) if value else _("NA")
+
+
+def notify_tech_on_evaluation_start(doc, method=None):
+	"""Mail the technical user their service assignment once the deal moves from Tech
+	Assignment into Tech Evaluation — the sheet they work the site visit from."""
+	if not deal_entered_tech_evaluation(doc):
+		return
+
+	member = tech_member_on_deal(doc)
+	if not member:
+		return
+
+	recipient = frappe.db.get_value("User", member, "email") or member
+	if not recipient or member == frappe.session.user:
+		return
+
+	visit_date = (
+		frappe.utils.formatdate(doc.evaluation_start, "dd-MMM-yyyy")
+		if doc.evaluation_start
+		else _("NA")
+	)
+	rows = (
+		_email_row(_("Service ID"), frappe.utils.escape_html(doc.name))
+		+ _email_row(_("Customer Name"), _service_value(doc.organization))
+		+ _email_row(_("Customer Email"), _service_value(doc.email))
+		+ _email_row(_("Customer Contact"), _service_value(doc.mobile_no))
+		+ _email_row(_("Customer Location"), _service_value(doc.territory))
+		+ _email_row(_("Visit Date"), visit_date)
+		# Shift and Issue Details have no field on the deal yet. The rows are laid out
+		# the way the business asked for them and stay blank until the fields exist.
+		+ _email_row(_("Shift"), "")
+		+ _email_row(_("Priority"), _service_value(doc.business_impact))
+		+ _email_row(_("Issue Details"), "", border=False)
+	)
+
+	full_name = frappe.get_cached_value("User", member, "full_name") or member
+	signoff = "\n".join(
+		[
+			_("After completing the service, kindly update the service report using the above button."),
+			"",
+			_("Regards,"),
+			_("Service Department"),
+			_("Precious Alloys Pvt. Ltd."),
+		]
+	)
+
+	frappe.sendmail(
+		recipients=[recipient],
+		subject=_("New Service Assigned - {0}").format(doc.name),
+		content=_render_deal_email(
+			_("New Service Assignment"),
+			_("New Service Assigned"),
+			_("A new service request has been assigned to you. Please review the details below."),
+			rows,
+			frappe.utils.get_url(f"/crm/deals/{doc.name}"),
+			_("Complete Service Report"),
+			greeting=_("Dear {0},").format(frappe.utils.escape_html(full_name)),
+			signoff=signoff,
+		),
+		reference_doctype="CRM Deal",
+		reference_name=doc.name,
+	)
 
 
 def _log_info_round(doc, action_label, text):

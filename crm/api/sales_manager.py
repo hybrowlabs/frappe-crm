@@ -161,6 +161,8 @@ def notify_roles_on_status_change(doc, method=None):
 	if not doc.has_value_changed("status"):
 		return
 
+	from crm.api.tech_team import deal_entered_tech_evaluation
+
 	tech_user = doc.get("assigned_tech_member") or None
 	sales_user = _deal_sales_person_user(doc)
 	manager_user = None
@@ -175,6 +177,10 @@ def notify_roles_on_status_change(doc, method=None):
 	# are notified.
 	trio = list(dict.fromkeys(u for u in (tech_user, sales_user, manager_user) if u))
 	editor = frappe.session.user
+	# On the Tech Assignment -> Tech Evaluation handover the tech member gets the far
+	# richer service assignment mail instead, so the generic status mail would only
+	# arrive as a duplicate. They still get the in-app notification.
+	service_handover = deal_entered_tech_evaluation(doc)
 	owner_name = frappe.get_cached_value("User", editor, "full_name") or editor
 	notification_text = f"""
 		<div class="mb-2 leading-5 text-ink-gray-5">
@@ -199,6 +205,8 @@ def notify_roles_on_status_change(doc, method=None):
 				"redirect_to_docname": doc.name,
 			}
 		)
+		if service_handover and user == tech_user:
+			continue
 		send_status_change_email(doc, user, owner_name)
 
 
