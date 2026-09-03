@@ -256,6 +256,7 @@ class CRMDeal(Document):
             notify_roles_on_status_change,
             notify_sales_manager_on_approval,
         )
+        from crm.api.tech_team import notify_tech_on_evaluation_start
         from crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings import (
             create_customer_in_erpnext,
         )
@@ -263,6 +264,7 @@ class CRMDeal(Document):
         create_customer_in_erpnext(self, "on_update")
         notify_sales_manager_on_approval(self)
         notify_roles_on_status_change(self)
+        notify_tech_on_evaluation_start(self)
 
     def validate_status(self):
         if self.is_new():
