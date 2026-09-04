@@ -642,25 +642,38 @@ function startPolling(docName) {
         { data_import_name: docName },
       )
 
+      let passedRecords = Number(res.success) || 0
+      let failedRecords = Number(res.failed) || 0
+      let totalRecords = Number(res.total_records) || 0
+      let allRowsProcessed =
+        totalRecords > 0 && passedRecords + failedRecords >= totalRecords
+
+      if (
+        ['Success', 'Partial Success', 'Error'].includes(res.status) &&
+        !allRowsProcessed
+      ) {
+        return
+      }
+
       if (res.status === 'Success') {
         importStatus.value = 'Success'
-        importMessage.value = __('{0} records imported successfully.', [
-          res.success || res.total_records || '',
-        ])
+        importMessage.value = __('{0} passed.', [passedRecords])
         fetchLogs(docName)
         stopPolling()
       } else if (res.status === 'Partial Success') {
         importStatus.value = 'Partial Success'
         importMessage.value = __(
-          '{0} of {1} records imported. Check the import log for details.',
-          [res.success || 0, res.total_records || 0],
+          '{0} passed, {1} failed. Total: {2} rows. Check the import log for details.',
+          [passedRecords, failedRecords, totalRecords],
         )
         fetchLogs(docName)
         stopPolling()
       } else if (res.status === 'Error') {
         importStatus.value = 'Error'
-        importMessage.value = __('Import failed. {0} records failed.', [
-          res.failed || '',
+        importMessage.value = __('{0} passed, {1} failed. Total: {2} rows.', [
+          passedRecords,
+          failedRecords,
+          totalRecords,
         ])
         fetchLogs(docName)
         stopPolling()
@@ -679,10 +692,13 @@ function startPolling(docName) {
 }
 
 async function fetchLogs(docName) {
-  importLogs.value =
+  let logs =
     (await call('frappe.core.doctype.data_import.data_import.get_import_logs', {
       data_import: docName,
     })) || []
+  importLogs.value = logs.sort(
+    (first, second) => Number(first.success) - Number(second.success),
+  )
 }
 
 function parseLogMessages(messages) {
