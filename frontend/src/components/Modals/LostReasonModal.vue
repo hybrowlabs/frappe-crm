@@ -61,6 +61,9 @@ import { ref } from 'vue'
 const props = defineProps({
   doctype: { type: String, default: 'CRM Lead' },
   document: { type: Object, required: true },
+  // When given, the reason is handed over instead of being saved from here, so the
+  // caller can persist it in the same request as the status change it belongs to.
+  onSave: { type: Function, default: null },
 })
 
 const show = defineModel({ type: Boolean })
@@ -91,6 +94,14 @@ function save() {
 
   error.value = ''
   show.value = false
+
+  if (props.onSave) {
+    props.onSave({
+      lost_reason: lostReason.value,
+      lost_notes: lostNotes.value,
+    })
+    return
+  }
 
   doc.lost_reason = lostReason.value
   doc.lost_notes = lostNotes.value

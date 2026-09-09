@@ -12,6 +12,7 @@ const documentsCache = {}
 const controllersCache = {}
 const assigneesCache = {}
 const permissionsCache = {}
+const saveResourcesCache = {}
 
 export function useDocument(doctype, docname, resourceOverrides = {}) {
   if (typeof docname === 'number') docname = String(docname)
@@ -55,30 +56,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
               toast.success(__('Document updated successfully'))
               processPendingDeletions()
             },
-            onError: (err) => {
-              triggerOnError(err)
-
-              if (err.exc_type == 'MandatoryError') {
-                const fieldName = err.messages
-                  .map((msg) => {
-                    let arr = msg.split(': ')
-                    return arr[arr.length - 1].trim()
-                  })
-                  .join(', ')
-                toast.error(__('Mandatory field error: {0}', [fieldName]))
-                return
-              }
-
-              err.messages?.forEach((msg) => {
-                toast.error(msg)
-              })
-
-              if (err.messages?.length === 0) {
-                toast.error(__('An error occurred while updating the document'))
-              }
-
-              console.error(err)
-            },
+            onError: (err) => handleSaveError(err),
           },
           ...resourceOverrides,
         },
@@ -106,6 +84,17 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
         if (mandatory) return
         return _originalSubmit.apply(_save, args)
       }
+
+      saveResourcesCache[doctype] = saveResourcesCache[doctype] || {}
+      saveResourcesCache[doctype][docname] = createResource(
+        {
+          url: 'frappe.client.set_value',
+          // Errors are handled by saveChanges; this only keeps createResource from
+          // falling back to the global handler and reporting them twice.
+          onError: () => {},
+        },
+        vm,
+      )
     } else {
       documentsCache[doctype][''] = reactive({
         doc: { __newDocument: true, doctype },
@@ -361,6 +350,84 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     cache.fieldHtmlMap[fieldname] = html
   }
 
+  // A save the server rejected must never leave a status on screen that was never
+  // stored. frappe-ui's own rollback can't do this: documentResource snapshots
+  // `previousDoc` inside beforeSubmit, i.e. *after* the caller has already written the
+  // new status into the doc, so restoring it puts the rejected value straight back.
+  // `originalDoc` is the last server-confirmed state, so restore the status from there.
+  // Only the status is restored -- whatever else the user just typed stays put so they
+  // can fill in what was missing and retry.
+  function restoreStatus() {
+    const resource = documentsCache[doctype]?.[docname || '']
+    if (!resource?.doc || !resource.originalDoc) return
+    if (resource.doc.status !== resource.originalDoc.status) {
+      resource.doc.status = resource.originalDoc.status
+    }
+  }
+
+  function handleSaveError(err) {
+    restoreStatus()
+    triggerOnError(err)
+
+    if (err.exc_type == 'MandatoryError') {
+      const fieldName = err.messages
+        .map((msg) => {
+          let arr = msg.split(': ')
+          return arr[arr.length - 1].trim()
+        })
+        .join(', ')
+      toast.error(__('Mandatory field error: {0}', [fieldName]))
+      return
+    }
+
+    err.messages?.forEach((msg) => {
+      toast.error(msg)
+    })
+
+    if (err.messages?.length === 0) {
+      toast.error(__('An error occurred while updating the document'))
+    }
+
+    console.error(err)
+  }
+
+  // Persist `changes` without writing them into the local doc first, and apply the
+  // server's copy only once it comes back. `save` and `setValue` both assign
+  // optimistically in beforeSubmit, which is what makes a rejected status linger on
+  // screen until a reload; here a rejected save never reaches the UI at all.
+  async function saveChanges(changes, { onSuccess, onError } = {}) {
+    const resource = documentsCache[doctype]?.[docname || '']
+    const saveResource = saveResourcesCache[doctype]?.[docname || '']
+    if (!resource || !saveResource) return
+
+    try {
+      await triggerOnValidate()
+    } catch (err) {
+      console.error(err)
+      return
+    }
+
+    // Validate a merged copy so the doc itself stays untouched.
+    if (checkMandatory({ ...resource.doc, ...changes })) return
+
+    try {
+      const data = await saveResource.submit({
+        doctype: doctype,
+        name: docname,
+        fieldname: changes,
+      })
+      resource.doc = data
+      resource.originalDoc = JSON.parse(JSON.stringify(data))
+      triggerOnSave()
+      processPendingDeletions()
+      toast.success(__('Document updated successfully'))
+      onSuccess?.(data)
+    } catch (err) {
+      handleSaveError(err)
+      onError?.(err)
+    }
+  }
+
   async function trigger(taskFn, row = null) {
     const controllers = getControllers(row)
     if (!controllers.length) return
@@ -386,6 +453,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     triggerOnSave,
     triggerOnError,
     triggerOnChange,
+    saveChanges,
     triggerButton,
     triggerOnRowAdd,
     triggerOnRowRemove,
