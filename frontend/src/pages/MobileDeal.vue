@@ -293,6 +293,7 @@
     v-model="showLostReasonModal"
     doctype="CRM Deal"
     :document="document"
+    :onSave="saveLostReason"
   />
   <CaptureRequirementsModal
     v-if="showCaptureRequirementsModal && isSalesTeam()"
@@ -499,14 +500,8 @@ const errorTitle = ref('')
 const errorMessage = ref('')
 const showDeleteLinkedDocModal = ref(false)
 
-const {
-  triggerOnChange,
-  triggerOnRender,
-  assignees,
-  document,
-  scripts,
-  error,
-} = useDocument('CRM Deal', props.dealId)
+const { triggerOnRender, saveChanges, assignees, document, scripts, error } =
+  useDocument('CRM Deal', props.dealId)
 
 const doc = computed(() => document.doc || {})
 
@@ -775,22 +770,21 @@ function nextStageName() {
 }
 
 function saveRequirements({ values, advance, status }) {
-  Object.assign(doc.value, values)
   // Advance to the next stage in the same save so the status reliably persists.
   // `status`, when provided, is a status name (PK).
+  let changes = { ...values }
   if (status) {
-    doc.value.status = status
+    changes.status = status
   } else if (advance) {
     let next = nextStageName()
-    if (next) doc.value.status = next
+    if (next) changes.status = next
   }
-  document.save.submit(null, {
+  // Errors are reported by the shared save handler, which renders the backend's
+  // stage-gate message in full.
+  saveChanges(changes, {
     onSuccess: () => {
       reload.value = true
       toast.success(__('Requirements saved'))
-    },
-    onError: (err) => {
-      toast.error(err.messages?.[0] || __('Error saving requirements'))
     },
   })
 }
@@ -1082,8 +1076,7 @@ async function triggerStatusChange(value) {
         showPreQuotationModal.value = true
         return
       }
-      await triggerOnChange('status', value)
-      setLostReason()
+      setLostReason({ status: value })
       return
     }
     // The Proposal stage form doesn't advance the deal, so skip it here.
@@ -1109,8 +1102,7 @@ async function triggerStatusChange(value) {
     }
   }
 
-  await triggerOnChange('status', value)
-  setLostReason()
+  setLostReason({ status: value })
 }
 
 const pendingProposalStatus = ref(null)
@@ -1119,12 +1111,15 @@ async function confirmPreQuotation(payload) {
   let value = pendingProposalStatus.value
   pendingProposalStatus.value = null
   if (!value) return
+  // The address fields ride along in the same save as the status, because the
+  // Proposal/Quotation gate requires them to be stored.
+  let changes = { status: value }
   // Skip: advance to the next stage without creating/linking any customer.
   if (!payload?.skip) {
     // For a chosen existing customer we skip address creation; otherwise build the
     // billing/shipping addresses from the entered details.
     if (payload && !payload.existingCustomer) {
-      await createDealAddresses(payload)
+      Object.assign(changes, await createDealAddresses(payload))
     }
     try {
       const customer = await call(
@@ -1142,13 +1137,13 @@ async function confirmPreQuotation(payload) {
       toast.error(err.messages?.[0] || __('Error creating customer'))
     }
   }
-  await triggerOnChange('status', value)
-  setLostReason()
+  setLostReason(changes)
 }
 
+// Returns the address fields to persist rather than writing them into the doc, so the
+// caller can send them in the same save as the status change that requires them.
 async function createDealAddresses(payload) {
-  doc.value.legal_name = payload.legalName
-  doc.value.gstin = payload.gstin
+  const fields = { legal_name: payload.legalName, gstin: payload.gstin }
   const addressTitle = payload.legalName || title.value || props.dealId
   const links = [{ link_doctype: 'CRM Deal', link_name: props.dealId }]
   try {
@@ -1162,7 +1157,7 @@ async function createDealAddresses(payload) {
         links,
       },
     })
-    doc.value.billing_address = billingAddress.name
+    fields.billing_address = billingAddress.name
     if (!payload.sameAsBilling) {
       const shippingAddress = await call('frappe.client.insert', {
         doc: {
@@ -1174,38 +1169,59 @@ async function createDealAddresses(payload) {
           links,
         },
       })
-      doc.value.shipping_address = shippingAddress.name
+      fields.shipping_address = shippingAddress.name
     } else {
-      doc.value.shipping_address = billingAddress.name
+      fields.shipping_address = billingAddress.name
     }
   } catch (err) {
     toast.error(err.messages?.[0] || __('Error creating address'))
   }
+  return fields
 }
 
 const showLostReasonModal = ref(false)
+const pendingLostChanges = ref(null)
 
-function setLostReason() {
+// `changes` carries the fields to persist, including the status being moved to. The
+// status is read from there and not from the doc, because the doc only takes the new
+// status once the server has accepted it.
+function setLostReason(changes) {
+  const status = changes?.status ?? doc.value.status
   if (
-    getDealStatus(doc.value.status).type !== 'Lost' ||
+    getDealStatus(status)?.type !== 'Lost' ||
     (doc.value.lost_reason && doc.value.lost_reason !== 'Other') ||
     (doc.value.lost_reason === 'Other' && doc.value.lost_notes)
   ) {
-    document.save.submit()
+    saveChanges(changes)
     return
   }
 
+  pendingLostChanges.value = changes
   showLostReasonModal.value = true
 }
 
+// The modal collects the reason; it is saved together with the pending status change so
+// the stage only moves once the server has accepted both.
+function saveLostReason(lostFields) {
+  saveChanges({ ...pendingLostChanges.value, ...lostFields })
+  pendingLostChanges.value = null
+}
+
 function beforeStatusChange(data) {
+  // The Data tab and the side panel write into the doc before emitting, so put the
+  // server-confirmed status back in the same tick: Vue flushes to the DOM after this,
+  // so the badge never shows a stage the server has not accepted yet.
+  if (Object.hasOwn(data ?? {}, 'status') && document.originalDoc) {
+    doc.value.status = document.originalDoc.status
+  }
+
   if (
     Object.hasOwn(data ?? {}, 'status') &&
-    getDealStatus(data.status).type == 'Lost'
+    getDealStatus(data.status)?.type == 'Lost'
   ) {
-    setLostReason()
+    setLostReason(data)
   } else {
-    document.save.submit(null, {
+    saveChanges(data, {
       onSuccess: () => reloadAssignees(data),
     })
   }
