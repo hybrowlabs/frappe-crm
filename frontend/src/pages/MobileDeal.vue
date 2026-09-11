@@ -585,7 +585,7 @@ const STAGE_CTA = {
   Qualification: { label: __('Initiate Trial'), icon: BeakerIcon },
   'Tech Assignment': { label: __('Technical Response'), icon: BeakerIcon },
   'New Product Development': { label: __('NPD Response'), icon: BeakerIcon },
-  'Demo/Making': { label: __('Record Evaluation'), icon: BeakerIcon },
+  'Tech Evaluation': { label: __('Record Evaluation'), icon: BeakerIcon },
   Retrial: { label: __('Record Evaluation'), icon: BeakerIcon },
   'Proposal/Quotation': { label: __('Create Quotation'), icon: RupeeIcon },
 }
@@ -629,7 +629,7 @@ const stageCta = computed(() => {
     return isSalesManager() ? cta : null
   }
   // Record Evaluation is a technical-team action — visible to Technical Person only.
-  if (['Demo/Making', 'Retrial'].includes(status)) {
+  if (['Tech Evaluation', 'Retrial'].includes(status)) {
     return isTechnicalPerson() ? cta : null
   }
   // A quotation is raised against a billing address, so there is nothing to create
@@ -662,7 +662,7 @@ const STAGE_MODALS = {
   'Request for New Info': 'showInitiateTrialModal',
   'Tech Assignment': 'showTechnicalResponseModal',
   'New Product Development': 'showNpdResponseModal',
-  'Demo/Making': 'showRecordEvaluationModal',
+  'Tech Evaluation': 'showRecordEvaluationModal',
   Retrial: 'showRecordEvaluationModal',
   'Proposal/Quotation': 'showProposalStageModal',
 }
@@ -1088,7 +1088,7 @@ async function triggerStatusChange(value) {
     if (current === 'Tech Assignment') {
       // A flagged deal awaits the sales manager's escalation review, not a forward move.
       canOpenStageForm = !doc.value.not_suitable && isTechnicalTeam()
-    } else if (['Demo/Making', 'Retrial'].includes(current)) {
+    } else if (['Tech Evaluation', 'Retrial'].includes(current)) {
       canOpenStageForm = isTechnicalPerson()
     } else {
       canOpenStageForm = isSalesTeam()

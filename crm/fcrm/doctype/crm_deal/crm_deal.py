@@ -47,7 +47,7 @@ STAGE_GATES = [
         ],
     },
     {
-        "status": "Demo/Making",
+        "status": "Tech Evaluation",
         "step": "Technical Response",
         "fields": [
             ("product_suggestions", "Product Suggestions"),
@@ -256,7 +256,10 @@ class CRMDeal(Document):
             notify_roles_on_status_change,
             notify_sales_manager_on_approval,
         )
-        from crm.api.tech_team import notify_tech_on_evaluation_start
+        from crm.api.tech_team import (
+            notify_tech_head_on_service_completed,
+            notify_tech_on_evaluation_start,
+        )
         from crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings import (
             create_customer_in_erpnext,
         )
@@ -265,6 +268,7 @@ class CRMDeal(Document):
         notify_sales_manager_on_approval(self)
         notify_roles_on_status_change(self)
         notify_tech_on_evaluation_start(self)
+        notify_tech_head_on_service_completed(self)
 
     def validate_status(self):
         if self.is_new():
@@ -350,7 +354,7 @@ class CRMDeal(Document):
             # NPD route: the tech team proposed a new alloy instead of recommending an
             # existing item, so there are no product suggestions or application notes
             # to gate on when the approved deal moves into Tech Evaluation.
-            if gate["status"] == "Demo/Making" and self.npd_decision == "Yes":
+            if gate["status"] == "Tech Evaluation" and self.npd_decision == "Yes":
                 continue
             missing = []
             for fieldname, label in gate["fields"]:

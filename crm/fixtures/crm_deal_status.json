@@ -106,12 +106,12 @@
  {
   "active": 1,
   "color": "orange",
-  "deal_status": "Demo/Making",
+  "deal_status": "Tech Evaluation",
   "docstatus": 0,
   "doctype": "CRM Deal Status",
   "label": "Tech Evaluation",
   "modified": "2026-06-13 12:09:23.220570",
-  "name": "Demo/Making",
+  "name": "Tech Evaluation",
   "position": 6,
   "probability": 25.0,
   "type": "Ongoing"
