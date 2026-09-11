@@ -633,13 +633,13 @@ function recommendAndApprove() {
     toast.error(__('Please add product suggestions and application notes.'))
     return
   }
-  // Trial required → Technical Evaluation (Demo/Making). No trial → skip the
+  // Trial required → Tech Evaluation. No trial → skip the
   // trial/retrial stages straight to Evaluation Completed (the quotation flow).
   // Emit the explicit target so the advance never depends on the cached status order.
   emit('save', {
     values: recommendValues(),
     advance: true,
-    status: trialRequired.value ? 'Demo/Making' : 'Evaluation Completed',
+    status: trialRequired.value ? 'Tech Evaluation' : 'Evaluation Completed',
   })
   show.value = false
 }

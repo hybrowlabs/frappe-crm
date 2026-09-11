@@ -182,8 +182,20 @@ def send_assignment_email(deal, member, assigned_by, notes=None):
 	)
 
 
+# Button colour of the service-department mails (New Service Assigned / Service Completed).
+SERVICE_CTA_COLOR = "#005fa9"
+
+
 def _render_deal_email(
-	badge, heading, subtext, rows_html, deal_url, cta_label, greeting=None, signoff=None
+	badge,
+	heading,
+	subtext,
+	rows_html,
+	deal_url,
+	cta_label,
+	greeting=None,
+	signoff=None,
+	cta_color="#1f272e",
 ):
 	"""Shared branded shell for the tech-response stakeholder emails.
 
@@ -218,7 +230,7 @@ def _render_deal_email(
 				<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e8eaed;border-radius:8px;">{rows_html}</table>
 			</td></tr>
 			<tr><td style="padding:{cta_padding};">
-				<a href="{deal_url}" style="display:inline-block;background:#1f272e;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:8px;">{cta_label} &rarr;</a>
+				<a href="{deal_url}" style="display:inline-block;background:{cta_color};color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:8px;">{cta_label} &rarr;</a>
 			</td></tr>
 			{signoff_html}
 		</table>
@@ -277,8 +289,10 @@ def notify_tech_on_evaluation_start(doc, method=None):
 	if not member:
 		return
 
+	# No self-skip here: the tech member usually makes this move themselves (Recommend
+	# & Approve with a trial), and the mail is their service sheet, not a heads-up.
 	recipient = frappe.db.get_value("User", member, "email") or member
-	if not recipient or member == frappe.session.user:
+	if not recipient:
 		return
 
 	visit_date = (
@@ -323,10 +337,80 @@ def notify_tech_on_evaluation_start(doc, method=None):
 			_("Complete Service Report"),
 			greeting=_("Dear {0},").format(frappe.utils.escape_html(full_name)),
 			signoff=signoff,
+			cta_color=SERVICE_CTA_COLOR,
 		),
 		reference_doctype="CRM Deal",
 		reference_name=doc.name,
 	)
+
+
+# The trial wrapping up: Record Evaluation moves the deal on from the trial stages.
+SERVICE_COMPLETED_FROM = ("Tech Evaluation", "Retrial")
+SERVICE_COMPLETED_TO = "Evaluation Completed"
+
+
+def deal_completed_service(doc):
+	"""True when this save closes out the trial — Tech Evaluation or Retrial into
+	Evaluation Completed. A no-trial deal skips straight past, so it never matches."""
+	if not doc.has_value_changed("status") or doc.status != SERVICE_COMPLETED_TO:
+		return False
+	before = doc.get_doc_before_save()
+	return bool(before and before.status in SERVICE_COMPLETED_FROM)
+
+
+def technical_heads():
+	"""Enabled users holding the Technical Head role. The role is not tied to a
+	territory or team, so every head gets the confirmation."""
+	holders = frappe.get_all(
+		"Has Role", filters={"role": "Technical Head", "parenttype": "User"}, pluck="parent"
+	)
+	if not holders:
+		return []
+	return frappe.get_all(
+		"User",
+		filters=[["name", "in", holders], ["name", "!=", "Administrator"], ["enabled", "=", 1]],
+		fields=["name", "email", "full_name"],
+	)
+
+
+def notify_tech_head_on_service_completed(doc, method=None):
+	"""Confirm to the Technical Heads that a service is done once the engineer's
+	evaluation moves the deal into Evaluation Completed."""
+	if not deal_completed_service(doc):
+		return
+
+	rows = _email_row(_("Service ID"), frappe.utils.escape_html(doc.name)) + _email_row(
+		_("Customer Name"), _service_value(doc.organization), border=False
+	)
+	signoff = "\n".join(
+		[
+			_("The service report has been submitted by the assigned engineer."),
+			"",
+			_("Regards,"),
+			_("Service Management System"),
+			_("Precious Alloys Pvt. Ltd."),
+		]
+	)
+
+	for head in technical_heads():
+		recipient = head.email or head.name
+		frappe.sendmail(
+			recipients=[recipient],
+			subject=_("✅ Service Completed - {0}").format(doc.name),
+			content=_render_deal_email(
+				_("Service Completed"),
+				_("Service Completed"),
+				_("The following service request has been completed successfully."),
+				rows,
+				frappe.utils.get_url(f"/crm/deals/{doc.name}"),
+				_("View Service Report"),
+				greeting=_("Dear {0},").format(frappe.utils.escape_html(head.full_name or head.name)),
+				signoff=signoff,
+				cta_color=SERVICE_CTA_COLOR,
+			),
+			reference_doctype="CRM Deal",
+			reference_name=doc.name,
+		)
 
 
 def _log_info_round(doc, action_label, text):
@@ -798,7 +882,7 @@ def respond_npd(deal: str, decision: str, remarks: str | None = None):
 	doc.npd_remarks = remarks or ""
 	doc.npd_pending = 0
 	if decision == "Yes":
-		doc.status = "Demo/Making"
+		doc.status = "Tech Evaluation"
 	else:
 		doc.npd_declined = 1
 		doc.status = "Closed"

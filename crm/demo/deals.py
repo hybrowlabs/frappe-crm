@@ -25,7 +25,7 @@ def create_demo_deals(lead_names, demo_users):
 	# leads[10] Karen, [11] Leo → 2 lost deals
 	d_alice = convert_to_deal(
 		lead=lead_names[0],
-		deal={"status": "Demo/Making", "deal_value": 120000, "probability": 50, "deal_owner": session_user},
+		deal={"status": "Tech Evaluation", "deal_value": 120000, "probability": 50, "deal_owner": session_user},
 	)
 	d_david = convert_to_deal(
 		lead=lead_names[3],
@@ -300,7 +300,7 @@ def _create_deal_versions(deal_names, session_user, owner_1, owner_2, now):
 		{
 			"deal": deal_names[6],  # Leo
 			"owner": session_user,
-			"changed": [["status", "Demo/Making", "Lost"]],
+			"changed": [["status", "Tech Evaluation", "Lost"]],
 			"days_ago": 13,
 		},
 	]

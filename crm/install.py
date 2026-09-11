@@ -108,7 +108,7 @@ def add_default_deal_statuses():
 			"probability": 10,
 			"position": 1,
 		},
-		"Demo/Making": {
+		"Tech Evaluation": {
 			"color": "orange",
 			"type": "Ongoing",
 			"probability": 25,
