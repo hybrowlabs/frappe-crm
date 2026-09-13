@@ -92,15 +92,39 @@ def notify_agent(doc):
 
 @frappe.whitelist()
 def is_whatsapp_enabled():
+	"""Return whether the optional WhatsApp integration is usable.
+
+	A restored site may retain stale DocType metadata after the optional
+	``frappe_whatsapp`` app has been removed. Avoid loading a controller for
+	that metadata row: loading it raises ``ImportError`` and breaks every CRM
+	page that probes this capability.
+	"""
+	if "frappe_whatsapp" not in frappe.get_installed_apps():
+		return False
 	if not frappe.db.exists("DocType", "WhatsApp Settings"):
 		return False
-	default_outgoing = frappe.get_cached_value(
-		"WhatsApp Settings", "WhatsApp Settings", "default_outgoing_account"
+	if not frappe.db.table_exists("Singles"):
+		return False
+	default_outgoing = frappe.db.sql(
+		"""
+		SELECT value FROM `tabSingles`
+		WHERE doctype = %s AND field = %s
+		LIMIT 1
+		""",
+		("WhatsApp Settings", "default_outgoing_account"),
+		pluck=True,
 	)
+	default_outgoing = default_outgoing[0] if default_outgoing else None
 	if not default_outgoing:
 		return False
-	status = frappe.get_cached_value("WhatsApp Account", default_outgoing, "status")
-	return status == "Active"
+	if not frappe.db.table_exists("WhatsApp Account"):
+		return False
+	status = frappe.db.sql(
+		"SELECT status FROM `tabWhatsApp Account` WHERE name = %s LIMIT 1",
+		(default_outgoing,),
+		pluck=True,
+	)
+	return bool(status and status[0] == "Active")
 
 
 @frappe.whitelist()
