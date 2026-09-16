@@ -1,5 +1,8 @@
 import frappe
+from frappe.query_builder.functions import Avg, Count
 from frappe.utils import add_days, flt, getdate, now_datetime
+
+from crm.api.aggregate import aggregate
 
 # ---------------------------------------------------------------------------
 # Team scoping
@@ -279,12 +282,11 @@ def _technical(team_aes, is_fallback, statuses):
 	# Average first-response time across the team's deals.
 	resp_filters = dict(base)
 	resp_filters["first_response_time"] = [">", 0]
-	resp = frappe.db.get_value(
-		"CRM Deal",
-		resp_filters,
-		["avg(first_response_time) as avg", "count(name) as n"],
-		as_dict=True,
+	deal = frappe.qb.DocType("CRM Deal")
+	avg_resp, n_resp = aggregate(
+		"CRM Deal", resp_filters, Avg(deal.first_response_time), Count(deal.name)
 	)
+	resp = frappe._dict(avg=avg_resp, n=n_resp)
 
 	# Trials in progress (trial required, outcome not yet recorded).
 	trial_filters = dict(base)
