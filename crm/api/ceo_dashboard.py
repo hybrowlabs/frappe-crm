@@ -2,7 +2,7 @@ import frappe
 from frappe.query_builder.functions import Avg, Count, Sum
 from frappe.utils import add_days, add_months, flt, getdate
 
-from crm.api.aggregate import aggregate
+from crm.api.aggregate import aggregate, aggregate_rows
 
 # Lead sources treated as marketing-originated for the "Marketing Contribution"
 # metric. Adjust to match the client's channel taxonomy.
@@ -56,14 +56,15 @@ def _so_sum(start, end, customers=None):
 def _so_count_by_customer(customers, start, end):
 	if not customers or not frappe.db.exists("DocType", "Sales Order"):
 		return {}
-	rows = frappe.get_all(
+	so = frappe.qb.DocType("Sales Order")
+	rows = aggregate_rows(
 		"Sales Order",
-		filters={
+		{
 			"docstatus": 1,
 			"customer": ["in", customers],
 			"transaction_date": ["between", [start, end]],
 		},
-		fields=["customer", "count(name) as orders"],
+		["customer", Count(so.name).as_("orders")],
 		group_by="customer",
 	)
 	return {r.customer: r.orders for r in rows}
@@ -221,14 +222,15 @@ def _account_health():
 	top_accounts = []
 	repeat_value = 0
 	if frappe.db.exists("DocType", "Sales Order") and cust_to_org:
-		rows = frappe.get_all(
+		so = frappe.qb.DocType("Sales Order")
+		rows = aggregate_rows(
 			"Sales Order",
-			filters={
+			{
 				"docstatus": 1,
 				"customer": ["in", list(cust_to_org)],
 				"transaction_date": ["between", [ytd_start, today]],
 			},
-			fields=["customer", "sum(base_grand_total) as value", "count(name) as orders"],
+			["customer", Sum(so.base_grand_total).as_("value"), Count(so.name).as_("orders")],
 			group_by="customer",
 		)
 		for r in rows:

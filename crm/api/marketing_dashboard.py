@@ -1,8 +1,8 @@
 import frappe
-from frappe.query_builder.functions import Sum
+from frappe.query_builder.functions import Count, Sum
 from frappe.utils import add_months, flt, getdate
 
-from crm.api.aggregate import aggregate
+from crm.api.aggregate import aggregate, aggregate_rows
 
 # Marketing dashboard — lead-volume, conversion, bulk-status and repeat-
 # contribution views over CRM Leads (+ their converted deals and the ERPNext
@@ -188,17 +188,17 @@ def _repeat_contribution(today):
 		)
 		cust_ids = [o.erpnext_customer for o in orgs if o.erpnext_customer]
 		if cust_ids:
-			rows = frappe.get_all(
+			so = frappe.qb.DocType("Sales Order")
+			rows = aggregate_rows(
 				"Sales Order",
-				filters={"docstatus": 1, "customer": ["in", cust_ids]},
-				fields=["customer", "sum(base_grand_total) as value", "count(name) as orders"],
+				{"docstatus": 1, "customer": ["in", cust_ids]},
+				["customer", Sum(so.base_grand_total).as_("value"), Count(so.name).as_("orders")],
 				group_by="customer",
 			)
 			for r in rows:
 				revenue_from_mktg += flt(r.value)
 				if r.orders and r.orders > 1:
 					now_repeat += 1
-			so = frappe.qb.DocType("Sales Order")
 			total_revenue = flt(aggregate("Sales Order", {"docstatus": 1}, Sum(so.base_grand_total))[0])
 			contribution_pct = round(revenue_from_mktg / total_revenue * 100) if total_revenue else 0
 
