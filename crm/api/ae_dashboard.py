@@ -1,5 +1,8 @@
 import frappe
+from frappe.query_builder.functions import Sum
 from frappe.utils import add_days, flt, get_datetime, getdate, now_datetime
+
+from crm.api.aggregate import aggregate
 
 # Account Executive ("My Dashboard") — everything is scoped to the logged-in
 # salesperson (frappe.session.user): my open deals, my tasks, my accounts, my
@@ -180,12 +183,13 @@ def _performance(me):
 			if o.erpnext_customer
 		]
 		if my_customers:
+			so = frappe.qb.DocType("Sales Order")
 			orders_value = flt(
-				frappe.db.get_value(
+				aggregate(
 					"Sales Order",
 					{"docstatus": 1, "customer": ["in", my_customers], "transaction_date": ["between", [month_start, today]]},
-					"sum(base_grand_total)",
-				)
+					Sum(so.base_grand_total),
+				)[0]
 			)
 
 	leads = frappe.get_all("CRM Lead", filters={"lead_owner": me}, fields=["converted"])

@@ -1,5 +1,8 @@
 import frappe
+from frappe.query_builder.functions import Avg
 from frappe.utils import flt, get_datetime, getdate, now_datetime
+
+from crm.api.aggregate import aggregate
 
 # Technical Pre-Sale dashboard — the CRM Pipeline phase only. "Technical
 # assignment records" = CRM Deals routed to the tech team (assign_to_tech_team=1),
@@ -47,7 +50,8 @@ def _response_bands(view):
 	# given in the current month (first_responded_on in this month).
 	month_filters = dict(filters)
 	month_filters["first_responded_on"] = [">=", getdate().replace(day=1)]
-	avg = frappe.db.get_value("CRM Deal", month_filters, "avg(first_response_time)")
+	deal = frappe.qb.DocType("CRM Deal")
+	(avg,) = aggregate("CRM Deal", month_filters, Avg(deal.first_response_time))
 	return {"bands": bands, "total": sum(counts), "avg_seconds": flt(avg)}
 
 
@@ -185,10 +189,11 @@ def _team_view():
 		if trials:
 			won = sum(1 for t in trials if t.trial_outcome == "Successful")
 			conv_by_engineer.append({"engineer": eng, "rate": round(won / len(trials) * 100)})
-		avg = frappe.db.get_value(
+		deal = frappe.qb.DocType("CRM Deal")
+		(avg,) = aggregate(
 			"CRM Deal",
 			{"assign_to_tech_team": 1, "assigned_tech_member": eng, "first_response_time": [">", 0]},
-			"avg(first_response_time)",
+			Avg(deal.first_response_time),
 		)
 		if avg:
 			resp_by_engineer.append({"engineer": eng, "avg_seconds": flt(avg)})

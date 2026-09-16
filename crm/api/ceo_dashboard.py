@@ -1,5 +1,8 @@
 import frappe
+from frappe.query_builder.functions import Avg, Count, Sum
 from frappe.utils import add_days, add_months, flt, getdate
+
+from crm.api.aggregate import aggregate
 
 # Lead sources treated as marketing-originated for the "Marketing Contribution"
 # metric. Adjust to match the client's channel taxonomy.
@@ -46,9 +49,8 @@ def _so_sum(start, end, customers=None):
 		if not customers:
 			return 0
 		filters["customer"] = ["in", customers]
-	return flt(
-		frappe.db.get_value("Sales Order", filters, "sum(base_grand_total)")
-	)
+	so = frappe.qb.DocType("Sales Order")
+	return flt(aggregate("Sales Order", filters, Sum(so.base_grand_total))[0])
 
 
 def _so_count_by_customer(customers, start, end):
@@ -293,17 +295,18 @@ def _performance():
 		"rate": round(successful / len(trials) * 100) if trials else 0,
 	}
 
-	resp = frappe.db.get_value(
+	deal = frappe.qb.DocType("CRM Deal")
+	avg_resp, n_resp = aggregate(
 		"CRM Deal",
 		{"first_response_time": [">", 0]},
-		["avg(first_response_time) as avg", "count(name) as n"],
-		as_dict=True,
+		Avg(deal.first_response_time),
+		Count(deal.name),
 	)
 
 	return {
 		"trial_conversion": trial_conversion,
-		"tech_response_seconds": flt(resp.avg) if resp else 0,
-		"tech_response_count": (resp.n if resp else 0) or 0,
+		"tech_response_seconds": flt(avg_resp),
+		"tech_response_count": n_resp or 0,
 	}
 
 
