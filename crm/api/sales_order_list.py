@@ -8,8 +8,7 @@ from crm.api.quotation import can_see_all_quotations
 # in the CRM (papl_business_logic "Created Via" = CRM). Normal users see only the
 # orders they created; Administrator and System Managers see all of them.
 
-# The order states the Customer Portal shows (customer_experiance/papl_api.py,
-# _order_state), plus ERPNext's own Draft / Cancelled / Closed / On Hold.
+# The order states the Customer Portal shows, plus ERPNext's own Draft / Cancelled / Closed / On Hold.
 STATE_COLORS = {
 	"Draft": "red",
 	"Confirmed": "blue",
