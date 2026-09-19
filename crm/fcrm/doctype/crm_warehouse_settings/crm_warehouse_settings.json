@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-09-19 12:30:00.000000",
+ "description": "The warehouse CRM quotations and their sales orders use, per branch.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "branch_warehouses"
+ ],
+ "fields": [
+  {
+   "description": "Every item on a CRM quotation and its sales order takes the warehouse set here for the salesperson's branch (Sales Person → Branch & Currency).",
+   "fieldname": "branch_warehouses",
+   "fieldtype": "Table",
+   "label": "Branch Warehouses",
+   "options": "CRM Branch Warehouse"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-19 12:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "FCRM",
+ "name": "CRM Warehouse Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

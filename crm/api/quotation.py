@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
 
+from crm.fcrm.doctype.crm_warehouse_settings.crm_warehouse_settings import get_branch_warehouse
+
 # CRM list/detail views over ERPNext's Quotation. Normal users only see the
 # quotations they created; Administrator and System Managers see all of them.
 
@@ -273,6 +275,12 @@ def get_quotation_defaults():
 	return {"sales_person": sales_person, "branches": branches}
 
 
+# Every line of a CRM quotation and its sales order takes the warehouse set for
+# the salesperson's branch in CRM Warehouse Settings; the Item's own warehouse
+# is not used.
+NO_WAREHOUSE = "No warehouse is set for branch {0} in CRM Warehouse Settings."
+
+
 def _check_customer(customer):
 	"""Only customers with the user's Sales Person on their Sales Team;
 	Administrator and System Managers may use any customer."""
@@ -288,7 +296,7 @@ def _check_customer(customer):
 def _entitled_items(customer, branch):
 	"""{item_code: {item_code, stock_uom, slabs}} for the rows on the customer's
 	Item Discounts table for this branch or with the branch left blank. Same
-	rule as the Customer Portal's get_items (customer_experiance/papl_api.py)."""
+	rule as the Customer Portal's item list."""
 	rows = frappe.get_all(
 		"Customer Item Discount",
 		filters={"parenttype": "Customer", "parent": customer, "parentfield": "custom_item_discounts"},
@@ -331,7 +339,7 @@ def get_customer_items(customer: str, branch: str | None = None):
 
 
 # Pricing-core status -> (call succeeded, rate set). Same map as the Customer
-# Portal (customer_experiance/papl_api.py): an item with no Sales BOM rate is
+# Portal: an item with no Sales BOM rate is
 # not an error, it just has no number to show.
 PRICE_STATUS = {
 	"success": (True, True),
@@ -426,7 +434,7 @@ def create_quotation(
 	deal: str | None = None,
 ):
 	"""Create and submit a quotation from the CRM, then create and submit its
-	Sales Order, the way the Customer Portal does (customer_experiance/papl_api.py):
+	Sales Order, the way the Customer Portal does:
 	no rate is sent, PAPL's validate prices every line from the Sales BOM, GST
 	is chosen by the portal's tax rules, and a line left at rate 0 refuses the
 	whole quotation. Runs as the logged-in user; approval is skipped like the
@@ -434,8 +442,7 @@ def create_quotation(
 	is kept and the error is returned.
 
 	Returns {ok, reason, message, name, sales_order}."""
-	from customer_experiance.api.tax import apply_portal_taxes
-	from customer_experiance.papl_api import _warehouse_for
+	from papl_business_logic.papl_business_logic.api.quotation_tax import apply_quotation_taxes
 	from frappe.contacts.doctype.address.address import get_default_address
 	from frappe.utils import cint, flt, nowdate, strip_html
 
@@ -449,6 +456,9 @@ def create_quotation(
 		"Global Defaults", "default_company"
 	)
 	entitled = _entitled_items(customer, branch)
+	warehouse = get_branch_warehouse(branch)
+	if not warehouse:
+		return refuse("no_warehouse", _(NO_WAREHOUSE).format(branch))
 
 	rows = frappe.parse_json(items) if isinstance(items, str) else (items or [])
 	rows = [row for row in rows if (row or {}).get("item_code")]
@@ -521,7 +531,7 @@ def create_quotation(
 				"uom": entitled[item_code]["stock_uom"],
 				"custom_no_of_packs": packs,
 				"custom_base_qty": base_qty,
-				"warehouse": _warehouse_for(item_code, branch, company),
+				"warehouse": warehouse,
 			},
 		)
 
@@ -531,7 +541,7 @@ def create_quotation(
 		doc.customer_address = get_default_address("Customer", customer)
 
 	try:
-		apply_portal_taxes(doc)
+		apply_quotation_taxes(doc)
 	except Exception:
 		frappe.log_error(title="CRM quotation taxes failed", message=frappe.get_traceback())
 		return refuse("tax_failed", _("Taxes could not be worked out for this quotation."))
@@ -583,8 +593,7 @@ def _sales_orders_for(quotation):
 
 def _make_sales_order(quotation):
 	"""Create and submit the Sales Order for a just-submitted CRM quotation, the
-	way the Customer Portal does (customer_experiance/papl_api.py,
-	create_sales_order): PAPL's metal-rate check, then PAPL's own mapper (it
+	way the Customer Portal does: PAPL's metal-rate check, then PAPL's own mapper (it
 	refuses an expired quotation) so the order copies the quoted lines, rates,
 	taxes and payment schedule; delivery is today + 7 days. Raises on any error
 	so the caller can roll the quotation back with it.
@@ -593,12 +602,15 @@ def _make_sales_order(quotation):
 	PAPL's credit-limit hold only commits on its own when the hold status changed
 	since the save, which cannot happen within this one request, so a hold just
 	raises and is rolled back with everything else."""
-	from customer_experiance.papl_api import _warehouse_for
 	from frappe.utils import add_days, nowdate
 	from papl_business_logic.papl_business_logic.custom.quotation import (
 		make_sales_order,
 		validate_metal_rate_before_so,
 	)
+
+	warehouse = get_branch_warehouse(quotation.custom_branch)
+	if not warehouse:
+		frappe.throw(_(NO_WAREHOUSE).format(quotation.custom_branch))
 
 	# Same gate as the desk's Create > Sales Order button: no order once the
 	# metal rate has risen past the tolerance it was quoted at.
@@ -615,10 +627,8 @@ def _make_sales_order(quotation):
 		order.custom_sale_by = quotation.get("custom_sale_by") or _session_sales_person()
 	for row in order.items:
 		row.delivery_date = delivery_date
-		if not row.warehouse:
-			row.warehouse = _warehouse_for(
-				row.item_code, order.get("branch") or quotation.custom_branch, order.company
-			)
+		# Always the branch's warehouse from CRM Warehouse Settings, not the item's.
+		row.warehouse = warehouse
 	order.insert()
 	order.submit()
 	return order
