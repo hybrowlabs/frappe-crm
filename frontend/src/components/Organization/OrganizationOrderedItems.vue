@@ -102,8 +102,9 @@
 
 <script setup>
 import { formatDate, timeAgo } from '@/utils'
-import { Button, createResource, toast } from 'frappe-ui'
+import { Button, call, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   organization: { type: String, required: true },
@@ -137,24 +138,33 @@ function toggleAll(checked) {
 
 const creating = ref(false)
 
-function createQuotation() {
+const router = useRouter()
+
+// Opens the CRM's own New Quotation page (not the ERPNext desk form) with the
+// organization's customer and the ticked items filled in.
+async function createQuotation() {
   creating.value = true
-  createResource({
-    url: 'crm.fcrm.doctype.erpnext_crm_settings.erpnext_crm_settings.get_repeat_order_quotation_url',
-    params: {
-      organization: props.organization,
-      items: JSON.stringify(selected.value),
-    },
-    auto: true,
-    onSuccess(url) {
-      creating.value = false
-      if (url) window.open(url, '_blank')
-    },
-    onError(err) {
-      creating.value = false
-      toast.error(err.messages?.[0] || __('Error creating quotation'))
-    },
-  })
+  try {
+    const org = await call('frappe.client.get_value', {
+      doctype: 'CRM Organization',
+      filters: { name: props.organization },
+      fieldname: 'erpnext_customer',
+    })
+    if (!org?.erpnext_customer) {
+      toast.error(
+        __('No ERPNext Customer is linked to this organization yet. Create the customer first.'),
+      )
+      return
+    }
+    router.push({
+      name: 'New Quotation',
+      query: { customer: org.erpnext_customer, items: selected.value.join(',') || undefined },
+    })
+  } catch (err) {
+    toast.error(err?.messages?.[0] || __('Error creating quotation'))
+  } finally {
+    creating.value = false
+  }
 }
 
 function fmtCurrency(v) {

@@ -2,24 +2,19 @@
   <div class="flex h-full flex-col overflow-hidden">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('CEO Dashboard'), route: { name: 'CEODashboard' } }]" />
+        <Breadcrumbs :items="[{ label: __('Dashboards'), route: { name: 'Dashboard' } }, { label: __('CEO Dashboard'), route: { name: 'CEODashboard' } }]" />
       </template>
     </LayoutHeader>
 
-    <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-semibold text-ink-gray-9">{{ __('CEO Dashboard') }}</h1>
-          <span class="flex items-center gap-1 text-xs text-ink-gray-5">
-            <span class="h-2 w-2 rounded-full bg-surface-green-3"></span>{{ __('Live') }}
-          </span>
-        </div>
-        <div class="flex rounded-md bg-surface-gray-2 p-0.5 text-sm">
+    <div class="flex-1 overflow-y-auto pa-page">
+      <div class="pa-page-h">
+        <h1 class="pa-h1">{{ __('CEO Dashboard') }} <span class="pa-live">{{ __('Live') }}</span></h1>
+        <div class="pa-seg" role="group" :aria-label="__('Period')">
           <button
             v-for="p in periods"
             :key="p.value"
-            class="rounded px-3 py-1 text-ink-gray-6"
-            :class="{ 'bg-surface-white font-medium text-ink-gray-9 shadow-sm': period === p.value }"
+            :class="{ on: period === p.value }"
+            :aria-pressed="period === p.value"
             @click="period = p.value"
           >
             {{ __(p.label) }}
@@ -30,83 +25,80 @@
       <template v-if="d">
         <!-- PIPELINE -->
         <SectionLabel :label="__('Pipeline')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Tile :title="__('Total Pipeline (Open)')" :value="fmtINR(d.pipeline.total_value)"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+          <Tile :icon="LucideFunnel" :title="__('Total Pipeline (Open)')" :value="fmtINR(d.pipeline.total_value)"
             :sub="__('{0} open deals', [d.pipeline.open_count])" @click="drillPipeline()" />
-          <Tile :title="revenueLabel" :value="fmtINR(d.pipeline.revenue_booked)"
+          <Tile :icon="LucideIndianRupee" :title="revenueLabel" :value="fmtINR(d.pipeline.revenue_booked)"
             :sub="__('booked this period')" />
-          <Tile :title="__('vs Last Period')" :value="pct(d.pipeline.revenue_booked, d.pipeline.revenue_prev)"
+          <Tile :icon="trendIcon(d.pipeline.revenue_booked, d.pipeline.revenue_prev)" :title="__('vs Last Period')"
+            :value="pct(d.pipeline.revenue_booked, d.pipeline.revenue_prev)"
             :sub="__('{0} last period', [fmtINR(d.pipeline.revenue_prev)])"
             :tone="tone(d.pipeline.revenue_booked, d.pipeline.revenue_prev)" />
-          <Tile :title="__('vs Last Year (same period)')" :value="pct(d.pipeline.revenue_booked, d.pipeline.revenue_last_year)"
+          <Tile :icon="trendIcon(d.pipeline.revenue_booked, d.pipeline.revenue_last_year)" :title="__('vs Last Year (same period)')"
+            :value="pct(d.pipeline.revenue_booked, d.pipeline.revenue_last_year)"
             :sub="__('{0} last year', [fmtINR(d.pipeline.revenue_last_year)])"
             :tone="tone(d.pipeline.revenue_booked, d.pipeline.revenue_last_year)" />
-          <Tile :title="__('New Accounts')" :value="String(d.pipeline.new_accounts)"
+          <Tile :icon="LucideBuilding" :title="__('New Accounts')" :value="String(d.pipeline.new_accounts)"
             :sub="__('created this period')" />
         </div>
 
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-3">
-          <Card :title="__('Pipeline by Stage')" icon="trending-up">
-            <BarRow v-for="s in d.pipeline.by_stage" :key="s.stage" :label="s.stage"
-              :sub="__('{0} deals', [s.count])" :value="fmtINR(s.value)"
-              :ratio="ratio(s.value, maxStageValue)" @click="drillStage(s.stage)" />
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-3">
+          <Card :title="__('Pipeline by Stage')">
+            <Bars>
+              <BarRow v-for="s in d.pipeline.by_stage" :key="s.stage" :label="s.stage"
+                :sub="__('{0} deals', [s.count])" :value="fmtINR(s.value)"
+                :ratio="ratio(s.value, maxStageValue)" @click="drillStage(s.stage)" />
+            </Bars>
             <Empty v-if="!d.pipeline.by_stage.length" />
           </Card>
-          <Card :title="__('Category-wise Pipeline')" icon="layers">
-            <div class="mb-3 flex h-2.5 w-full overflow-hidden rounded-full bg-surface-gray-2">
+          <Card :title="__('Category-wise Pipeline')">
+            <div v-if="d.pipeline.by_category.length" class="pa-stacked">
               <div v-for="(c, i) in d.pipeline.by_category" :key="c.category"
                 class="cursor-pointer" :class="catColor(c.category, i)"
                 :style="`width: ${c.pct}%`" :title="c.category" @click="drillCategory(c.category)"></div>
             </div>
-            <div v-for="(c, i) in d.pipeline.by_category" :key="c.category"
-              class="-mx-1 mb-1 flex cursor-pointer items-center justify-between rounded px-1 py-0.5 text-sm hover:bg-surface-gray-1"
-              @click="drillCategory(c.category)">
-              <span class="flex items-center gap-2 text-ink-gray-7">
-                <span class="h-2.5 w-2.5 rounded-sm" :class="catColor(c.category, i)"></span>{{ c.category }}
-              </span>
-              <span class="text-ink-gray-8">
-                <span class="font-medium">{{ c.pct }}%</span>
-                <span class="ml-1 text-ink-gray-4">· {{ fmtINR(c.value) }}</span>
-              </span>
+            <div class="pa-legend">
+              <div v-for="(c, i) in d.pipeline.by_category" :key="c.category"
+                class="pa-legend-row cursor-pointer" @click="drillCategory(c.category)">
+                <span class="flex items-center"><span class="pa-dot" :class="catColor(c.category, i)"></span>{{ c.category }}</span>
+                <span><b>{{ c.pct }}%</b><em>· {{ fmtINR(c.value) }}</em></span>
+              </div>
             </div>
-            <Empty v-if="!d.pipeline.by_category.length" :text="__('No product category on deals')" />
+            <Empty v-if="!d.pipeline.by_category.length" :icon="LucideLayers" :text="__('No product category on deals')" />
           </Card>
-          <Card :title="__('Region-wise Pipeline')" icon="map-pin">
-            <BarRow v-for="r in d.pipeline.by_region" :key="r.region" :label="r.region"
-              :value="fmtINR(r.value)" :ratio="ratio(r.value, maxRegionValue)" @click="drillRegion(r.region)" />
+          <Card :title="__('Region-wise Pipeline')">
+            <Bars>
+              <BarRow v-for="r in d.pipeline.by_region" :key="r.region" :label="r.region"
+                :value="fmtINR(r.value)" :ratio="ratio(r.value, maxRegionValue)" @click="drillRegion(r.region)" />
+            </Bars>
             <Empty v-if="!d.pipeline.by_region.length" />
           </Card>
         </div>
 
         <!-- ACCOUNT HEALTH -->
         <SectionLabel :label="__('Account Health')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Tile :title="__('Dormant Accounts')" :value="String(d.account_health.dormant_count)"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <Tile :icon="LucideMoon" :title="__('Dormant Accounts')" :value="String(d.account_health.dormant_count)"
             :sub="__('no order in 30+ days')" tone="amber" @click="drillDormant()" />
-          <Tile :title="__('Accounts at Risk')" :value="String(d.account_health.at_risk_count)"
+          <Tile :icon="LucideTriangleAlert" :title="__('Accounts at Risk')" :value="String(d.account_health.at_risk_count)"
             :sub="__('ordering less frequently')" tone="red" @click="drillAtRisk()" />
-          <Tile :title="__('Repeat Business')" :value="`${d.account_health.repeat_pct}%`"
+          <Tile :icon="LucideRepeat" :title="__('Repeat Business')" :value="`${d.account_health.repeat_pct}%`"
             :sub="__('of total order value')" tone="green" />
-          <Tile :title="__('YTD Revenue')" :value="fmtINR(d.account_health.ytd_revenue)"
+          <Tile :icon="LucideWallet" :title="__('YTD Revenue')" :value="fmtINR(d.account_health.ytd_revenue)"
             :sub="__('all accounts')" @click="drillAccounts()" />
         </div>
 
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <Card :title="__('Top 10 Accounts by Revenue (YTD)')" icon="trending-up">
-            <div v-for="(a, i) in d.account_health.top_accounts" :key="a.organization"
-              class="mb-2.5 cursor-pointer last:mb-0" @click="goOrg(a.organization)">
-              <div class="mb-1 flex items-center justify-between text-sm">
-                <span class="text-ink-gray-8">
-                  <span class="mr-2 text-ink-gray-4">{{ i + 1 }}</span>{{ a.organization_name }}
-                </span>
-                <span class="font-medium text-ink-gray-8">{{ fmtINR(a.value) }}</span>
-              </div>
-              <Bar :ratio="ratio(a.value, maxAccountValue)" color="green" />
-            </div>
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          <Card :title="__('Top 10 Accounts by Revenue (YTD)')">
+            <Bars>
+              <BarRow v-for="(a, i) in d.account_health.top_accounts" :key="a.organization"
+                :rank="i + 1" :label="a.organization_name" :value="fmtINR(a.value)"
+                :ratio="ratio(a.value, maxAccountValue)" color="green" @click="goOrg(a.organization)" />
+            </Bars>
             <Empty v-if="!d.account_health.top_accounts.length" />
           </Card>
-          <div class="flex flex-col gap-3">
-            <Card :title="__('Dormant — No Order in 30 Days')" icon="clock">
+          <div class="flex flex-col gap-3.5">
+            <Card :title="__('Dormant — No Order in 30 Days')">
               <table v-if="d.account_health.dormant.length" class="w-full text-sm">
                 <thead>
                   <tr class="text-xs text-ink-gray-5">
@@ -125,9 +117,12 @@
                   </tr>
                 </tbody>
               </table>
-              <Empty v-else :text="__('No dormant accounts')" />
+              <Empty v-else :icon="LucideCircleCheck" :text="__('No dormant accounts')" />
             </Card>
-            <Card :title="__('At Risk — Ordering Less Often')" icon="alert-triangle">
+            <Card :title="__('At Risk — Ordering Less Often')">
+              <template v-if="d.account_health.accounts_at_risk.length" #right>
+                <span class="pa-count bad">{{ d.account_health.accounts_at_risk.length }}</span>
+              </template>
               <table v-if="d.account_health.accounts_at_risk.length" class="w-full text-sm">
                 <thead>
                   <tr class="text-xs text-ink-gray-5">
@@ -149,22 +144,24 @@
                   </tr>
                 </tbody>
               </table>
-              <Empty v-else :text="__('No accounts flagged at risk')" />
+              <Empty v-else :icon="LucideCircleCheck" :text="__('No accounts flagged at risk')" />
             </Card>
           </div>
         </div>
 
         <!-- WAITING TIME -->
         <SectionLabel :label="__('Waiting Time')" />
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <Card :title="__('Avg Waiting Time by Stage')" icon="clock">
-            <BarRow v-for="w in d.waiting_time" :key="w.stage" :label="w.stage"
-              :value="__('{0} d', [w.avg_days])"
-              :ratio="ratio(w.avg_days, maxWaitDays)"
-              :color="w.avg_days === maxWaitDays ? 'red' : 'amber'" />
-            <Empty v-if="!d.waiting_time.length" />
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          <Card :title="__('Avg Waiting Time by Stage')">
+            <Bars>
+              <BarRow v-for="w in d.waiting_time" :key="w.stage" :label="w.stage"
+                :value="__('{0} d', [w.avg_days])"
+                :ratio="ratio(w.avg_days, maxWaitDays)"
+                :color="w.avg_days === maxWaitDays ? 'red' : 'amber'" />
+            </Bars>
+            <Empty v-if="!d.waiting_time.length" :icon="LucideClock" />
           </Card>
-          <Card :title="__('Bottlenecks — Highest Waiting Time')" icon="alert-triangle">
+          <Card :title="__('Bottlenecks — Highest Waiting Time')">
             <table v-if="bottlenecks.length" class="w-full text-sm">
               <thead>
                 <tr class="text-xs text-ink-gray-5">
@@ -176,7 +173,7 @@
               </thead>
               <tbody>
                 <tr v-for="(w, i) in bottlenecks" :key="w.stage" class="border-t border-outline-gray-1">
-                  <td class="py-1.5 text-ink-gray-4">{{ i + 1 }}</td>
+                  <td class="py-1.5"><span class="pa-rank" :class="{ r1: i === 0 }">{{ i + 1 }}</span></td>
                   <td class="py-1.5 text-ink-gray-8" :class="{ 'font-semibold': i === 0 }">{{ w.stage }}</td>
                   <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ __('{0} d', [w.avg_days]) }}</td>
                   <td class="py-1.5 text-right">
@@ -191,19 +188,19 @@
 
         <!-- PERFORMANCE -->
         <SectionLabel :label="__('Performance')" />
-        <div class="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Tile :title="__('Trial Conversion Rate')" :value="`${d.performance.trial_conversion.rate}%`"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <Tile :icon="LucideTarget" :title="__('Trial Conversion Rate')" :value="`${d.performance.trial_conversion.rate}%`"
             :sub="__('{0} of {1} trials successful', [d.performance.trial_conversion.successful, d.performance.trial_conversion.total])"
             tone="green" />
-          <Tile :title="__('Tech Avg Response')" :value="fmtDuration(d.performance.tech_response_seconds)"
+          <Tile :icon="LucideClock" :title="__('Tech Avg Response')" :value="fmtDuration(d.performance.tech_response_seconds)"
             :sub="__('across {0} deals', [d.performance.tech_response_count])" />
-          <Tile :title="__('Marketing Contribution')" :value="`${d.pipeline.marketing_pct}%`"
+          <Tile :icon="LucideMegaphone" :title="__('Marketing Contribution')" :value="`${d.pipeline.marketing_pct}%`"
             :sub="__('of pipeline from mktg leads')" />
-          <Tile :title="__('Overdue Payments')" :value="fmtINR(d.overdue_payments.amount)"
+          <Tile :icon="LucideWallet" :title="__('Overdue Payments')" :value="fmtINR(d.overdue_payments.amount)"
             :sub="__('{0} accounts', [d.overdue_payments.count])" tone="red" @click="drillOverdue()" />
         </div>
         <Card v-if="d.overdue_payments.accounts.length" :title="__('Overdue Payments — Accounts')"
-          icon="alert-triangle" class="mb-4">
+          class="mb-4">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-xs text-ink-gray-5">
@@ -265,9 +262,24 @@
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import { SectionLabel, Tile, Card, BarRow, Bars, Empty } from '@/components/Dashboard/ui'
+import LucideFunnel from '~icons/lucide/funnel'
+import LucideIndianRupee from '~icons/lucide/indian-rupee'
+import LucideTrendingUp from '~icons/lucide/trending-up'
+import LucideTrendingDown from '~icons/lucide/trending-down'
+import LucideBuilding from '~icons/lucide/building'
+import LucideLayers from '~icons/lucide/layers'
+import LucideMoon from '~icons/lucide/moon'
+import LucideTriangleAlert from '~icons/lucide/triangle-alert'
+import LucideRepeat from '~icons/lucide/repeat'
+import LucideWallet from '~icons/lucide/wallet'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucideClock from '~icons/lucide/clock'
+import LucideTarget from '~icons/lucide/target'
+import LucideMegaphone from '~icons/lucide/megaphone'
 import { formatDate } from '@/utils'
 import { Badge, Breadcrumbs, Button, call, createResource } from 'frappe-ui'
-import { computed, h, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
@@ -486,79 +498,5 @@ function pct(now, base) {
 function tone(now, base) {
   return now >= base ? 'green' : 'red'
 }
-
-// ---- tiny presentational components (kept local to this dashboard) ----
-const SectionLabel = (props) =>
-  h('div', { class: 'mb-2 text-xs font-medium uppercase tracking-wide text-ink-gray-5' }, props.label)
-SectionLabel.props = ['label']
-
-const toneClass = {
-  green: 'text-ink-green-3',
-  red: 'text-ink-red-3',
-  amber: 'text-ink-amber-3',
-}
-const Tile = (props, { attrs }) =>
-  h(
-    'div',
-    {
-      ...attrs,
-      class:
-        'rounded-lg border border-outline-gray-1 bg-surface-white p-4' +
-        (attrs.onClick ? ' cursor-pointer transition hover:border-outline-gray-3' : ''),
-    },
-    [
-      h('div', { class: 'mb-1 flex items-center justify-between text-xs text-ink-gray-5' }, [
-        props.title,
-        attrs.onClick ? h('span', { class: 'text-ink-gray-4' }, '→') : null,
-      ]),
-      h('div', { class: `text-2xl font-semibold ${toneClass[props.tone] || 'text-ink-gray-9'}` }, props.value),
-      h('div', { class: 'mt-0.5 text-xs text-ink-gray-4' }, props.sub),
-    ],
-  )
-Tile.props = ['title', 'value', 'sub', 'tone']
-Tile.inheritAttrs = false
-
-const Card = (props, { slots }) =>
-  h('div', { class: 'rounded-lg border border-outline-gray-1 bg-surface-white p-4' }, [
-    h('div', { class: 'mb-3 text-sm font-medium text-ink-gray-8' }, props.title),
-    slots.default?.(),
-  ])
-Card.props = ['title', 'icon']
-
-const barColor = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
-}
-const Bar = (props) =>
-  h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-surface-gray-2' }, [
-    h('div', {
-      class: `h-full rounded-full ${barColor[props.color] || barColor.blue}`,
-      style: `width: ${Math.round(props.ratio * 100)}%`,
-    }),
-  ])
-Bar.props = ['ratio', 'color']
-
-const BarRow = (props, { attrs }) =>
-  h(
-    'div',
-    { ...attrs, class: 'mb-2.5 last:mb-0' + (attrs.onClick ? ' cursor-pointer' : '') },
-    [
-      h('div', { class: 'mb-1 flex items-center justify-between text-sm' }, [
-        h('span', { class: 'text-ink-gray-8' }, props.label),
-        h('span', { class: 'text-ink-gray-6' }, [
-          props.sub ? h('span', { class: 'mr-2 text-ink-gray-4' }, props.sub) : null,
-          h('span', { class: 'font-medium text-ink-gray-8' }, props.value),
-        ]),
-      ]),
-      h(Bar, { ratio: props.ratio, color: props.color }),
-    ],
-  )
-BarRow.props = ['label', 'sub', 'value', 'ratio', 'color']
-BarRow.inheritAttrs = false
-
-const Empty = (props) =>
-  h('div', { class: 'py-6 text-center text-sm text-ink-gray-4' }, props.text || __('No data'))
-Empty.props = ['text']
+const trendIcon = (now, base) => (now >= base ? LucideTrendingUp : LucideTrendingDown)
 </script>

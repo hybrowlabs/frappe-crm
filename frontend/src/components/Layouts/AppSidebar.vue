@@ -1,7 +1,7 @@
 <template>
   <div
     class="relative flex h-full flex-col justify-between transition-all duration-300 ease-in-out"
-    :class="isSidebarCollapsed ? 'w-12' : 'w-[220px]'"
+    :class="isSidebarCollapsed ? 'w-12' : 'w-[232px]'"
   >
     <div class="p-2">
       <UserDropdown :isCollapsed="isSidebarCollapsed" />
@@ -11,7 +11,7 @@
         <SidebarLink
           id="notifications-btn"
           :label="__('Notifications')"
-          :icon="NotificationsIcon"
+          :icon="LucideBell"
           :isCollapsed="isSidebarCollapsed"
           class="relative mx-2 my-[1.5px]"
           @click="() => toggleNotificationPanel()"
@@ -29,8 +29,8 @@
           </template>
         </SidebarLink>
       </div>
-      <div v-for="view in allViews" :key="view.label">
-        <div class="mx-2 my-1.5" />
+      <div v-for="(view, vi) in allViews" :key="view.label">
+        <div :class="vi === 0 ? 'pa-nav-sep' : 'mx-2 my-1.5'" />
         <Section
           :label="view.name"
           :hideLabel="view.hideLabel"
@@ -56,15 +56,16 @@
             </div>
           </template>
           <nav class="flex flex-col">
-            <SidebarLink
-              v-for="link in view.views"
-              :key="link.label"
-              :icon="link.icon"
-              :label="__(link.label)"
-              :to="link.to"
-              :isCollapsed="isSidebarCollapsed"
-              class="mx-2 my-[1.5px]"
-            />
+            <template v-for="link in view.views" :key="link.label">
+              <div v-if="link.sepBefore" class="pa-nav-sep" />
+              <SidebarLink
+                :icon="link.icon"
+                :label="__(link.label)"
+                :to="link.to"
+                :isCollapsed="isSidebarCollapsed"
+                class="mx-2 my-[1.5px]"
+              />
+            </template>
           </nav>
         </Section>
       </div>
@@ -113,7 +114,7 @@
         "
       >
         <template #icon>
-          <HelpIcon class="h-4 w-4" />
+          <LucideCircleQuestionMark class="size-[17px]" />
         </template>
       </SidebarLink>
       <SidebarLink
@@ -124,9 +125,9 @@
       >
         <template #icon>
           <span class="grid h-4 w-4 flex-shrink-0 place-items-center">
-            <CollapseSidebar
-              class="h-4 w-4 text-ink-gray-7 duration-300 ease-in-out"
-              :class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
+            <LucideChevronsLeft
+              class="size-[17px] duration-300 ease-in-out"
+              :class="{ 'rotate-180': isSidebarCollapsed }"
             />
           </span>
         </template>
@@ -154,13 +155,24 @@
 
 <script setup>
 import BrushCleaningIcon from '~icons/lucide/brush-cleaning'
-import LucideLayoutDashboard from '~icons/lucide/layout-dashboard'
+import LucideSparkles from '~icons/lucide/sparkles'
 import LucideCrown from '~icons/lucide/crown'
-import LucideLineChart from '~icons/lucide/line-chart'
+import LucideCompass from '~icons/lucide/compass'
 import LucideRepeat from '~icons/lucide/repeat'
 import LucideFlaskConical from '~icons/lucide/flask-conical'
-import LucideCircleUser from '~icons/lucide/circle-user'
+import LucideUsers from '~icons/lucide/users'
+import LucideZap from '~icons/lucide/zap'
+import LucideContact from '~icons/lucide/contact'
+import LucideBuilding from '~icons/lucide/building'
+import LucideNotepadText from '~icons/lucide/notepad-text'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucidePhone from '~icons/lucide/phone'
+import LucideBell from '~icons/lucide/bell'
+import LucideCircleQuestionMark from '~icons/lucide/circle-question-mark'
+import LucideChevronsLeft from '~icons/lucide/chevrons-left'
 import LucideMegaphone from '~icons/lucide/megaphone'
+import LucideFileText from '~icons/lucide/file-text'
+import LucidePackageCheck from '~icons/lucide/package-check'
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import InviteIcon from '@/components/Icons/InviteIcon.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
@@ -172,15 +184,8 @@ import PinIcon from '@/components/Icons/PinIcon.vue'
 import UserDropdown from '@/components/UserDropdown.vue'
 import SquareAsterisk from '@/components/Icons/SquareAsterisk.vue'
 import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
-import DealsIcon from '@/components/Icons/DealsIcon.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
-import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
-import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
-import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
-import NotificationsIcon from '@/components/Icons/NotificationsIcon.vue'
-import HelpIcon from '@/components/Icons/HelpIcon.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import Notifications from '@/components/Notifications.vue'
 import Settings from '@/components/Settings/Settings.vue'
@@ -227,7 +232,7 @@ const showSalesHierarchyBanner = ref(!!window.show_sales_hierarchy_banner)
 const links = [
   {
     label: 'Dashboard',
-    icon: LucideLayoutDashboard,
+    icon: LucideSparkles,
     to: 'Dashboard',
   },
   {
@@ -238,7 +243,7 @@ const links = [
   },
   {
     label: 'Sales Manager',
-    icon: LucideLineChart,
+    icon: LucideCompass,
     to: 'SalesManagerDashboard',
     condition: () => isSalesManager(),
   },
@@ -256,7 +261,7 @@ const links = [
   },
   {
     label: 'My Dashboard',
-    icon: LucideCircleUser,
+    icon: LucideSparkles,
     to: 'MyDashboard',
     condition: () => isSalesperson(),
   },
@@ -268,37 +273,48 @@ const links = [
   },
   {
     label: 'Leads',
-    icon: LeadsIcon,
+    icon: LucideUsers,
+    sepBefore: true,
     to: 'Leads',
   },
   {
     label: 'Deals',
-    icon: DealsIcon,
+    icon: LucideZap,
     to: 'Deals',
   },
   {
+    label: 'Quotations',
+    icon: LucideFileText,
+    to: 'Quotations',
+  },
+  {
+    label: 'Sales Orders',
+    icon: LucidePackageCheck,
+    to: 'Sales Orders',
+  },
+  {
     label: 'Contacts',
-    icon: ContactsIcon,
+    icon: LucideContact,
     to: 'Contacts',
   },
   {
     label: 'Organizations',
-    icon: OrganizationsIcon,
+    icon: LucideBuilding,
     to: 'Organizations',
   },
   {
     label: 'Notes',
-    icon: NoteIcon,
+    icon: LucideNotepadText,
     to: 'Notes',
   },
   {
     label: 'Tasks',
-    icon: TaskIcon,
+    icon: LucideCircleCheck,
     to: 'Tasks',
   },
   {
     label: 'Call Logs',
-    icon: PhoneIcon,
+    icon: LucidePhone,
     to: 'Call Logs',
   },
 ]
@@ -354,17 +370,21 @@ function getIcon(routeName, icon) {
 
   switch (routeName) {
     case 'Leads':
-      return LeadsIcon
+      return LucideUsers
     case 'Deals':
-      return DealsIcon
+      return LucideZap
+    case 'Quotations':
+      return LucideFileText
+    case 'Sales Orders':
+      return LucidePackageCheck
     case 'Contacts':
-      return ContactsIcon
+      return LucideContact
     case 'Organizations':
-      return OrganizationsIcon
+      return LucideBuilding
     case 'Notes':
-      return NoteIcon
+      return LucideNotepadText
     case 'Call Logs':
-      return PhoneIcon
+      return LucidePhone
     default:
       return PinIcon
   }

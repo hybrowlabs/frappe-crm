@@ -1,21 +1,23 @@
 <template>
   <button
-    class="flex h-7.5 cursor-pointer items-center rounded text-ink-gray-8 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+    class="pa-nav-link flex h-9 cursor-pointer items-center rounded-[9px] text-ink-gray-7 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
     :class="
-      isActive ? 'bg-surface-selected shadow-sm' : 'hover:bg-surface-gray-2'
+      isActive
+        ? 'active bg-surface-selected font-semibold text-ink-gray-9 shadow-sm'
+        : 'font-medium hover:bg-surface-gray-2 hover:text-ink-gray-9'
     "
     @click="handleClick"
   >
     <div
       class="flex w-full items-center justify-between duration-300 ease-in-out"
-      :class="isCollapsed ? 'ml-[3px] p-1' : 'px-2 py-[7px]'"
+      :class="isCollapsed ? 'ml-[3px] p-1' : 'px-2.5 py-[7px]'"
     >
       <div class="flex items-center truncate">
         <Tooltip :text="label" placement="right" :disabled="!isCollapsed">
           <slot name="icon">
             <Icon
               :icon="icon"
-              class="flex items-center size-4 text-ink-gray-8"
+              class="flex items-center size-[17px] text-current"
             />
           </slot>
         </Tooltip>
@@ -26,11 +28,11 @@
           :hoverDelay="1.5"
         >
           <span
-            class="flex-1 flex-shrink-0 truncate text-sm duration-300 ease-in-out"
+            class="flex-1 flex-shrink-0 truncate text-[13.5px] duration-300 ease-in-out"
             :class="
               isCollapsed
                 ? 'ml-0 w-0 overflow-hidden opacity-0'
-                : 'ml-2 w-auto opacity-100'
+                : 'ml-[11px] w-auto opacity-100'
             "
           >
             {{ label }}
