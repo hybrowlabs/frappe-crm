@@ -272,7 +272,10 @@ def get_quotation_defaults():
 			fields=["branch", "currency"],
 			order_by="idx asc",
 		)
-	return {"sales_person": sales_person, "branches": branches}
+	# The company ERPNext puts on a new Quotation (the CRM sets none), for the
+	# company address / contact pickers.
+	company = frappe.new_doc("Quotation").company
+	return {"sales_person": sales_person, "branches": branches, "company": company}
 
 
 # Every line of a CRM quotation and its sales order takes the warehouse set for
@@ -429,7 +432,6 @@ def create_quotation(
 	customer: str,
 	branch: str,
 	items,
-	company: str | None = None,
 	addresses=None,
 	deal: str | None = None,
 ):
@@ -452,9 +454,6 @@ def create_quotation(
 	_check_customer(customer)
 	currency = _branch_currency(branch)
 	sales_person = _session_sales_person()
-	company = company or frappe.defaults.get_user_default("Company") or frappe.db.get_single_value(
-		"Global Defaults", "default_company"
-	)
 	entitled = _entitled_items(customer, branch)
 	warehouse = get_branch_warehouse(branch)
 	if not warehouse:
@@ -470,7 +469,6 @@ def create_quotation(
 		{
 			"quotation_to": "Customer",
 			"party_name": customer,
-			"company": company,
 			"custom_branch": branch,
 			"currency": currency,
 			"custom_sale_by": sales_person,
@@ -486,14 +484,17 @@ def create_quotation(
 		frappe.get_doc("CRM Deal", deal).check_permission("read")
 		doc.custom_deal = deal
 
-	# Address & Contact tab: only the customer's / company's own records.
+	# The company is whatever ERPNext puts on a new Quotation; the CRM sets none.
+	company = doc.company
+	if not company:
+		return refuse("no_company", _("ERPNext set no company on the new quotation."))
+
+	# Address tab: only the customer's / company's own addresses.
 	addresses = frappe.parse_json(addresses) if isinstance(addresses, str) else (addresses or {})
 	own = {
 		"customer_address": ("Address", "Customer", customer),
 		"shipping_address_name": ("Address", "Customer", customer),
-		"contact_person": ("Contact", "Customer", customer),
 		"company_address": ("Address", "Company", company),
-		"company_contact_person": ("Contact", "Company", company),
 	}
 	for field, (doctype, link_doctype, link_name) in own.items():
 		value = addresses.get(field)
@@ -502,8 +503,6 @@ def create_quotation(
 		if not _linked_to(doctype, value, link_doctype, link_name):
 			return refuse("not_found", _("{0} {1} does not belong to {2}.").format(doctype, value, link_name))
 		doc.set(field, value)
-	if addresses.get("place_of_supply"):
-		doc.place_of_supply = addresses["place_of_supply"]
 
 	for row in rows:
 		item_code = row["item_code"]

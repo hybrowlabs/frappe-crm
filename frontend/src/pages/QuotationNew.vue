@@ -236,13 +236,13 @@
           </div>
         </div>
 
-        <!-- Address & Contact -->
+        <!-- Address -->
         <div v-show="tab === 'address'" class="flex flex-col gap-6">
           <div
             v-if="!doc.party_name"
             class="rounded-lg bg-surface-gray-2 px-4 py-3 text-base text-ink-gray-6"
           >
-            {{ __('Select a customer on the Details tab to pick its addresses and contacts.') }}
+            {{ __('Select a customer on the Details tab to pick its addresses.') }}
           </div>
 
           <section class="flex flex-col gap-3">
@@ -257,22 +257,6 @@
                   @update:modelValue="(v) => loadAddress(v, 'billing')"
                 />
                 <AddressText :text="display.billing" />
-                <FormControl
-                  v-model="doc.place_of_supply"
-                  type="select"
-                  :label="__('Place of Supply')"
-                  :options="placeOfSupplyOptions"
-                />
-              </div>
-              <div class="flex flex-col gap-2">
-                <Link
-                  v-model="doc.contact_person"
-                  :label="__('Contact Person')"
-                  doctype="Contact"
-                  :filters="partyLinkFilters"
-                  @update:modelValue="loadContact"
-                />
-                <AddressText :text="display.contact" />
               </div>
             </div>
           </section>
@@ -306,12 +290,6 @@
                 />
                 <AddressText :text="display.company" />
               </div>
-              <Link
-                v-model="doc.company_contact_person"
-                :label="__('Company Contact Person')"
-                doctype="Contact"
-                :filters="companyLinkFilters"
-              />
             </div>
           </section>
         </div>
@@ -349,7 +327,7 @@ const { doctypeMeta } = getMeta('Quotation')
 
 const tabs = [
   { key: 'details', label: __('Details') },
-  { key: 'address', label: __('Address & Contact') },
+  { key: 'address', label: __('Address') },
 ]
 const tab = ref('details')
 
@@ -376,12 +354,12 @@ const newRow = () => ({
 
 // Series is filled in on the server (rules pending). Sale By is the logged-in
 // user's Sales Person, and Branch and Currency come from its Branch & Currency
-// rows. Company and Date are not shown but ERPNext needs them, so they keep
-// these defaults.
+// rows. The CRM sets no company: ERPNext puts its own on the new quotation, and
+// `company` here only mirrors it for the company address / contact pickers.
 const doc = reactive({
   quotation_to: 'Customer',
   party_name: '',
-  company: 'Precious Alloys',
+  company: '',
   transaction_date: today,
   valid_till: today,
   order_type: 'Sales',
@@ -390,21 +368,17 @@ const doc = reactive({
   currency: '',
   items: [newRow()],
   customer_address: '',
-  place_of_supply: '',
-  contact_person: '',
   shipping_address_name: '',
   company_address: '',
-  company_contact_person: '',
 })
 
-const display = reactive({ billing: '', shipping: '', company: '', contact: '' })
+const display = reactive({ billing: '', shipping: '', company: '' })
 
 function selectOptions(fieldname) {
   const df = doctypeMeta.value?.fields?.find((f) => f.fieldname === fieldname)
   return (df?.options || '').split('\n')
 }
 const orderTypeOptions = computed(() => selectOptions('order_type').filter(Boolean))
-const placeOfSupplyOptions = computed(() => ['', ...selectOptions('place_of_supply').filter(Boolean)])
 
 const partyLinkFilters = computed(() =>
   doc.party_name
@@ -430,6 +404,7 @@ onMounted(async () => {
     const defaults = await call('crm.api.quotation.get_quotation_defaults')
     salesPerson.value = defaults?.sales_person || ''
     branches.value = defaults?.branches || []
+    doc.company = defaults?.company || ''
     if (branches.value.length) doc.custom_branch = branches.value[0].branch
     applyPrefill()
   } catch {
@@ -458,8 +433,8 @@ const customerFilters = computed(() =>
 
 // ---- Party -------------------------------------------------------------
 function clearPartyDetails() {
-  for (const f of ['customer_address', 'contact_person', 'shipping_address_name']) doc[f] = ''
-  display.billing = display.shipping = display.contact = ''
+  for (const f of ['customer_address', 'shipping_address_name']) doc[f] = ''
+  display.billing = display.shipping = ''
 }
 
 // ---- Items -------------------------------------------------------------
@@ -703,24 +678,6 @@ async function loadAddress(name, target) {
     .join('\n')
 }
 
-async function loadContact(name) {
-  display.contact = ''
-  if (!name) return
-  const c = await call('frappe.client.get_value', {
-    doctype: 'Contact',
-    filters: { name },
-    fieldname: ['first_name', 'last_name', 'mobile_no', 'email_id'],
-  }).catch(() => null)
-  if (!c) return
-  display.contact = [
-    [c.first_name, c.last_name].filter(Boolean).join(' '),
-    c.mobile_no,
-    c.email_id,
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
-
 // ---- Save --------------------------------------------------------------
 function validate() {
   if (!salesPerson.value) return __('No Sales Person is linked to your login.')
@@ -756,7 +713,6 @@ async function save() {
     const result = await call('crm.api.quotation.create_quotation', {
       customer: doc.party_name,
       branch: doc.custom_branch,
-      company: doc.company,
       deal: doc.custom_deal || null,
       items: doc.items
         .filter((r) => r.item_code)
@@ -768,10 +724,7 @@ async function save() {
       addresses: {
         customer_address: doc.customer_address,
         shipping_address_name: doc.shipping_address_name,
-        contact_person: doc.contact_person,
-        place_of_supply: doc.place_of_supply,
         company_address: doc.company_address,
-        company_contact_person: doc.company_contact_person,
       },
     })
     // All or nothing: the quotation is kept only with its Sales Order.
