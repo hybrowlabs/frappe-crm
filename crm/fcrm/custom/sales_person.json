@@ -1,0 +1,33 @@
+{
+ "custom_fields": [
+  {
+   "doctype": "Custom Field",
+   "dt": "Sales Person",
+   "module": "FCRM",
+   "is_system_generated": 0,
+   "name": "Sales Person-custom_branch_currency_section",
+   "fieldname": "custom_branch_currency_section",
+   "fieldtype": "Section Break",
+   "label": "Branch & Currency",
+   "insert_after": "targets",
+   "description": "Quotations raised by this Sales Person use this Branch and Currency."
+  },
+  {
+   "doctype": "Custom Field",
+   "dt": "Sales Person",
+   "module": "FCRM",
+   "is_system_generated": 0,
+   "name": "Sales Person-custom_branches",
+   "fieldname": "custom_branches",
+   "fieldtype": "Table",
+   "label": "Branch & Currency",
+   "options": "Sales Person Branch",
+   "insert_after": "custom_branch_currency_section"
+  }
+ ],
+ "custom_perms": [],
+ "doctype": "Sales Person",
+ "links": [],
+ "property_setters": [],
+ "sync_on_migrate": 1
+}

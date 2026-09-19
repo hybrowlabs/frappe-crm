@@ -2,19 +2,14 @@
   <div class="flex h-full flex-col overflow-hidden">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Sales Manager'), route: { name: 'SalesManagerDashboard' } }]" />
+        <Breadcrumbs :items="[{ label: __('Dashboards'), route: { name: 'Dashboard' } }, { label: __('Sales Manager'), route: { name: 'SalesManagerDashboard' } }]" />
       </template>
     </LayoutHeader>
 
-    <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-semibold text-ink-gray-9">{{ __('Sales Manager Dashboard') }}</h1>
-          <span class="flex items-center gap-1 text-xs text-ink-gray-5">
-            <span class="h-2 w-2 rounded-full bg-surface-green-3"></span>{{ __('Live') }}
-          </span>
-        </div>
-        <div v-if="d" class="flex items-center gap-1.5 text-sm text-ink-gray-5">
+    <div class="flex-1 overflow-y-auto pa-page">
+      <div class="pa-page-h">
+        <h1 class="pa-h1">{{ __('Sales Manager Dashboard') }} <span class="pa-live">{{ __('Live') }}</span></h1>
+        <div v-if="d" class="pa-meta">
           <span>{{ d.is_fallback ? __('All teams') : __('My team') }} · {{ d.team.length }} {{ __('AEs') }}</span>
         </div>
       </div>
@@ -22,42 +17,38 @@
       <template v-if="d">
         <!-- TEAM PIPELINE -->
         <SectionLabel :label="__('Team Pipeline')" />
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <Tile :title="__('Team Pipeline Value')" :value="fmtINR(d.pipeline.team_value)"
+        <div class="mb-3.5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+          <Tile :icon="LucideFunnel" :title="__('Team Pipeline Value')" :value="fmtINR(d.pipeline.team_value)"
             :sub="__('{0} open deals', [d.pipeline.team_open_count])" />
-          <Tile v-for="a in d.pipeline.by_ae" :key="a.ae" :title="aeLabel(a.ae)"
+          <Tile v-for="a in d.pipeline.by_ae" :key="a.ae" :icon="LucideUser" :title="aeLabel(a.ae)"
             :value="fmtINR(a.value)" :sub="__('{0} deals', [a.deals])" @click="drillAE(a.ae)" />
         </div>
 
-        <div class="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Team Pipeline by Stage')">
-            <BarRow v-for="s in d.pipeline.by_stage" :key="s.stage" :label="s.stage"
-              :sub="__('{0} deals', [s.count])" :value="fmtINR(s.value)"
-              :ratio="ratio(s.count, maxStageCount)" @click="drillStage(s.stage)" />
+            <Bars>
+              <BarRow v-for="s in d.pipeline.by_stage" :key="s.stage" :label="s.stage"
+                :sub="__('{0} deals', [s.count])" :value="fmtINR(s.value)"
+                :ratio="ratio(s.count, maxStageCount)" @click="drillStage(s.stage)" />
+            </Bars>
             <Empty v-if="!d.pipeline.by_stage.length" />
           </Card>
           <Card :title="__('Opportunities by Category')">
-            <div class="mb-3 flex h-2.5 w-full overflow-hidden rounded-full bg-surface-gray-2">
+            <div class="pa-stacked">
               <div v-for="(c, i) in d.pipeline.by_category" :key="c.category"
                 class="cursor-pointer" :class="catColor(c.category, i)"
                 :style="`width: ${c.pct}%`" :title="c.category" @click="drillCategory(c.category)"></div>
             </div>
             <div v-for="(c, i) in d.pipeline.by_category" :key="c.category"
-              class="-mx-1 mb-1 flex cursor-pointer items-center justify-between rounded px-1 py-0.5 text-sm hover:bg-surface-gray-1"
-              @click="drillCategory(c.category)">
-              <span class="flex items-center gap-2 text-ink-gray-7">
-                <span class="h-2.5 w-2.5 rounded-sm" :class="catColor(c.category, i)"></span>{{ c.category }}
-              </span>
-              <span class="text-ink-gray-8">
-                <span class="font-medium">{{ c.pct }}%</span>
-                <span class="ml-1 text-ink-gray-4">· {{ fmtINR(c.value) }}</span>
-              </span>
+              class="pa-legend-row cursor-pointer" @click="drillCategory(c.category)">
+              <span class="flex items-center"><span class="pa-dot" :class="catColor(c.category, i)"></span>{{ c.category }}</span>
+              <span><b>{{ c.pct }}%</b><em>· {{ fmtINR(c.value) }}</em></span>
             </div>
             <Empty v-if="!d.pipeline.by_category.length" :text="__('No product category on deals')" />
           </Card>
         </div>
 
-        <Card :title="__('Each AE\'s Stage Distribution')" class="mb-6">
+        <Card :title="__('Each AE\'s Stage Distribution')" class="mb-8">
           <div v-if="d.pipeline.stage_dist.rows.length" class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
@@ -90,24 +81,26 @@
 
         <!-- LEAD MANAGEMENT -->
         <SectionLabel :label="__('Lead Management')" />
-        <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Tile :title="__('Leads Assigned to Team')" :value="String(d.leads.assigned)"
+        <div class="mb-8 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <Tile :icon="LucideUsers" :title="__('Leads Assigned to Team')" :value="String(d.leads.assigned)"
             :sub="__('across team members')" />
-          <Tile :title="__('Actioned')" :value="String(d.leads.actioned)"
+          <Tile :icon="LucideCircleCheck" :title="__('Actioned')" :value="String(d.leads.actioned)"
             :sub="__('{0}% contacted', [actionedPct])" tone="green" />
-          <Tile :title="__('Not Actioned')" :value="String(d.leads.not_actioned)"
+          <Tile :icon="LucideInbox" :title="__('Not Actioned')" :value="String(d.leads.not_actioned)"
             :sub="__('awaiting first contact')" tone="amber" />
-          <Tile :title="__('Not Contacted 7+ Days')" :value="String(d.leads.not_contacted_7d_count)"
+          <Tile :icon="LucidePhone" :title="__('Not Contacted 7+ Days')" :value="String(d.leads.not_contacted_7d_count)"
             :sub="__('need first contact')" tone="red" @click="drillNotContacted()" />
         </div>
 
         <!-- ACTIVITY -->
         <SectionLabel :label="__('Activity')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Overdue Follow-ups by AE')">
-            <BarRow v-for="a in d.activity.overdue_by_ae" :key="a.ae" :label="aeName(a.ae)"
-              :value="__('{0} overdue', [a.count])" :ratio="ratio(a.count, maxOverdue)" color="red"
-              @click="goTasks()" />
+            <Bars>
+              <BarRow v-for="a in d.activity.overdue_by_ae" :key="a.ae" :label="aeName(a.ae)"
+                :value="__('{0} overdue', [a.count])" :ratio="ratio(a.count, maxOverdue)" color="red"
+                @click="goTasks()" />
+            </Bars>
             <Empty v-if="!d.activity.overdue_by_ae.length" :text="__('No overdue follow-ups')" />
           </Card>
           <Card :title="__('Calls Logged — This Week')">
@@ -134,7 +127,7 @@
           </Card>
         </div>
 
-        <Card :title="__('Accounts With No Activity in 30 Days')" class="mb-6">
+        <Card :title="__('Accounts With No Activity in 30 Days')" class="mb-8">
           <table v-if="d.activity.no_activity_30d.length" class="w-full text-sm">
             <thead>
               <tr class="text-xs text-ink-gray-5">
@@ -160,19 +153,19 @@
 
         <!-- TECHNICAL & TRIALS -->
         <SectionLabel :label="__('Technical & Trials')" />
-        <div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Tile :title="__('Tech Assignments Pending')" :value="String(d.technical.tech_pending_count)"
+        <div class="mb-3.5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <Tile :icon="LucideFlaskConical" :title="__('Tech Assignments Pending')" :value="String(d.technical.tech_pending_count)"
             :sub="__('awaiting response')" tone="amber" @click="drillTech()" />
-          <Tile :title="__('Avg Technical Response')" :value="fmtDuration(d.technical.avg_response_seconds)"
+          <Tile :icon="LucideClock" :title="__('Avg Technical Response')" :value="fmtDuration(d.technical.avg_response_seconds)"
             :sub="__('across {0} deals', [d.technical.avg_response_count])" />
-          <Tile :title="__('Trials in Progress')" :value="String(d.technical.trials_count)"
+          <Tile :icon="LucideLayers" :title="__('Trials in Progress')" :value="String(d.technical.trials_count)"
             :sub="__('active trials')" @click="drillTrials()" />
-          <Tile :title="__('Trial Conversion — Team')" :value="`${d.technical.trial_conversion.rate}%`"
+          <Tile :icon="LucideTarget" :title="__('Trial Conversion — Team')" :value="`${d.technical.trial_conversion.rate}%`"
             :sub="__('{0} of {1} trials', [d.technical.trial_conversion.successful, d.technical.trial_conversion.total])"
             tone="green" />
         </div>
 
-        <Card v-if="d.technical.trials.length" :title="__('Trials in Progress')" class="mb-6">
+        <Card v-if="d.technical.trials.length" :title="__('Trials in Progress')" class="mb-8">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-xs text-ink-gray-5">
@@ -197,7 +190,7 @@
 
         <!-- DORMANCY -->
         <SectionLabel :label="__('Dormancy — My Territory')" />
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('At Risk — No Order 20–30 Days')">
             <table v-if="d.dormancy.at_risk.length" class="w-full text-sm">
               <thead>
@@ -249,10 +242,12 @@
         <!-- WAITING TIME -->
         <SectionLabel :label="__('Waiting Time — My Team')" />
         <Card :title="__('Where Deals Get Stuck')" class="mb-4">
-          <BarRow v-for="w in d.waiting_time" :key="w.stage" :label="w.stage"
-            :sub="__('{0} deals', [w.count])" :value="__('{0} d', [w.avg_days])"
-            :ratio="ratio(w.avg_days, maxWaitDays)"
-            :color="w.avg_days === maxWaitDays ? 'red' : 'amber'" />
+          <Bars>
+            <BarRow v-for="w in d.waiting_time" :key="w.stage" :label="w.stage"
+              :sub="__('{0} deals', [w.count])" :value="__('{0} d', [w.avg_days])"
+              :ratio="ratio(w.avg_days, maxWaitDays)"
+              :color="w.avg_days === maxWaitDays ? 'red' : 'amber'" />
+          </Bars>
           <Empty v-if="!d.waiting_time.length" />
         </Card>
       </template>
@@ -298,9 +293,20 @@
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import { SectionLabel, Tile, Card, BarRow, Bars, Empty } from '@/components/Dashboard/ui'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucideClock from '~icons/lucide/clock'
+import LucideFlaskConical from '~icons/lucide/flask-conical'
+import LucideFunnel from '~icons/lucide/funnel'
+import LucideInbox from '~icons/lucide/inbox'
+import LucideLayers from '~icons/lucide/layers'
+import LucidePhone from '~icons/lucide/phone'
+import LucideTarget from '~icons/lucide/target'
+import LucideUser from '~icons/lucide/user'
+import LucideUsers from '~icons/lucide/users'
 import { formatDate } from '@/utils'
 import { Avatar, Badge, Breadcrumbs, Button, call, createResource } from 'frappe-ui'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
@@ -477,79 +483,4 @@ function fmtINR(v) {
   if (n >= 1e5) return `₹${(v / 1e5).toFixed(1)} L`
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v || 0)
 }
-
-// ---- tiny presentational components (kept local to this dashboard) ----
-const SectionLabel = (props) =>
-  h('div', { class: 'mb-2 text-xs font-medium uppercase tracking-wide text-ink-gray-5' }, props.label)
-SectionLabel.props = ['label']
-
-const toneClass = {
-  green: 'text-ink-green-3',
-  red: 'text-ink-red-3',
-  amber: 'text-ink-amber-3',
-}
-const Tile = (props, { attrs }) =>
-  h(
-    'div',
-    {
-      ...attrs,
-      class:
-        'rounded-lg border border-outline-gray-1 bg-surface-white p-4' +
-        (attrs.onClick ? ' cursor-pointer transition hover:border-outline-gray-3' : ''),
-    },
-    [
-      h('div', { class: 'mb-1 flex items-center justify-between text-xs text-ink-gray-5' }, [
-        props.title,
-        attrs.onClick ? h('span', { class: 'text-ink-gray-4' }, '→') : null,
-      ]),
-      h('div', { class: `text-2xl font-semibold ${toneClass[props.tone] || 'text-ink-gray-9'}` }, props.value),
-      h('div', { class: 'mt-0.5 text-xs text-ink-gray-4' }, props.sub),
-    ],
-  )
-Tile.props = ['title', 'value', 'sub', 'tone']
-Tile.inheritAttrs = false
-
-const Card = (props, { slots }) =>
-  h('div', { class: 'rounded-lg border border-outline-gray-1 bg-surface-white p-4' }, [
-    h('div', { class: 'mb-3 text-sm font-medium text-ink-gray-8' }, props.title),
-    slots.default?.(),
-  ])
-Card.props = ['title']
-
-const barColor = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  amber: 'bg-amber-500',
-  red: 'bg-red-500',
-}
-const Bar = (props) =>
-  h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-surface-gray-2' }, [
-    h('div', {
-      class: `h-full rounded-full ${barColor[props.color] || barColor.blue}`,
-      style: `width: ${Math.round(props.ratio * 100)}%`,
-    }),
-  ])
-Bar.props = ['ratio', 'color']
-
-const BarRow = (props, { attrs }) =>
-  h(
-    'div',
-    { ...attrs, class: 'mb-2.5 last:mb-0' + (attrs.onClick ? ' cursor-pointer' : '') },
-    [
-      h('div', { class: 'mb-1 flex items-center justify-between text-sm' }, [
-        h('span', { class: 'text-ink-gray-8' }, props.label),
-        h('span', { class: 'text-ink-gray-6' }, [
-          props.sub ? h('span', { class: 'mr-2 text-ink-gray-4' }, props.sub) : null,
-          h('span', { class: 'font-medium text-ink-gray-8' }, props.value),
-        ]),
-      ]),
-      h(Bar, { ratio: props.ratio, color: props.color }),
-    ],
-  )
-BarRow.props = ['label', 'sub', 'value', 'ratio', 'color']
-BarRow.inheritAttrs = false
-
-const Empty = (props) =>
-  h('div', { class: 'py-6 text-center text-sm text-ink-gray-4' }, props.text || __('No data'))
-Empty.props = ['text']
 </script>

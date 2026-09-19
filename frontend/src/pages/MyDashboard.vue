@@ -2,19 +2,14 @@
   <div class="flex h-full flex-col overflow-hidden">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('My Dashboard'), route: { name: 'MyDashboard' } }]" />
+        <Breadcrumbs :items="[{ label: __('Dashboards'), route: { name: 'Dashboard' } }, { label: __('My Dashboard'), route: { name: 'MyDashboard' } }]" />
       </template>
     </LayoutHeader>
 
-    <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-semibold text-ink-gray-9">{{ __('My Dashboard') }}</h1>
-          <span class="flex items-center gap-1 text-xs text-ink-gray-5">
-            <span class="h-2 w-2 rounded-full bg-surface-green-3"></span>{{ __('Live') }}
-          </span>
-        </div>
-        <div v-if="d" class="flex items-center gap-1.5 text-sm text-ink-gray-5">
+    <div class="flex-1 overflow-y-auto pa-page">
+      <div class="pa-page-h">
+        <h1 class="pa-h1">{{ __('My Dashboard') }} <span class="pa-live">{{ __('Live') }}</span></h1>
+        <div v-if="d" class="pa-meta">
           <Avatar :label="meName" size="sm" /><span>{{ meName }}</span>
         </div>
       </div>
@@ -22,29 +17,31 @@
       <template v-if="d">
         <!-- MY PIPELINE -->
         <SectionLabel :label="__('My Pipeline')" :hint="__('click a stage to see the deals')" />
-        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Tile v-for="st in d.pipeline.by_stage" :key="st.stage" :title="st.stage" :value="String(st.count)"
+        <div class="mb-3.5 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
+          <Tile v-for="st in d.pipeline.by_stage" :key="st.stage" :icon="LucideFunnel" :title="st.stage" :value="String(st.count)"
             :sub="fmtINR(st.value)" @click="drillStage(st.stage)" />
-          <Tile :title="__('Total Pipeline Value')" :value="fmtINR(d.pipeline.total_value)"
+          <Tile :icon="LucideIndianRupee" :title="__('Total Pipeline Value')" :value="fmtINR(d.pipeline.total_value)"
             :sub="__('{0} open deals', [d.pipeline.total_count])" tone="green" />
         </div>
 
-        <Card :title="__('Pipeline by Stage')" class="mb-6">
-          <BarRow v-for="st in d.pipeline.by_stage" :key="st.stage" :label="st.stage"
-            :value="__('{0} deals · {1}', [st.count, fmtINR(st.value)])"
-            :ratio="ratio(st.count, maxStage)" color="blue" @click="drillStage(st.stage)" />
+        <Card :title="__('Pipeline by Stage')" class="mb-8">
+          <Bars>
+            <BarRow v-for="st in d.pipeline.by_stage" :key="st.stage" :label="st.stage"
+              :value="__('{0} deals · {1}', [st.count, fmtINR(st.value)])"
+              :ratio="ratio(st.count, maxStage)" color="blue" @click="drillStage(st.stage)" />
+          </Bars>
           <Empty v-if="!d.pipeline.by_stage.length" />
         </Card>
 
         <!-- MY TASKS -->
         <SectionLabel :label="__('My Tasks')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Tile :title="__('Today\'s Tasks')" :value="String(d.tasks.today_count)" :sub="__('due today')" />
-          <Tile :title="__('Overdue Actions')" :value="String(d.tasks.overdue_count)" :sub="__('past due date')" tone="red" />
-          <Tile :title="__('Pending Tech Responses')" :value="String(d.tasks.pending_tech_count)" :sub="__('waiting on tech team')" tone="amber" />
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <Tile :icon="LucideCircleCheck" :title="__('Today\'s Tasks')" :value="String(d.tasks.today_count)" :sub="__('due today')" />
+          <Tile :icon="LucideTriangleAlert" :title="__('Overdue Actions')" :value="String(d.tasks.overdue_count)" :sub="__('past due date')" tone="red" />
+          <Tile :icon="LucideClock" :title="__('Pending Tech Responses')" :value="String(d.tasks.pending_tech_count)" :sub="__('waiting on tech team')" tone="amber" />
         </div>
 
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Today\'s Tasks & Follow-ups')">
             <table v-if="d.tasks.today.length" class="w-full text-sm">
               <thead>
@@ -95,7 +92,7 @@
           </Card>
         </div>
 
-        <Card class="mb-6">
+        <Card class="mb-8">
           <template #title>
             <div class="flex items-center justify-between">
               <span>{{ __('Pending Technical Team Responses') }}</span>
@@ -124,7 +121,7 @@
 
         <!-- MY ACCOUNTS -->
         <SectionLabel :label="__('My Accounts')" />
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('My Accounts — Last Contact')">
             <table v-if="d.accounts.last_contact.length" class="w-full text-sm">
               <thead>
@@ -177,12 +174,12 @@
 
         <!-- MY PERFORMANCE -->
         <SectionLabel :label="__('My Performance')" />
-        <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Tile :title="__('Orders This Month')" :value="d.performance.has_orders ? fmtINR(d.performance.orders_this_month) : '—'"
+        <div class="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <Tile :icon="LucideIndianRupee" :title="__('Orders This Month')" :value="d.performance.has_orders ? fmtINR(d.performance.orders_this_month) : '—'"
             :sub="d.performance.has_orders ? __('booked to my accounts') : __('order data unavailable')" tone="green" />
-          <Tile :title="__('Lead Conversion Rate')" :value="`${d.performance.lead_conversion_rate}%`"
+          <Tile :icon="LucideArrowLeftRight" :title="__('Lead Conversion Rate')" :value="`${d.performance.lead_conversion_rate}%`"
             :sub="__('{0} of {1} leads', [d.performance.leads_converted, d.performance.leads_assigned])" tone="green" />
-          <Tile :title="__('Trial Conversion Rate')" :value="`${d.performance.trial_conversion_rate}%`"
+          <Tile :icon="LucideTarget" :title="__('Trial Conversion Rate')" :value="`${d.performance.trial_conversion_rate}%`"
             :sub="__('{0} of {1} trials', [d.performance.trials_won, d.performance.trials_total])" tone="green" />
         </div>
       </template>
@@ -225,9 +222,17 @@
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import { SectionLabel, Tile, Card, BarRow, Bars, Empty } from '@/components/Dashboard/ui'
+import LucideArrowLeftRight from '~icons/lucide/arrow-left-right'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucideClock from '~icons/lucide/clock'
+import LucideFunnel from '~icons/lucide/funnel'
+import LucideIndianRupee from '~icons/lucide/indian-rupee'
+import LucideTarget from '~icons/lucide/target'
+import LucideTriangleAlert from '~icons/lucide/triangle-alert'
 import { formatDate } from '@/utils'
 import { Avatar, Badge, Breadcrumbs, Button, call, createResource } from 'frappe-ui'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
@@ -324,51 +329,4 @@ async function openDealsFiltered(filters) {
   }
   router.push({ name: 'Deals' })
 }
-
-// ---- tiny presentational components ----
-const SectionLabel = (props) =>
-  h('div', { class: 'mb-2 flex items-baseline gap-2' }, [
-    h('span', { class: 'text-xs font-medium uppercase tracking-wide text-ink-gray-5' }, props.label),
-    props.hint ? h('span', { class: 'text-xs text-ink-gray-4' }, props.hint) : null,
-  ])
-SectionLabel.props = ['label', 'hint']
-
-const toneClass = { green: 'text-ink-green-3', red: 'text-ink-red-3', amber: 'text-ink-amber-3' }
-const Tile = (props, { attrs }) =>
-  h('div', { ...attrs, class: 'rounded-lg border border-outline-gray-1 bg-surface-white p-4' + (attrs.onClick ? ' cursor-pointer transition hover:border-outline-gray-3' : '') }, [
-    h('div', { class: 'mb-1 flex items-center justify-between text-xs text-ink-gray-5' }, [props.title, attrs.onClick ? h('span', { class: 'text-ink-gray-4' }, '→') : null]),
-    h('div', { class: `text-2xl font-semibold ${toneClass[props.tone] || 'text-ink-gray-9'}` }, props.value),
-    h('div', { class: 'mt-0.5 text-xs text-ink-gray-4' }, props.sub),
-  ])
-Tile.props = ['title', 'value', 'sub', 'tone']
-Tile.inheritAttrs = false
-
-const Card = (props, { slots }) =>
-  h('div', { class: 'rounded-lg border border-outline-gray-1 bg-surface-white p-4' }, [
-    h('div', { class: 'mb-3 text-sm font-medium text-ink-gray-8' }, slots.title ? slots.title() : props.title),
-    slots.default?.(),
-  ])
-Card.props = ['title']
-
-const barColor = { blue: 'bg-blue-500', green: 'bg-green-500', amber: 'bg-amber-500', red: 'bg-red-500' }
-const Bar = (props) =>
-  h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-surface-gray-2' }, [
-    h('div', { class: `h-full rounded-full ${barColor[props.color] || barColor.blue}`, style: `width: ${Math.round(props.ratio * 100)}%` }),
-  ])
-Bar.props = ['ratio', 'color']
-
-const BarRow = (props, { attrs }) =>
-  h('div', { ...attrs, class: 'mb-2.5 last:mb-0' + (attrs.onClick ? ' cursor-pointer' : '') }, [
-    h('div', { class: 'mb-1 flex items-center justify-between text-sm' }, [
-      h('span', { class: 'text-ink-gray-8' }, props.label),
-      h('span', { class: 'font-medium text-ink-gray-8' }, props.value),
-    ]),
-    h(Bar, { ratio: props.ratio, color: props.color }),
-  ])
-BarRow.props = ['label', 'value', 'ratio', 'color']
-BarRow.inheritAttrs = false
-
-const Empty = (props) =>
-  h('div', { class: 'py-6 text-center text-sm text-ink-gray-4' }, props.text || __('No data'))
-Empty.props = ['text']
 </script>

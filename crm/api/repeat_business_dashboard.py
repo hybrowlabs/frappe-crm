@@ -194,6 +194,8 @@ def get_repeat_business_dashboard() -> dict:
 		status = _status(a, a["days"])
 		freq_rows.append({**a, "status": status})
 	healthy = [a for a in freq_rows if a["status"] == "Healthy"]
+	# Accounts with no order history at all are left out of the table; only their count is sent.
+	with_orders = [a for a in freq_rows if a["status"] != "No Data"]
 
 	# ---- early warning ----
 	below_avg = [a for a in accounts if (a["this_month"] < a["avg3mo"]) or a["below_avg_signal"]]
@@ -229,7 +231,8 @@ def get_repeat_business_dashboard() -> dict:
 			"avg_freq": avg_freq,
 			"healthy_count": len(healthy),
 			"dormant_30_count": len(dormant_30),
-			"rows": trim(sorted(freq_rows, key=lambda a: a["this_month"], reverse=True), 40),
+			"rows": trim(sorted(with_orders, key=lambda a: a["this_month"], reverse=True), 40),
+			"no_data_count": len(freq_rows) - len(with_orders),
 		},
 		"early_warning": {
 			"below_avg_count": len(below_avg),

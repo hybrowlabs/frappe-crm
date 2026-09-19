@@ -4,8 +4,10 @@ import json
 
 import frappe
 from frappe import _
-from frappe.model.document import Document, get_controller
+from frappe.model.document import Document
 from frappe.utils import parse_json
+
+from crm.api.quotation import get_list_controller
 
 
 class CRMViewSettings(Document):
@@ -167,7 +169,7 @@ def remove_duplicates(l):
 
 
 def sync_default_rows(doctype, type="list"):
-	list = get_controller(doctype)
+	list = get_list_controller(doctype)
 	rows = []
 
 	if hasattr(list, "default_list_data"):
@@ -178,7 +180,7 @@ def sync_default_rows(doctype, type="list"):
 
 def sync_default_columns(view):
 	doctype = view.dt or view.doctype
-	list = get_controller(doctype)
+	list = get_list_controller(doctype)
 	columns = []
 
 	if view.type == "kanban" and view.column_field:

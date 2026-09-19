@@ -10,6 +10,13 @@ from frappe.model.document import get_controller
 from frappe.utils import make_filter_tuple
 from pypika import Criterion
 
+from crm.api.quotation import (
+	get_list_controller,
+	get_quick_filter_fields,
+	quotation_owner_filter,
+	translate_status_filter,
+)
+from crm.api import sales_order_list
 from crm.api.views import get_views
 from crm.fcrm.doctype.crm_form_script.crm_form_script import get_form_script
 from crm.utils import is_frappe_version
@@ -179,6 +186,12 @@ def get_quick_filters(doctype: str, cached: bool = True):
 				if field:
 					fields.append(field)
 
+	elif doctype == "Quotation":
+		fields = get_quick_filter_fields()
+
+	elif doctype == "Sales Order":
+		fields = sales_order_list.get_quick_filter_fields()
+
 	else:
 		fields = [field for field in meta.fields if field.in_standard_filter]
 
@@ -296,9 +309,16 @@ def get_data(
 		default_filters = frappe.parse_json(default_filters)
 		filters.update(default_filters)
 
+	if doctype == "Quotation":
+		translate_status_filter(filters)
+		filters.update(quotation_owner_filter())
+	elif doctype == "Sales Order":
+		sales_order_list.translate_status_filter(filters)
+		filters.update(sales_order_list.sales_order_filter())
+
 	is_default = True
 	data = []
-	_list = get_controller(doctype)
+	_list = get_list_controller(doctype)
 	default_rows = []
 	if hasattr(_list, "default_list_data"):
 		default_rows = _list.default_list_data().get("rows")
@@ -542,7 +562,7 @@ def get_data(
 
 
 def parse_list_data(data, doctype):
-	_list = get_controller(doctype)
+	_list = get_list_controller(doctype)
 	if hasattr(_list, "parse_list_data"):
 		data = _list.parse_list_data(data)
 	return data

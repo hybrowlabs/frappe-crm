@@ -2,17 +2,14 @@
   <div class="flex h-full flex-col overflow-hidden">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Repeat Business'), route: { name: 'RepeatBusinessDashboard' } }]" />
+        <Breadcrumbs :items="[{ label: __('Dashboards'), route: { name: 'Dashboard' } }, { label: __('Repeat Business'), route: { name: 'RepeatBusinessDashboard' } }]" />
       </template>
     </LayoutHeader>
 
-    <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-      <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-semibold text-ink-gray-9">{{ __('Repeat Business Dashboard') }}</h1>
-          <Badge theme="green" variant="subtle" :label="__('80% of revenue')" />
-        </div>
-        <div v-if="d" class="flex items-center gap-1.5 text-sm text-ink-gray-5">
+    <div class="flex-1 overflow-y-auto pa-page">
+      <div class="pa-page-h">
+        <h1 class="pa-h1">{{ __('Repeat Business Dashboard') }} <span class="pa-tag good">{{ __('80% of revenue') }}</span></h1>
+        <div v-if="d" class="pa-meta">
           <span>{{ __('{0} accounts', [d.total_accounts]) }}</span>
         </div>
       </div>
@@ -25,17 +22,17 @@
 
         <!-- ORDER FREQUENCY -->
         <SectionLabel :label="__('Order Frequency')" :hint="__('the core repeat-revenue view')" />
-        <div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Tile :title="__('Ordering 3+ Times This Month')" :value="String(d.order_frequency.order_3plus_count)"
+        <div class="mb-3.5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <Tile :icon="LucideSparkles" :title="__('Ordering 3+ Times This Month')" :value="String(d.order_frequency.order_3plus_count)"
             :sub="__('special-offer trigger')" tone="green" @click="drillAccounts(__('Ordering 3+ This Month'), __('Loyalty / special-offer candidates'), d.order_frequency.rows.filter((a) => a.this_month >= 3), (a) => __('{0} orders · {1}', [a.this_month, aeName(a.ae)]))" />
-          <Tile :title="__('Avg Order Frequency')" :value="String(d.order_frequency.avg_freq)" :sub="__('orders / account / month')" />
-          <Tile :title="__('Healthy Accounts')" :value="String(d.order_frequency.healthy_count)"
+          <Tile :icon="LucideRepeat" :title="__('Avg Order Frequency')" :value="String(d.order_frequency.avg_freq)" :sub="__('orders / account / month')" />
+          <Tile :icon="LucideCircleCheck" :title="__('Healthy Accounts')" :value="String(d.order_frequency.healthy_count)"
             :sub="__('of {0} accounts', [d.total_accounts])" tone="green" />
-          <Tile :title="__('Dormant (30+ Days)')" :value="String(d.order_frequency.dormant_30_count)"
+          <Tile :icon="LucideMoon" :title="__('Dormant (30+ Days)')" :value="String(d.order_frequency.dormant_30_count)"
             :sub="__('no order in 30 days')" tone="red" @click="drillAccounts(__('Dormant Accounts'), __('No order in 30+ days'), d.dormant.rows, (a) => __('{0}d · AE {1}', [a.days, aeName(a.ae)]))" />
         </div>
 
-        <Card class="mb-6">
+        <Card class="mb-8">
           <template #title>
             <div class="flex items-center justify-between">
               <span>{{ __('Account Order Frequency') }}</span>
@@ -43,7 +40,6 @@
                 <span class="flex items-center gap-1"><Dot color="green" />{{ __('Healthy') }}</span>
                 <span class="flex items-center gap-1"><Dot color="amber" />{{ __('Declining') }}</span>
                 <span class="flex items-center gap-1"><Dot color="red" />{{ __('Dormant') }}</span>
-                <span class="flex items-center gap-1"><Dot color="gray" />{{ __('No Data') }}</span>
               </span>
             </div>
           </template>
@@ -80,21 +76,21 @@
               </tr>
             </tbody>
           </table>
-          <Empty v-else :text="__('No accounts')" />
+          <Empty v-else :text="__('No accounts with order history yet')" />
         </Card>
 
         <!-- EARLY WARNING -->
         <SectionLabel :label="__('Early Warning')" :hint="__('catch accounts before they go dormant')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Tile :title="__('Ordering Below Their Average')" :value="String(d.early_warning.below_avg_count)"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <Tile :icon="LucideTrendingDown" :title="__('Ordering Below Their Average')" :value="String(d.early_warning.below_avg_count)"
             :sub="__('< 3-month rolling avg')" tone="amber" />
-          <Tile :title="__('Declining Order Value')" :value="String(d.early_warning.declining_value_count)"
+          <Tile :icon="LucideIndianRupee" :title="__('Declining Order Value')" :value="String(d.early_warning.declining_value_count)"
             :sub="__('AOV this qtr < last qtr')" tone="amber" />
-          <Tile :title="__('No Order 20–29 Days')" :value="String(d.early_warning.no_order_2029_count)"
+          <Tile :icon="LucideClock" :title="__('No Order 20–29 Days')" :value="String(d.early_warning.no_order_2029_count)"
             :sub="__('pre-dormancy alert')" tone="amber" />
         </div>
 
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Ordering Below Average')">
             <table v-if="d.early_warning.below_avg.length" class="w-full text-sm">
               <thead>
@@ -141,14 +137,14 @@
 
         <!-- DORMANT ACCOUNTS -->
         <SectionLabel :label="__('Dormant Accounts')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Tile :title="__('No Order 30+ Days')" :value="String(d.dormant.d30_count)" :sub="__('needs action')" tone="amber" />
-          <Tile :title="__('No Order 60+ Days')" :value="String(d.dormant.d60_count)" :sub="__('escalation required')" tone="red" />
-          <Tile :title="__('Win-Back (90+ Days)')" :value="String(d.dormant.winback_count)" :sub="__('re-engagement campaign')" tone="red"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+          <Tile :icon="LucideMoon" :title="__('No Order 30+ Days')" :value="String(d.dormant.d30_count)" :sub="__('needs action')" tone="amber" />
+          <Tile :icon="LucideTriangleAlert" :title="__('No Order 60+ Days')" :value="String(d.dormant.d60_count)" :sub="__('escalation required')" tone="red" />
+          <Tile :icon="LucideRotateCcw" :title="__('Win-Back (90+ Days)')" :value="String(d.dormant.winback_count)" :sub="__('re-engagement campaign')" tone="red"
             @click="drillAccounts(__('Win-Back Candidates'), __('No order in 90+ days'), d.dormant.winback, (a) => __('{0}d · AE {1}', [a.days, aeName(a.ae)]))" />
         </div>
 
-        <Card :title="__('Dormant Accounts — Escalation View')" class="mb-6">
+        <Card :title="__('Dormant Accounts — Escalation View')" class="mb-8">
           <table v-if="d.dormant.rows.length" class="w-full text-sm">
             <thead>
               <tr class="text-xs text-ink-gray-5">
@@ -180,7 +176,7 @@
 
         <!-- REVENUE TREND -->
         <SectionLabel :label="__('Revenue Trend')" />
-        <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Revenue per Account — This Year vs Last')">
             <table v-if="d.revenue_trend.rows.length" class="w-full text-sm">
               <thead>
@@ -203,19 +199,21 @@
             </table>
             <Empty v-else :text="__('No revenue recorded')" />
           </Card>
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-3.5">
             <Card :title="__('Top Accounts by Order Frequency')">
-              <BarRow v-for="(a, i) in d.revenue_trend.top_by_freq" :key="a.organization"
-                :label="`${i + 1}. ${a.organization_name}`" :value="__('{0} orders', [a.ytd_orders])"
-                :ratio="ratio(a.ytd_orders, maxFreq)" color="green" @click="goOrg(a.organization)" />
+              <Bars>
+                <BarRow v-for="(a, i) in d.revenue_trend.top_by_freq" :key="a.organization"
+                  :label="`${i + 1}. ${a.organization_name}`" :value="__('{0} orders', [a.ytd_orders])"
+                  :ratio="ratio(a.ytd_orders, maxFreq)" color="green" @click="goOrg(a.organization)" />
+              </Bars>
               <Empty v-if="!d.revenue_trend.top_by_freq.length" :text="__('No orders recorded')" />
             </Card>
             <Card :title="__('Revenue Concentration')">
-              <div class="mb-3 flex h-3 w-full overflow-hidden rounded-full">
+              <div class="pa-stacked">
                 <div class="bg-blue-500" :style="`width: ${d.revenue_trend.concentration.top_pct}%`"></div>
                 <div class="bg-surface-gray-3" :style="`width: ${100 - d.revenue_trend.concentration.top_pct}%`"></div>
               </div>
-              <div class="mb-1 flex items-center justify-between text-sm">
+              <div class="pa-legend-row">
                 <span class="flex items-center gap-2 text-ink-gray-7"><span class="h-2.5 w-2.5 rounded-sm bg-blue-500"></span>{{ __('Top {0} accounts', [d.revenue_trend.concentration.top_n]) }}</span>
                 <span class="font-medium text-ink-gray-8">{{ d.revenue_trend.concentration.top_pct }}% · {{ fmtINR(d.revenue_trend.concentration.top_value) }}</span>
               </div>
@@ -233,16 +231,16 @@
 
         <!-- CROSS-SELL -->
         <SectionLabel :label="__('Cross-Sell')" :hint="__('grow wallet share')" />
-        <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Tile :title="__('Buying Only One Category')" :value="String(d.cross_sell.one_cat_count)"
+        <div class="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <Tile :icon="LucideLayers" :title="__('Buying Only One Category')" :value="String(d.cross_sell.one_cat_count)"
             :sub="__('cross-sell opportunity')" tone="amber"
             @click="drillAccounts(__('Buying Only One Category'), __('Never bought other categories'), d.cross_sell.one_cat, (a) => __('Buys {0} · missing {1}', [a.cats.join(', '), d.cross_sell.categories.filter((c) => !a.cats.includes(c)).join(', ')]))" />
-          <Tile :title="__('Special-Offer Candidates')" :value="String(d.cross_sell.order_3plus_count)"
+          <Tile :icon="LucideTarget" :title="__('Special-Offer Candidates')" :value="String(d.cross_sell.order_3plus_count)"
             :sub="__('3+ orders this month')" tone="green"
             @click="drillAccounts(__('Special-Offer Conversation'), __('3+ orders this month — loyalty'), d.order_frequency.rows.filter((a) => a.this_month >= 3), (a) => __('{0} orders · AE {1}', [a.this_month, aeName(a.ae)]))" />
         </div>
 
-        <Card :title="__('Cross-Sell Gap Analysis')" class="mb-6">
+        <Card :title="__('Cross-Sell Gap Analysis')" class="mb-8">
           <template #title>
             <div class="flex items-center justify-between">
               <span>{{ __('Cross-Sell Gap Analysis') }}</span>
@@ -335,9 +333,21 @@
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import { SectionLabel, Tile, Card, BarRow, Bars, Empty, Dot } from '@/components/Dashboard/ui'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucideClock from '~icons/lucide/clock'
+import LucideIndianRupee from '~icons/lucide/indian-rupee'
+import LucideLayers from '~icons/lucide/layers'
+import LucideMoon from '~icons/lucide/moon'
+import LucideRepeat from '~icons/lucide/repeat'
+import LucideRotateCcw from '~icons/lucide/rotate-ccw'
+import LucideSparkles from '~icons/lucide/sparkles'
+import LucideTarget from '~icons/lucide/target'
+import LucideTrendingDown from '~icons/lucide/trending-down'
+import LucideTriangleAlert from '~icons/lucide/triangle-alert'
 import { formatDate } from '@/utils'
 import { Avatar, Badge, Breadcrumbs, createResource } from 'frappe-ui'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usersStore } from '@/stores/users'
 
@@ -406,67 +416,4 @@ function fmtINR(v) {
   if (n >= 1e5) return `₹${(v / 1e5).toFixed(1)} L`
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v || 0)
 }
-
-// ---- tiny presentational components (kept local to this dashboard) ----
-const SectionLabel = (props) =>
-  h('div', { class: 'mb-2 flex items-baseline gap-2' }, [
-    h('span', { class: 'text-xs font-medium uppercase tracking-wide text-ink-gray-5' }, props.label),
-    props.hint ? h('span', { class: 'text-xs text-ink-gray-4' }, props.hint) : null,
-  ])
-SectionLabel.props = ['label', 'hint']
-
-const Dot = (props) =>
-  h('span', { class: `inline-block h-2 w-2 rounded-full ${{ green: 'bg-green-500', amber: 'bg-amber-500', red: 'bg-red-500' }[props.color] || 'bg-surface-gray-4'}` })
-Dot.props = ['color']
-
-const toneClass = { green: 'text-ink-green-3', red: 'text-ink-red-3', amber: 'text-ink-amber-3' }
-const Tile = (props, { attrs }) =>
-  h(
-    'div',
-    {
-      ...attrs,
-      class:
-        'rounded-lg border border-outline-gray-1 bg-surface-white p-4' +
-        (attrs.onClick ? ' cursor-pointer transition hover:border-outline-gray-3' : ''),
-    },
-    [
-      h('div', { class: 'mb-1 flex items-center justify-between text-xs text-ink-gray-5' }, [
-        props.title,
-        attrs.onClick ? h('span', { class: 'text-ink-gray-4' }, '→') : null,
-      ]),
-      h('div', { class: `text-2xl font-semibold ${toneClass[props.tone] || 'text-ink-gray-9'}` }, props.value),
-      h('div', { class: 'mt-0.5 text-xs text-ink-gray-4' }, props.sub),
-    ],
-  )
-Tile.props = ['title', 'value', 'sub', 'tone']
-Tile.inheritAttrs = false
-
-const Card = (props, { slots }) =>
-  h('div', { class: 'rounded-lg border border-outline-gray-1 bg-surface-white p-4' }, [
-    h('div', { class: 'mb-3 text-sm font-medium text-ink-gray-8' }, slots.title ? slots.title() : props.title),
-    slots.default?.(),
-  ])
-Card.props = ['title']
-
-const barColor = { blue: 'bg-blue-500', green: 'bg-green-500', amber: 'bg-amber-500', red: 'bg-red-500' }
-const Bar = (props) =>
-  h('div', { class: 'h-1.5 w-full overflow-hidden rounded-full bg-surface-gray-2' }, [
-    h('div', { class: `h-full rounded-full ${barColor[props.color] || barColor.blue}`, style: `width: ${Math.round(props.ratio * 100)}%` }),
-  ])
-Bar.props = ['ratio', 'color']
-
-const BarRow = (props, { attrs }) =>
-  h('div', { ...attrs, class: 'mb-2.5 last:mb-0' + (attrs.onClick ? ' cursor-pointer' : '') }, [
-    h('div', { class: 'mb-1 flex items-center justify-between text-sm' }, [
-      h('span', { class: 'text-ink-gray-8' }, props.label),
-      h('span', { class: 'font-medium text-ink-gray-8' }, props.value),
-    ]),
-    h(Bar, { ratio: props.ratio, color: props.color }),
-  ])
-BarRow.props = ['label', 'value', 'ratio', 'color']
-BarRow.inheritAttrs = false
-
-const Empty = (props) =>
-  h('div', { class: 'py-6 text-center text-sm text-ink-gray-4' }, props.text || __('No data'))
-Empty.props = ['text']
 </script>

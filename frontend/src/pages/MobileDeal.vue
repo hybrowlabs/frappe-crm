@@ -738,18 +738,13 @@ function onStageAction() {
     return
   }
 
-  // Quotations live in ERPNext — jump straight to the Desk create page,
-  // prefilling the custom_deal link back to this deal and the linked customer.
+  // Open the CRM's own New Quotation page (not the ERPNext desk), with the
+  // deal's customer filled in and the quotation linked back to this deal.
   if (status === 'Proposal/Quotation') {
-    const params = new URLSearchParams({
-      custom_deal: props.dealId,
-      custom_created_from_crm: 1,
+    router.push({
+      name: 'New Quotation',
+      query: { customer: orgErpnextCustomer.value || undefined, deal: props.dealId },
     })
-    if (orgErpnextCustomer.value) {
-      params.set('quotation_to', 'Customer')
-      params.set('party_name', orgErpnextCustomer.value)
-    }
-    window.open(`/app/quotation/new?${params.toString()}`, '_blank')
     return
   }
 

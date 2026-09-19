@@ -73,6 +73,35 @@ const routes = [
     props: true,
   },
   {
+    alias: '/quotations',
+    path: '/quotations/view/:viewType?',
+    name: 'Quotations',
+    component: () => import('@/pages/Quotations.vue'),
+  },
+  {
+    path: '/quotations/new',
+    name: 'New Quotation',
+    component: () => import('@/pages/QuotationNew.vue'),
+  },
+  {
+    path: '/quotations/:quotationId',
+    name: 'Quotation',
+    component: () => import('@/pages/Quotation.vue'),
+    props: true,
+  },
+  {
+    alias: '/sales-orders',
+    path: '/sales-orders/view/:viewType?',
+    name: 'Sales Orders',
+    component: () => import('@/pages/SalesOrders.vue'),
+  },
+  {
+    path: '/sales-orders/:salesOrderId',
+    name: 'Sales Order',
+    component: () => import('@/pages/SalesOrder.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',

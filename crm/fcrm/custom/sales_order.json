@@ -1,0 +1,24 @@
+{
+ "custom_fields": [
+  {
+   "doctype": "Custom Field",
+   "dt": "Sales Order",
+   "module": "FCRM",
+   "is_system_generated": 0,
+   "read_only": 1,
+   "no_copy": 1,
+   "name": "Sales Order-custom_crm_quotation",
+   "fieldname": "custom_crm_quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "CRM Quotation",
+   "insert_after": "order_type",
+   "description": "The CRM quotation this order was created from."
+  }
+ ],
+ "custom_perms": [],
+ "doctype": "Sales Order",
+ "links": [],
+ "property_setters": [],
+ "sync_on_migrate": 1
+}

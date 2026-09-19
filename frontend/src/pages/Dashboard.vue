@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
+  <div class="flex flex-col h-full overflow-hidden bg-surface-gray-1">
     <LayoutHeader>
       <template #left-header>
         <ViewBreadcrumbs routeName="Dashboard" />

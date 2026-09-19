@@ -48,6 +48,7 @@
 import StageFormDialog from '@/components/StageForms/StageFormDialog.vue'
 import { Button, Badge, createListResource } from 'frappe-ui'
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   org: { type: String, default: '' },
@@ -56,6 +57,7 @@ const props = defineProps({
 })
 
 const show = defineModel({ type: Boolean })
+const router = useRouter()
 
 const fmtINR = (n) => '₹' + Number(n).toLocaleString('en-IN')
 
@@ -79,7 +81,8 @@ const quotes = computed(() =>
 )
 
 function openQuotation(q) {
-  window.open(`/app/quotation/${encodeURIComponent(q.no)}`, '_blank')
+  show.value = false
+  router.push({ name: 'Quotation', params: { quotationId: q.no } })
 }
 
 function qTheme(s) {
