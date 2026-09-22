@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 
-from crm.fcrm.doctype.crm_warehouse_settings.crm_warehouse_settings import get_branch_warehouse
+from crm.fcrm.doctype.crm_custom_settings.crm_warehouse_settings import get_branch_warehouse
 
 # CRM list/detail views over ERPNext's Quotation. Normal users only see the
 # quotations they created; Administrator and System Managers see all of them.

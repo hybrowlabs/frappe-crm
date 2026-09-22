@@ -9,7 +9,7 @@
  ],
  "fields": [
   {
-   "description": "Every item on a CRM quotation and its sales order takes the warehouse set here for the salesperson's branch (Sales Person → Branch & Currency).",
+   "description": "Every item on a CRM quotation and its sales order takes the warehouse set here for the salesperson's branch (Sales Person \u2192 Branch & Currency).",
    "fieldname": "branch_warehouses",
    "fieldtype": "Table",
    "label": "Branch Warehouses",
@@ -21,7 +21,7 @@
  "modified": "2026-09-19 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
- "name": "CRM Warehouse Settings",
+ "name": "CRM Custom Settings",
  "owner": "Administrator",
  "permissions": [
   {

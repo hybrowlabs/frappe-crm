@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 
 
-class CRMWarehouseSettings(Document):
+class CRMCustomSettings(Document):
 	def validate(self):
 		seen = set()
 		for row in self.branch_warehouses:
