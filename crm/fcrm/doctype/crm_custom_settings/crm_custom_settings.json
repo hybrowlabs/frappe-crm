@@ -1,11 +1,25 @@
 {
  "actions": [],
- "creation": "2026-09-19 12:30:00.000000",
+ "creation": "2026-09-19 13:28:10.386548",
  "description": "The warehouse CRM quotations and their sales orders use, per branch.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "branch_warehouses"
+  "branch_warehouses",
+  "tab_2_tab",
+  "holiday_list",
+  "section_break_mkaq",
+  "holiday_list_table",
+  "quotation_tab",
+  "time_setting_branch_wise",
+  "days_setting_section",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday"
  ],
  "fields": [
   {
@@ -14,11 +28,90 @@
    "fieldtype": "Table",
    "label": "Branch Warehouses",
    "options": "CRM Branch Warehouse"
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Holiday List"
+  },
+  {
+   "fieldname": "holiday_list",
+   "fieldtype": "Link",
+   "label": "Holiday List",
+   "options": "Holiday List"
+  },
+  {
+   "fieldname": "section_break_mkaq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "holiday_list_table",
+   "fieldtype": "Table",
+   "label": "Holiday List Table",
+   "options": "FCRM Holiday List"
+  },
+  {
+   "fieldname": "quotation_tab",
+   "fieldtype": "Tab Break",
+   "label": "Quotation"
+  },
+  {
+   "fieldname": "time_setting_branch_wise",
+   "fieldtype": "Table",
+   "label": "Time Setting Branch Wise",
+   "options": "FCRM Timing Setting"
+  },
+  {
+   "fieldname": "days_setting_section",
+   "fieldtype": "Section Break",
+   "label": "Days Setting"
+  },
+  {
+   "default": "0",
+   "fieldname": "monday",
+   "fieldtype": "Check",
+   "label": "Monday"
+  },
+  {
+   "default": "0",
+   "fieldname": "tuesday",
+   "fieldtype": "Check",
+   "label": "Tuesday"
+  },
+  {
+   "default": "0",
+   "fieldname": "wednesday",
+   "fieldtype": "Check",
+   "label": "Wednesday"
+  },
+  {
+   "default": "0",
+   "fieldname": "thursday",
+   "fieldtype": "Check",
+   "label": "Thursday"
+  },
+  {
+   "default": "0",
+   "fieldname": "friday",
+   "fieldtype": "Check",
+   "label": "Friday"
+  },
+  {
+   "default": "0",
+   "fieldname": "saturday",
+   "fieldtype": "Check",
+   "label": "Saturday"
+  },
+  {
+   "default": "0",
+   "fieldname": "sunday",
+   "fieldtype": "Check",
+   "label": "Sunday"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-09-19 12:30:00.000000",
+ "modified": "2026-09-22 17:08:36.007005",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
@@ -35,6 +128,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
