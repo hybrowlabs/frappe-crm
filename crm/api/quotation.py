@@ -1,7 +1,15 @@
 import frappe
 from frappe import _
 
-from crm.fcrm.doctype.crm_custom_settings.crm_warehouse_settings import get_branch_warehouse
+from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_branch_warehouse, is_holiday
+
+HOLIDAY_BLOCKED = "Quotation cannot be created on holiday."
+
+
+def block_holiday_creation(doc, method=None):
+	"""Refuse new quotations dated on a configured holiday, from any app."""
+	if is_holiday(doc.transaction_date):
+		frappe.throw(_(HOLIDAY_BLOCKED), title=_("Holiday"))
 
 # CRM list/detail views over ERPNext's Quotation. Normal users only see the
 # quotations they created; Administrator and System Managers see all of them.

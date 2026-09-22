@@ -189,6 +189,7 @@ doc_events = {
 		"on_cancel": ["crm.api.sales_order.reduce_previous_order_items"],
 	},
 	"Quotation": {
+		"before_insert": ["crm.api.quotation.block_holiday_creation"],
 		"after_insert": ["crm.api.sales_order.add_quotation_items_to_previous_order_items"],
 	},
 }
