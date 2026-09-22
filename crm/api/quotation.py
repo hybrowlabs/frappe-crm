@@ -473,6 +473,7 @@ def create_quotation(
 			"currency": currency,
 			"custom_sale_by": sales_person,
 			"transaction_date": nowdate(),
+			"valid_till": nowdate(),
 			"order_type": "Sales",
 			"custom_created_from_crm": 1,
 			# papl_business_logic "Created Via" (Backend / CRM / Customer Portal).
