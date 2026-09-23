@@ -6,7 +6,7 @@ from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_branch_
 
 HOLIDAY_BLOCKED = "Quotation cannot be created on holiday."
 DAY_BLOCKED = "Quotation cannot be created on {0}."
-TIME_BLOCKED = "Quotation for branch {0} can only be created between {1} and {2}."
+TIME_BLOCKED = "Quotation for branch {0} can only be created during: {1}."
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
@@ -24,18 +24,18 @@ def block_holiday_creation(doc, method=None):
 		frappe.throw(_(DAY_BLOCKED).format(_(weekday.title())), title=_("Day Not Allowed"))
 
 	branch = doc.get("custom_branch") or _sales_person_branch()
-	row = next(
-		(r for r in settings.time_setting_branch_wise if r.branch == branch),
-		None,
-	)
-	if not row:
+	windows = [r for r in settings.time_setting_branch_wise if r.branch == branch]
+	if not windows:
 		return
 
 	now = now_datetime().time()
-	if not (get_time(row.from_time) <= now <= get_time(row.to_time)):
-		frappe.throw(
-			_(TIME_BLOCKED).format(branch, row.from_time, row.to_time), title=_("Outside Working Hours")
-		)
+	if any(get_time(r.from_time) <= now <= get_time(r.to_time) for r in windows):
+		return
+
+	frappe.throw(
+		_(TIME_BLOCKED).format(branch, ", ".join(f"{r.from_time} - {r.to_time}" for r in windows)),
+		title=_("Outside Working Hours"),
+	)
 
 
 def _sales_person_branch():
