@@ -1,15 +1,53 @@
 import frappe
 from frappe import _
+from frappe.utils import get_time, getdate, now_datetime
 
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_branch_warehouse, is_holiday
 
 HOLIDAY_BLOCKED = "Quotation cannot be created on holiday."
+DAY_BLOCKED = "Quotation cannot be created on {0}."
+TIME_BLOCKED = "Quotation for branch {0} can only be created between {1} and {2}."
+
+WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
 
 def block_holiday_creation(doc, method=None):
-	"""Refuse new quotations dated on a configured holiday, from any app."""
+	"""Refuse new quotations outside the window CRM Custom Settings allows:
+	holiday, then weekday, then the branch's from/to time."""
 	if is_holiday(doc.transaction_date):
 		frappe.throw(_(HOLIDAY_BLOCKED), title=_("Holiday"))
+
+	settings = frappe.get_cached_doc("CRM Custom Settings")
+	date = getdate(doc.transaction_date)
+	weekday = WEEKDAYS[date.weekday()]
+	if not settings.get(weekday):
+		frappe.throw(_(DAY_BLOCKED).format(_(weekday.title())), title=_("Day Not Allowed"))
+
+	branch = doc.get("custom_branch") or _sales_person_branch()
+	row = next(
+		(r for r in settings.time_setting_branch_wise if r.branch == branch),
+		None,
+	)
+	if not row:
+		return
+
+	now = now_datetime().time()
+	if not (get_time(row.from_time) <= now <= get_time(row.to_time)):
+		frappe.throw(
+			_(TIME_BLOCKED).format(branch, row.from_time, row.to_time), title=_("Outside Working Hours")
+		)
+
+
+def _sales_person_branch():
+	"""First branch of the session user's Sales Person, when the quotation has none."""
+	sales_person = _session_sales_person()
+	if sales_person:
+		return frappe.db.get_value(
+			"Sales Person Branch",
+			{"parenttype": "Sales Person", "parent": sales_person, "parentfield": "custom_branches"},
+			"branch",
+			order_by="idx asc",
+		)
 
 # CRM list/detail views over ERPNext's Quotation. Normal users only see the
 # quotations they created; Administrator and System Managers see all of them.
