@@ -597,7 +597,10 @@ def create_quotation(
 	except frappe.PermissionError:
 		raise
 	except Exception as exc:
+		# Rolled back first, or the Error Log row goes with it; the traceback is
+		# still the one from this except block.
 		frappe.db.rollback()
+		frappe.log_error(title="CRM quotation insert failed", message=frappe.get_traceback(with_context=True))
 		return refuse("validation_failed", strip_html(str(exc)))
 
 	# The rate is only known after PAPL's validate has priced the lines.
@@ -618,7 +621,15 @@ def create_quotation(
 		raise
 	except Exception as exc:
 		# All or nothing: a quotation is only kept together with its Sales Order.
+		# Rolled back first, or the Error Log row goes with it.
+		quotation_name = doc.name
 		frappe.db.rollback()
+		frappe.log_error(
+			title="CRM quotation Sales Order failed",
+			message=frappe.get_traceback(with_context=True),
+			reference_doctype="Quotation",
+			reference_name=quotation_name,
+		)
 		return refuse("failed", strip_html(str(exc)))
 
 	return {"ok": True, "reason": "ordered", "message": "", "name": doc.name, "sales_order": order.name}
