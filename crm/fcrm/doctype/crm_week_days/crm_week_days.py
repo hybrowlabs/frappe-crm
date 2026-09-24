@@ -5,7 +5,7 @@
 from frappe.model.document import Document
 
 
-class FCRMHolidayList(Document):
+class CRMWeekDays(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -14,12 +14,12 @@ class FCRMHolidayList(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		date: DF.Date | None
 		ftwz: DF.Check
 		midc: DF.Check
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
 		seepz: DF.Check
+		week_day: DF.Data | None
 	# end: auto-generated types
 	pass

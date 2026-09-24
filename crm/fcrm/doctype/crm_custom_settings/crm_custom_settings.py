@@ -6,6 +6,18 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate
 
+BRANCH_FIELDS = {"MIDC": "midc", "FTWZ": "ftwz", "SEEPZ": "seepz"}
+
+WEEKDAYS = (
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+	"Sunday",
+)
+
 
 class CRMCustomSettings(Document):
 	# begin: auto-generated types
@@ -15,21 +27,16 @@ class CRMCustomSettings(Document):
 
 	if TYPE_CHECKING:
 		from crm.fcrm.doctype.crm_branch_warehouse.crm_branch_warehouse import CRMBranchWarehouse
+		from crm.fcrm.doctype.crm_week_days.crm_week_days import CRMWeekDays
 		from crm.fcrm.doctype.fcrm_holiday_list.fcrm_holiday_list import FCRMHolidayList
 		from crm.fcrm.doctype.fcrm_timing_setting.fcrm_timing_setting import FCRMTimingSetting
 		from frappe.types import DF
 
 		branch_warehouses: DF.Table[CRMBranchWarehouse]
-		friday: DF.Check
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
-		monday: DF.Check
-		saturday: DF.Check
-		sunday: DF.Check
-		thursday: DF.Check
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
-		tuesday: DF.Check
-		wednesday: DF.Check
+		week_days: DF.Table[CRMWeekDays]
 	# end: auto-generated types
 	def validate(self):
 		seen = set()
@@ -48,6 +55,14 @@ class CRMCustomSettings(Document):
 			self.set("holiday_list_table", [])
 			for holiday_date in get_holiday_list_dates(self.holiday_list):
 				self.append("holiday_list_table", {"date": holiday_date})
+
+		if not self.week_days:
+			for day in WEEKDAYS:
+				working = day not in ("Saturday", "Sunday")
+				self.append(
+					"week_days",
+					{"week_day": day, **{f: int(working) for f in BRANCH_FIELDS.values()}},
+				)
 
 
 @frappe.whitelist()
@@ -77,16 +92,47 @@ def get_branch_warehouse(branch):
 	)
 
 
-def is_holiday(date):
-	"""True when the date is in the holiday list configured in CRM Custom Settings."""
+def is_holiday(date, branch=None):
+	"""True when the date is a holiday in CRM Custom Settings for this branch.
+
+	A row with none of the branch checks ticked is a holiday for every branch;
+	otherwise only the ticked branches are blocked."""
+	if not date:
+		return False
+
+	rows = frappe.get_all(
+		"FCRM Holiday List",
+		filters={
+			"parent": "CRM Custom Settings",
+			"parentfield": "holiday_list_table",
+			"date": getdate(date),
+		},
+		fields=list(BRANCH_FIELDS.values()),
+	)
+	field = BRANCH_FIELDS.get(branch)
+	return any(not any(row.values()) or (field and row.get(field)) for row in rows)
+
+
+def is_working_day(date, branch=None):
+	"""True when the weekday of `date` is a working day for this branch.
+
+	The Week Days table ticks the branches that may create quotations that day;
+	a row with no branch ticked is non-working for every branch."""
+	if not date:
+		return False
+
+	field = BRANCH_FIELDS.get(branch)
+	if not field:
+		return True
+
 	return bool(
-		date
-		and frappe.db.exists(
-			"FCRM Holiday List",
+		frappe.db.get_value(
+			"CRM Week Days",
 			{
 				"parent": "CRM Custom Settings",
-				"parentfield": "holiday_list_table",
-				"date": getdate(date),
+				"parentfield": "week_days",
+				"week_day": WEEKDAYS[getdate(date).weekday()],
 			},
+			field,
 		)
 	)

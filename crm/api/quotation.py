@@ -2,28 +2,33 @@ import frappe
 from frappe import _
 from frappe.utils import get_time, getdate, now_datetime
 
-from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_branch_warehouse, is_holiday
+from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import (
+	WEEKDAYS,
+	get_branch_warehouse,
+	is_holiday,
+	is_working_day,
+)
 
-HOLIDAY_BLOCKED = "Quotation cannot be created on holiday."
-DAY_BLOCKED = "Quotation cannot be created on {0}."
+HOLIDAY_BLOCKED = "Quotation cannot be created on holiday for branch {0}."
+DAY_BLOCKED = "Quotation for branch {0} cannot be created on {1}."
 TIME_BLOCKED = "Quotation for branch {0} can only be created during: {1}."
-
-WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
 
 def block_holiday_creation(doc, method=None):
 	"""Refuse new quotations outside the window CRM Custom Settings allows:
 	holiday, then weekday, then the branch's from/to time."""
-	if is_holiday(doc.transaction_date):
-		frappe.throw(_(HOLIDAY_BLOCKED), title=_("Holiday"))
+	branch = doc.get("custom_branch") or _sales_person_branch()
+	if is_holiday(doc.transaction_date, branch):
+		frappe.throw(_(HOLIDAY_BLOCKED).format(branch or _("(none)")), title=_("Holiday"))
 
 	settings = frappe.get_cached_doc("CRM Custom Settings")
 	date = getdate(doc.transaction_date)
-	weekday = WEEKDAYS[date.weekday()]
-	if not settings.get(weekday):
-		frappe.throw(_(DAY_BLOCKED).format(_(weekday.title())), title=_("Day Not Allowed"))
+	if not is_working_day(date, branch):
+		frappe.throw(
+			_(DAY_BLOCKED).format(branch or _("(none)"), _(WEEKDAYS[date.weekday()])),
+			title=_("Day Not Allowed"),
+		)
 
-	branch = doc.get("custom_branch") or _sales_person_branch()
 	windows = [r for r in settings.time_setting_branch_wise if r.branch == branch]
 	if not windows:
 		return
