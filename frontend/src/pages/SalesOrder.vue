@@ -3,6 +3,9 @@
     <template #left-header>
       <Breadcrumbs :items="breadcrumbs" />
     </template>
+    <template #right-header>
+      <Button :label="__('Print')" iconLeft="printer" @click="printDoc" />
+    </template>
   </LayoutHeader>
   <div v-if="q" class="flex-1 overflow-y-auto">
     <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
@@ -173,7 +176,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
 import { indicatorTheme, formatQuotationAmount } from '@/utils/quotation'
-import { Breadcrumbs, Badge, createResource } from 'frappe-ui'
+import { Breadcrumbs, Badge, Button, createResource } from 'frappe-ui'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -196,6 +199,13 @@ const errorTitle = computed(() =>
 )
 
 const amount = (v) => formatQuotationAmount(v, q.value?.currency)
+
+// No `format` param: Frappe falls back to the doctype's default print format.
+const printDoc = () =>
+  window.open(
+    `/printview?doctype=Sales%20Order&name=${encodeURIComponent(props.salesOrderId)}&trigger_print=1`,
+    '_blank',
+  )
 
 const details = computed(() => [
   { label: __('Date'), value: formatDate(q.value.transaction_date, '', true) },
