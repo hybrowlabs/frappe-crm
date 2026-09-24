@@ -13,13 +13,7 @@
   "quotation_tab",
   "time_setting_branch_wise",
   "days_setting_section",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday"
+  "week_days"
  ],
  "fields": [
   {
@@ -67,51 +61,15 @@
    "label": "Days Setting"
   },
   {
-   "default": "0",
-   "fieldname": "monday",
-   "fieldtype": "Check",
-   "label": "Monday"
-  },
-  {
-   "default": "0",
-   "fieldname": "tuesday",
-   "fieldtype": "Check",
-   "label": "Tuesday"
-  },
-  {
-   "default": "0",
-   "fieldname": "wednesday",
-   "fieldtype": "Check",
-   "label": "Wednesday"
-  },
-  {
-   "default": "0",
-   "fieldname": "thursday",
-   "fieldtype": "Check",
-   "label": "Thursday"
-  },
-  {
-   "default": "0",
-   "fieldname": "friday",
-   "fieldtype": "Check",
-   "label": "Friday"
-  },
-  {
-   "default": "0",
-   "fieldname": "saturday",
-   "fieldtype": "Check",
-   "label": "Saturday"
-  },
-  {
-   "default": "0",
-   "fieldname": "sunday",
-   "fieldtype": "Check",
-   "label": "Sunday"
+   "fieldname": "week_days",
+   "fieldtype": "Table",
+   "label": "Week Days",
+   "options": "CRM Week Days"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-09-22 17:08:36.007005",
+ "modified": "2026-09-24 14:23:51.048508",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
