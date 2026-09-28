@@ -5,31 +5,34 @@ from frappe.utils import get_time, getdate, now_datetime
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import (
 	WEEKDAYS,
 	get_branch_warehouse,
+	get_print_format,
 	is_holiday,
 	is_working_day,
 )
 
-HOLIDAY_BLOCKED = "Quotation cannot be created on holiday for branch {0}."
-DAY_BLOCKED = "Quotation for branch {0} cannot be created on {1}."
-TIME_BLOCKED = "Quotation for branch {0} can only be created during: {1}."
+HOLIDAY_BLOCKED = "{0} cannot be created on holiday for branch {1}."
+DAY_BLOCKED = "{0} for branch {1} cannot be created on {2}."
+TIME_BLOCKED = "{0} for branch {1} can only be created during: {2}."
 
 
-def block_holiday_creation(doc, method=None):
-	"""Refuse new quotations outside the window CRM Custom Settings allows:
-	holiday, then weekday, then the branch's from/to time."""
+def _block_outside_window(doc, fieldname, label):
+	"""Refuse the document outside the window CRM Custom Settings allows for it:
+	holiday, then weekday, then the branch's from/to time. Only Time Setting rows
+	ticked for this document (`fieldname`) count, so a Quotation window does not
+	let a Sales Order through and the other way round."""
 	branch = doc.get("custom_branch") or _sales_person_branch()
 	if is_holiday(doc.transaction_date, branch):
-		frappe.throw(_(HOLIDAY_BLOCKED).format(branch or _("(none)")), title=_("Holiday"))
+		frappe.throw(_(HOLIDAY_BLOCKED).format(label, branch or _("(none)")), title=_("Holiday"))
 
 	settings = frappe.get_cached_doc("CRM Custom Settings")
 	date = getdate(doc.transaction_date)
 	if not is_working_day(date, branch):
 		frappe.throw(
-			_(DAY_BLOCKED).format(branch or _("(none)"), _(WEEKDAYS[date.weekday()])),
+			_(DAY_BLOCKED).format(label, branch or _("(none)"), _(WEEKDAYS[date.weekday()])),
 			title=_("Day Not Allowed"),
 		)
 
-	windows = [r for r in settings.time_setting_branch_wise if r.branch == branch]
+	windows = [r for r in settings.time_setting_branch_wise if r.branch == branch and r.get(fieldname)]
 	if not windows:
 		return
 
@@ -38,9 +41,14 @@ def block_holiday_creation(doc, method=None):
 		return
 
 	frappe.throw(
-		_(TIME_BLOCKED).format(branch, ", ".join(f"{r.from_time} - {r.to_time}" for r in windows)),
+		_(TIME_BLOCKED).format(label, branch, ", ".join(f"{r.from_time} - {r.to_time}" for r in windows)),
 		title=_("Outside Working Hours"),
 	)
+
+
+def block_holiday_creation(doc, method=None):
+	"""Quotation before_insert hook."""
+	_block_outside_window(doc, "quotation", _("Quotation"))
 
 
 def _sales_person_branch():
@@ -299,6 +307,9 @@ def get_quotation(name: str):
 		"discount_amount": doc.discount_amount,
 		"grand_total": doc.grand_total,
 		"rounded_total": doc.rounded_total,
+		# The print format from CRM Custom Settings; None means the screen prints
+		# with the doctype's own default.
+		"print_format": get_print_format("quotation_print_format"),
 	}
 
 
@@ -327,6 +338,22 @@ def get_quotation_defaults():
 	# company address / contact pickers.
 	company = frappe.new_doc("Quotation").company
 	return {"sales_person": sales_person, "branches": branches, "company": company}
+
+
+@frappe.whitelist()
+def get_quotation_window(branch: str):
+	"""The branch's Quotation time windows and whether now is inside one, so the
+	screen can say so before the user fills the form. Same rows the before_insert
+	gate uses; no rows means no time limit."""
+	settings = frappe.get_cached_doc("CRM Custom Settings")
+	windows = [r for r in settings.time_setting_branch_wise if r.branch == branch and r.quotation]
+	if not windows:
+		return {"open": True, "windows": []}
+	now = now_datetime().time()
+	return {
+		"open": any(get_time(r.from_time) <= now <= get_time(r.to_time) for r in windows),
+		"windows": [f"{r.from_time} - {r.to_time}" for r in windows],
+	}
 
 
 # Every line of a CRM quotation and its sales order takes the warehouse set for
@@ -390,6 +417,66 @@ def get_customer_items(customer: str, branch: str | None = None):
 	discount slabs (qty ranges) so the screen can check the qty first."""
 	_check_customer(customer)
 	return list(_entitled_items(customer, branch).values())
+
+
+@frappe.whitelist()
+def get_item_details(customer: str, item_code: str):
+	"""Item fields the new-quotation screen shows read-only, plus the pack rule it
+	uses for Qty. GST rate is the one the quotation will get on save (same Item Tax
+	Template as apply_quotation_taxes picks)."""
+	from frappe.utils import strip_html
+	from papl_business_logic.papl_business_logic.api.quotation_tax import (
+		_template_rate,
+		item_tax_template,
+		resolve_tax_category,
+	)
+
+	_check_customer(customer)
+	item = frappe.get_cached_doc("Item", item_code)
+	company = frappe.new_doc("Quotation").company
+	tax_category = resolve_tax_category(customer)
+	template = (
+		item_tax_template(item_code, company, tax_category, frappe.utils.nowdate()) if tax_category else None
+	)
+	return {
+		"item_name": item.item_name,
+		"stock_uom": item.stock_uom,
+		"description": strip_html(item.description or "").strip(),
+		"gst_hsn_code": item.get("gst_hsn_code") or "",
+		"gst_rate": _template_rate(template) if template else None,
+		"custom_sell_only_as_a_multiple_of_base_qty": item.get("custom_sell_only_as_a_multiple_of_base_qty"),
+		"custom_base_qty": item.get("custom_base_qty"),
+	}
+
+
+@frappe.whitelist()
+def get_customer_addresses(customer: str):
+	"""The customer's own billing and shipping addresses, so the screen can pick
+	the only one by itself and ask when there are several."""
+	_check_customer(customer)
+	names = frappe.get_all(
+		"Dynamic Link",
+		filters={
+			"parenttype": "Address",
+			"link_doctype": "Customer",
+			"link_name": customer,
+		},
+		pluck="parent",
+	)
+	if not names:
+		return {"billing": [], "shipping": []}
+	rows = frappe.get_all(
+		"Address",
+		filters={"name": ["in", names], "disabled": 0},
+		fields=["name", "address_type", "is_primary_address", "is_shipping_address"],
+		order_by="is_primary_address desc, name asc",
+	)
+	billing = [r.name for r in rows if r.address_type == "Billing"]
+	shipping = [r.name for r in rows if r.address_type == "Shipping" or r.is_shipping_address]
+	# A customer that types none of them still has to be quotable: fall back to
+	# every address it has, the same list the picker shows.
+	names = [r.name for r in rows]
+	return {"billing": billing or names, "shipping": shipping or names}
 
 
 # Pricing-core status -> (call succeeded, rate set). Same map as the Customer
@@ -486,15 +573,14 @@ def create_quotation(
 	addresses=None,
 	deal: str | None = None,
 ):
-	"""Create and submit a quotation from the CRM, then create and submit its
-	Sales Order, the way the Customer Portal does:
-	no rate is sent, PAPL's validate prices every line from the Sales BOM, GST
-	is chosen by the portal's tax rules, and a line left at rate 0 refuses the
-	whole quotation. Runs as the logged-in user; approval is skipped like the
-	portal's. All or nothing: if the quotation or its Sales Order fails, neither
-	is kept and the error is returned.
+	"""Create and submit a quotation from the CRM, the way the Customer Portal
+	does: no rate is sent, PAPL's validate prices every line from the Sales BOM,
+	GST is chosen by the portal's tax rules, and a line left at rate 0 refuses
+	the whole quotation. Runs as the logged-in user; approval is skipped like the
+	portal's. The Sales Order is not raised here: the quotation page's Create
+	Sales Order button calls create_sales_order when the user asks for it.
 
-	Returns {ok, reason, message, name, sales_order}."""
+	Returns {ok, reason, message, name}."""
 	from papl_business_logic.papl_business_logic.api.quotation_tax import apply_quotation_taxes
 	from frappe.contacts.doctype.address.address import get_default_address
 	from frappe.utils import cint, flt, nowdate, strip_html
@@ -621,23 +707,71 @@ def create_quotation(
 		doc.custom_approval_status = "Approved"
 		doc.custom_workflow_state = "Not Required"
 		doc.submit()
-		order = _make_sales_order(doc)
 	except frappe.PermissionError:
 		raise
 	except Exception as exc:
-		# All or nothing: a quotation is only kept together with its Sales Order.
 		# Rolled back first, or the Error Log row goes with it.
 		quotation_name = doc.name
 		frappe.db.rollback()
 		frappe.log_error(
-			title="CRM quotation Sales Order failed",
+			title="CRM quotation submit failed",
 			message=frappe.get_traceback(with_context=True),
 			reference_doctype="Quotation",
 			reference_name=quotation_name,
 		)
 		return refuse("failed", strip_html(str(exc)))
 
-	return {"ok": True, "reason": "ordered", "message": "", "name": doc.name, "sales_order": order.name}
+	return {"ok": True, "reason": "submitted", "message": "", "name": doc.name}
+
+
+@frappe.whitelist()
+def create_sales_order(quotation: str):
+	"""Create and submit the Sales Order for a submitted CRM quotation, when the
+	user presses Create Sales Order on the quotation page. Only a submitted
+	quotation can be ordered, and only while no live Sales Order already stands
+	against it, so a second press is refused instead of raising a second order.
+
+	Returns {ok, reason, message, sales_order}."""
+	from frappe.utils import cint, strip_html
+
+	doc = frappe.get_doc("Quotation", quotation)
+	doc.check_permission("read")
+
+	if cint(doc.docstatus) != 1:
+		return {
+			"ok": False,
+			"reason": "not_orderable",
+			"message": _("Only a submitted quotation can be turned into a Sales Order."),
+		}
+
+	existing = _sales_orders_for(doc.name)
+	if existing:
+		return {
+			"ok": False,
+			"reason": "already_ordered",
+			"message": _("Sales Order {0} has already been raised against this quotation.").format(
+				existing[0]
+			),
+			"sales_order": existing[0],
+		}
+
+	try:
+		order = _make_sales_order(doc)
+	except frappe.PermissionError:
+		raise
+	except Exception as exc:
+		# Rolled back first, or the Error Log row goes with it; the quotation
+		# itself stays submitted and can be ordered again later.
+		frappe.db.rollback()
+		frappe.log_error(
+			title="CRM quotation Sales Order failed",
+			message=frappe.get_traceback(with_context=True),
+			reference_doctype="Quotation",
+			reference_name=doc.name,
+		)
+		return {"ok": False, "reason": "failed", "message": strip_html(str(exc))}
+
+	return {"ok": True, "reason": "ordered", "message": "", "sales_order": order.name}
 
 
 def _sales_orders_for(quotation):

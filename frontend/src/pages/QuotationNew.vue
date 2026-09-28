@@ -49,6 +49,17 @@
         {{ __('Sale By') }}:
         <span class="font-medium text-ink-gray-9">{{ salesPerson }}</span>
       </div>
+      <div
+        v-if="timeWindow && !timeWindow.open"
+        class="rounded-lg border border-outline-red-2 bg-surface-red-1 px-4 py-3 text-base text-ink-red-4"
+      >
+        {{
+          __('Quotations for {0} can only be made during: {1}.', [
+            doc.custom_branch,
+            timeWindow.windows.join(', '),
+          ])
+        }}
+      </div>
 
       <fieldset
         :disabled="!ready"
@@ -84,6 +95,12 @@
               :placeholder="__('Select {0}', [__('Customer')])"
             />
             <FormControl
+              :modelValue="customerName"
+              type="text"
+              :label="__('Customer Name')"
+              disabled
+            />
+            <FormControl
               v-model="doc.order_type"
               type="select"
               :label="__('Order Type')"
@@ -112,16 +129,19 @@
               {{ __('Items') }} *
             </div>
             <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
-              <table class="w-full min-w-[48rem] text-base">
+              <table class="w-full min-w-[70rem] text-base">
                 <thead>
                   <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
                     <th class="w-10 px-3 py-2 font-medium">#</th>
-                    <th class="px-3 py-2 font-medium">{{ __('Item') }}</th>
-                    <th class="w-32 px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
-                    <th class="w-32 px-3 py-2 font-medium">{{ __('Qty') }}</th>
-                    <th class="w-20 px-3 py-2 font-medium">{{ __('UOM') }}</th>
-                    <th class="w-28 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
-                    <th class="w-28 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
+                    <th class="min-w-[14rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
+                    <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
+                    <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
+                    <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
+                    <th class="w-28 whitespace-nowrap px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
+                    <th class="w-24 px-3 py-2 font-medium">{{ __('Qty') }}</th>
+                    <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
+                    <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
+                    <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
                     <th class="w-10"></th>
                   </tr>
                 </thead>
@@ -156,6 +176,13 @@
                       >
                         {{ row.priceMessage }}
                       </div>
+                    </td>
+                    <td class="whitespace-pre-line px-3 py-2.5 text-sm text-ink-gray-6">
+                      {{ row.description || '—' }}
+                    </td>
+                    <td class="px-3 py-2.5 text-ink-gray-6">{{ row.gst_hsn_code || '—' }}</td>
+                    <td class="px-3 py-2.5 text-right text-ink-gray-6">
+                      {{ row.gst_rate == null ? '—' : `${row.gst_rate}%` }}
                     </td>
                     <td class="px-3 py-1.5">
                       <FormControl
@@ -243,6 +270,12 @@
             class="rounded-lg bg-surface-gray-2 px-4 py-3 text-base text-ink-gray-6"
           >
             {{ __('Select a customer on the Details tab to pick its addresses.') }}
+          </div>
+          <div
+            v-else-if="needsAddressChoice"
+            class="rounded-lg border border-outline-amber-2 bg-surface-amber-1 px-4 py-3 text-base text-ink-gray-7"
+          >
+            {{ __('This customer has more than one address. Please pick one before saving.') }}
           </div>
 
           <section class="flex flex-col gap-3">
@@ -342,6 +375,9 @@ const newRow = () => ({
   key: ++rowKey,
   item_code: '',
   item_name: '',
+  description: '',
+  gst_hsn_code: '',
+  gst_rate: null,
   uom: '',
   qty: null,
   custom_no_of_packs: null,
@@ -397,7 +433,23 @@ const companyLinkFilters = computed(() => [
 const salesPerson = ref('')
 const salesPersonLoading = ref(true)
 const branches = ref([])
-const ready = computed(() => !!salesPerson.value && branches.value.length > 0)
+// The branch's Quotation time window, checked up front so the form is not
+// filled in for a save the server would refuse.
+const timeWindow = ref(null)
+const ready = computed(
+  () => !!salesPerson.value && branches.value.length > 0 && timeWindow.value?.open !== false,
+)
+
+watch(
+  () => doc.custom_branch,
+  async (branch) => {
+    timeWindow.value = null
+    if (!branch) return
+    const w = await call('crm.api.quotation.get_quotation_window', { branch }).catch(() => null)
+    if (branch === doc.custom_branch) timeWindow.value = w
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   try {
@@ -436,6 +488,53 @@ function clearPartyDetails() {
   for (const f of ['customer_address', 'shipping_address_name']) doc[f] = ''
   display.billing = display.shipping = ''
 }
+
+// The customer's name for the read-only field; the link shows only its code.
+const customerName = ref('')
+watch(
+  () => doc.party_name,
+  async (customer) => {
+    customerName.value = ''
+    if (!customer) return
+    const row = await call('frappe.client.get_value', {
+      doctype: 'Customer',
+      filters: { name: customer },
+      fieldname: 'customer_name',
+    }).catch(() => null)
+    if (customer === doc.party_name) customerName.value = row?.customer_name || ''
+  },
+)
+
+// Addresses: one of a kind is taken by itself, several must be picked before
+// saving. Counts drive the Address tab's hint and the save check.
+const addressChoices = reactive({ billing: [], shipping: [] })
+watch(
+  () => doc.party_name,
+  async (customer) => {
+    addressChoices.billing = []
+    addressChoices.shipping = []
+    if (!customer) return
+    const lists = await call('crm.api.quotation.get_customer_addresses', { customer }).catch(
+      () => null,
+    )
+    if (!lists || customer !== doc.party_name) return
+    addressChoices.billing = lists.billing || []
+    addressChoices.shipping = lists.shipping || []
+    if (addressChoices.billing.length === 1) {
+      doc.customer_address = addressChoices.billing[0]
+      loadAddress(doc.customer_address, 'billing')
+    }
+    if (addressChoices.shipping.length === 1) {
+      doc.shipping_address_name = addressChoices.shipping[0]
+      loadAddress(doc.shipping_address_name, 'shipping')
+    }
+  },
+)
+const needsAddressChoice = computed(
+  () =>
+    (addressChoices.billing.length > 1 && !doc.customer_address) ||
+    (addressChoices.shipping.length > 1 && !doc.shipping_address_name),
+)
 
 // ---- Items -------------------------------------------------------------
 // Only the items on the customer's Item Discounts for this branch; picking a
@@ -541,23 +640,31 @@ function removeRow(i) {
 // Mirrors papl_business_logic quotation.js (_sync_pack_qty_meta): items sold
 // only in multiples of a base qty get No of Packs = 1 and Qty = packs x base.
 async function onItemChange(row) {
-  Object.assign(row, { item_name: '', uom: '', rate: 0, custom_base_qty: 0, sold_in_packs: false })
+  Object.assign(row, {
+    item_name: '',
+    description: '',
+    gst_hsn_code: '',
+    gst_rate: null,
+    uom: '',
+    rate: 0,
+    custom_base_qty: 0,
+    sold_in_packs: false,
+  })
   if (!row.item_code) {
     row.custom_no_of_packs = null
     return
   }
-  const item = await call('frappe.client.get_value', {
-    doctype: 'Item',
-    filters: { name: row.item_code },
-    fieldname: [
-      'item_name',
-      'stock_uom',
-      'custom_sell_only_as_a_multiple_of_base_qty',
-      'custom_base_qty',
-    ],
+  const asked = row.item_code
+  const item = await call('crm.api.quotation.get_item_details', {
+    customer: doc.party_name,
+    item_code: row.item_code,
   }).catch(() => null)
-  if (!item) return
+  // Ignore a stale reply if the row's item changed meanwhile.
+  if (!item || row.item_code !== asked) return
   row.item_name = item.item_name
+  row.description = item.description
+  row.gst_hsn_code = item.gst_hsn_code
+  row.gst_rate = item.gst_rate
   row.uom = item.stock_uom
   if (item.custom_sell_only_as_a_multiple_of_base_qty && item.custom_base_qty > 0) {
     row.sold_in_packs = true
@@ -683,6 +790,11 @@ function validate() {
   if (!salesPerson.value) return __('No Sales Person is linked to your login.')
   if (!doc.custom_branch || !doc.currency) return __('No Branch / Currency is set on your Sales Person.')
   if (!doc.party_name) return __('Please select a Customer.')
+  // More than one to choose from: the user has to say which, on the Address tab.
+  if (addressChoices.billing.length > 1 && !doc.customer_address)
+    return __('Please select the Customer Address on the Address tab.')
+  if (addressChoices.shipping.length > 1 && !doc.shipping_address_name)
+    return __('Please select the Shipping Address on the Address tab.')
   const items = doc.items.filter((r) => r.item_code)
   if (!items.length) return __('Please add at least one item.')
   const noQty = items.find((r) => !(Number(r.qty) > 0))
@@ -727,14 +839,11 @@ async function save() {
         company_address: doc.company_address,
       },
     })
-    // All or nothing: the quotation is kept only with its Sales Order.
     if (!result?.ok) {
       toast.error(result?.message || __('Could not create the quotation.'))
       return
     }
-    toast.success(
-      __('Quotation {0} and Sales Order {1} created.', [result.name, result.sales_order]),
-    )
+    toast.success(__('Quotation {0} created.', [result.name]))
     router.push({ name: 'Quotation', params: { quotationId: result.name } })
   } catch (e) {
     toast.error(e?.messages?.[0] || e?.message || __('Could not create the quotation.'))

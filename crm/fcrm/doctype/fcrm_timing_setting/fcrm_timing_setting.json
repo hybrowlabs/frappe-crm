@@ -8,10 +8,13 @@
  "field_order": [
   "branch",
   "from_time",
-  "to_time"
+  "to_time",
+  "quotation",
+  "sales_order"
  ],
  "fields": [
   {
+   "description": "The branch this window applies to. Taken from the quotation's Branch, or the first branch on the user's Sales Person.",
    "fieldname": "branch",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -20,6 +23,7 @@
    "reqd": 1
   },
   {
+   "description": "Window opens. The check uses the server clock at the moment of saving.",
    "fieldname": "from_time",
    "fieldtype": "Time",
    "in_list_view": 1,
@@ -27,18 +31,35 @@
    "reqd": 1
   },
   {
+   "description": "Window closes. Both ends are inclusive.",
    "fieldname": "to_time",
    "fieldtype": "Time",
    "in_list_view": 1,
    "label": "To Time",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Tick to make this window a Quotation window. Only ticked rows are used when a quotation is created; if a branch has several, being inside any one of them is enough.",
+   "fieldname": "quotation",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Quotation"
+  },
+  {
+   "default": "0",
+   "description": "Tick to make this window a Sales Order window. Only ticked rows are used when a sales order is created. Independent of the Quotation tick.",
+   "fieldname": "sales_order",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Sales Order"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-22 16:50:41.721831",
+ "modified": "2026-09-28 20:12:06.231487",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "FCRM Timing Setting",

@@ -13,6 +13,7 @@
  ],
  "fields": [
   {
+   "description": "The holiday. A quotation dated on this day is refused.",
    "fieldname": "date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -20,6 +21,7 @@
   },
   {
    "default": "0",
+   "description": "Tick to block MIDC on this date. With no branch ticked, every branch is blocked.",
    "fieldname": "midc",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -27,6 +29,7 @@
   },
   {
    "default": "0",
+   "description": "Tick to block FTWZ on this date. With no branch ticked, every branch is blocked.",
    "fieldname": "ftwz",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -34,6 +37,7 @@
   },
   {
    "default": "0",
+   "description": "Tick to block SEEPZ on this date. With no branch ticked, every branch is blocked.",
    "fieldname": "seepz",
    "fieldtype": "Check",
    "in_list_view": 1,

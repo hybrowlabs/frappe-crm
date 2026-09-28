@@ -4,7 +4,17 @@
       <Breadcrumbs :items="breadcrumbs" />
     </template>
     <template #right-header>
-      <Button :label="__('Print')" iconLeft="printer" @click="printDoc" />
+      <div class="flex items-center gap-2">
+        <Button
+          v-if="canOrder"
+          :label="__('Create Sales Order')"
+          variant="solid"
+          iconLeft="shopping-cart"
+          :loading="ordering"
+          @click="createSalesOrder"
+        />
+        <Button :label="__('Print')" iconLeft="printer" @click="printDoc" />
+      </div>
     </template>
   </LayoutHeader>
   <div v-if="q" class="flex-1 overflow-y-auto">
@@ -174,8 +184,8 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
 import { indicatorTheme, formatQuotationAmount } from '@/utils/quotation'
-import { Breadcrumbs, Badge, Button, createResource } from 'frappe-ui'
-import { computed } from 'vue'
+import { Breadcrumbs, Badge, Button, call, createResource, toast } from 'frappe-ui'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   quotationId: { type: String, required: true },
@@ -198,12 +208,42 @@ const errorTitle = computed(() =>
 
 const amount = (v) => formatQuotationAmount(v, q.value?.currency)
 
-// No `format` param: Frappe falls back to the doctype's default print format.
-const printDoc = () =>
+// The branch's print format from CRM Custom Settings; with none set, no `format`
+// param goes out and Frappe uses the doctype's default.
+const printDoc = () => {
+  const format = q.value?.print_format
   window.open(
-    `/printview?doctype=Quotation&name=${encodeURIComponent(props.quotationId)}&trigger_print=1`,
+    `/printview?doctype=Quotation&name=${encodeURIComponent(props.quotationId)}` +
+      (format ? `&format=${encodeURIComponent(format)}` : '') +
+      '&trigger_print=1',
     '_blank',
   )
+}
+
+// A submitted quotation can be ordered once; the button goes once a Sales
+// Order stands against it.
+const canOrder = computed(() => q.value?.docstatus === 1 && !q.value?.sales_orders?.length)
+const ordering = ref(false)
+
+async function createSalesOrder() {
+  ordering.value = true
+  try {
+    const result = await call('crm.api.quotation.create_sales_order', {
+      quotation: props.quotationId,
+    })
+    if (!result?.ok) {
+      toast.error(result?.message || __('Could not create the Sales Order.'))
+    } else {
+      toast.success(__('Sales Order {0} created.', [result.sales_order]))
+    }
+    // Either way the quotation now shows whichever Sales Order stands against it.
+    quotation.reload()
+  } catch (e) {
+    toast.error(e?.messages?.[0] || e?.message || __('Could not create the Sales Order.'))
+  } finally {
+    ordering.value = false
+  }
+}
 
 const details = computed(() => [
   { label: __('Date'), value: formatDate(q.value.transaction_date, '', true) },

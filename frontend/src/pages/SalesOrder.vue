@@ -200,12 +200,17 @@ const errorTitle = computed(() =>
 
 const amount = (v) => formatQuotationAmount(v, q.value?.currency)
 
-// No `format` param: Frappe falls back to the doctype's default print format.
-const printDoc = () =>
+// The branch's print format from CRM Custom Settings; with none set, no `format`
+// param goes out and Frappe uses the doctype's default.
+const printDoc = () => {
+  const format = q.value?.print_format
   window.open(
-    `/printview?doctype=Sales%20Order&name=${encodeURIComponent(props.salesOrderId)}&trigger_print=1`,
+    `/printview?doctype=Sales%20Order&name=${encodeURIComponent(props.salesOrderId)}` +
+      (format ? `&format=${encodeURIComponent(format)}` : '') +
+      '&trigger_print=1',
     '_blank',
   )
+}
 
 const details = computed(() => [
   { label: __('Date'), value: formatDate(q.value.transaction_date, '', true) },
