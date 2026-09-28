@@ -3,6 +3,7 @@ from frappe import _
 from frappe.utils import flt
 
 from crm.api.quotation import can_see_all_quotations
+from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_print_format
 
 # CRM list/detail views over ERPNext's Sales Order, limited to orders created
 # in the CRM (papl_business_logic "Created Via" = CRM). Normal users see only the
@@ -207,4 +208,7 @@ def get_sales_order(name: str):
 		"discount_amount": doc.discount_amount,
 		"grand_total": doc.grand_total,
 		"rounded_total": doc.rounded_total,
+		# The print format from CRM Custom Settings; None means the screen prints
+		# with the doctype's own default.
+		"print_format": get_print_format("sales_order_print_format"),
 	}

@@ -19,6 +19,8 @@ class FCRMTimingSetting(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		quotation: DF.Check
+		sales_order: DF.Check
 		to_time: DF.Time
 	# end: auto-generated types
 	pass

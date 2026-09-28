@@ -185,6 +185,7 @@ doc_events = {
 		"validate_reset_password": ["crm.api.live_demo.validate_reset_password"],
 	},
 	"Sales Order": {
+		"before_insert": ["crm.api.sales_order.block_creation_outside_window"],
 		"on_submit": ["crm.api.sales_order.update_previous_order_items"],
 		"on_cancel": ["crm.api.sales_order.reduce_previous_order_items"],
 	},

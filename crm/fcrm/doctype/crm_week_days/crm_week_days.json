@@ -13,6 +13,7 @@
  ],
  "fields": [
   {
+   "description": "The weekday these ticks apply to.",
    "fieldname": "week_day",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -22,6 +23,7 @@
   },
   {
    "default": "0",
+   "description": "Ticked: MIDC may create quotations on this weekday. Unticked: refused.",
    "fieldname": "midc",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -29,6 +31,7 @@
   },
   {
    "default": "0",
+   "description": "Ticked: FTWZ may create quotations on this weekday. Unticked: refused.",
    "fieldname": "ftwz",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -36,6 +39,7 @@
   },
   {
    "default": "0",
+   "description": "Ticked: SEEPZ may create quotations on this weekday. Unticked: refused.",
    "fieldname": "seepz",
    "fieldtype": "Check",
    "in_list_view": 1,

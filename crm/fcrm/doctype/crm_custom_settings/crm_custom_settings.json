@@ -6,6 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "branch_warehouses",
+  "section_break_jvos",
+  "sales_order_print_format",
+  "column_break_yhmn",
+  "quotation_print_format",
   "tab_2_tab",
   "holiday_list",
   "section_break_mkaq",
@@ -17,7 +21,7 @@
  ],
  "fields": [
   {
-   "description": "Every item on a CRM quotation and its sales order takes the warehouse set here for the salesperson's branch (Sales Person \u2192 Branch & Currency).",
+   "description": "Per branch: the warehouse every CRM quotation and sales order line uses. The Item's own warehouse is ignored. No row for a branch means quotations for it are refused.",
    "fieldname": "branch_warehouses",
    "fieldtype": "Table",
    "label": "Branch Warehouses",
@@ -29,6 +33,7 @@
    "label": "Holiday List"
   },
   {
+   "description": "Reference only. The dates that actually block quotations are the rows in the table below.",
    "fieldname": "holiday_list",
    "fieldtype": "Link",
    "label": "Holiday List",
@@ -39,6 +44,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "description": "Dates on which quotations cannot be created. Tick the branches the holiday applies to; a row with no branch ticked blocks every branch.",
    "fieldname": "holiday_list_table",
    "fieldtype": "Table",
    "label": "Holiday List Table",
@@ -50,6 +56,7 @@
    "label": "Quotation"
   },
   {
+   "description": "Hours of the day a branch may create documents. A row counts only for the documents it ticks: Quotation rows gate quotations, Sales Order rows gate sales orders. A branch with no Quotation row ticked has no time limit on quotations.",
    "fieldname": "time_setting_branch_wise",
    "fieldtype": "Table",
    "label": "Time Setting Branch Wise",
@@ -61,15 +68,38 @@
    "label": "Days Setting"
   },
   {
+   "description": "Weekdays on which each branch may create quotations. Untick a day to block it for that branch. Checked after the holiday check and before the time check.",
    "fieldname": "week_days",
    "fieldtype": "Table",
    "label": "Week Days",
    "options": "CRM Week Days"
+  },
+  {
+   "fieldname": "section_break_jvos",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Print format the CRM's Print button uses for sales orders. Leave blank to use the Sales Order doctype's own default.",
+   "fieldname": "sales_order_print_format",
+   "fieldtype": "Link",
+   "label": "Sales Order Print Format",
+   "options": "Print Format"
+  },
+  {
+   "fieldname": "column_break_yhmn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Print format the CRM's Print button uses for quotations. Leave blank to use the Quotation doctype's own default.",
+   "fieldname": "quotation_print_format",
+   "fieldtype": "Link",
+   "label": "Quotation Print Format",
+   "options": "Print Format"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-09-24 14:23:51.048508",
+ "modified": "2026-09-28 20:44:36.567669",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
