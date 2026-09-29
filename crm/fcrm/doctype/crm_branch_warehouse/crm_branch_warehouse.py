@@ -17,6 +17,8 @@ class CRMBranchWarehouse(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		quotation_print_format: DF.Link | None
+		sales_order_print_format: DF.Link | None
 		warehouse: DF.Link
 	# end: auto-generated types
 	pass

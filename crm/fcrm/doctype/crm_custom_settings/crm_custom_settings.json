@@ -6,10 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "branch_warehouses",
-  "section_break_jvos",
-  "sales_order_print_format",
-  "column_break_yhmn",
-  "quotation_print_format",
   "tab_2_tab",
   "holiday_list",
   "section_break_mkaq",
@@ -21,7 +17,7 @@
  ],
  "fields": [
   {
-   "description": "Per branch: the warehouse every CRM quotation and sales order line uses. The Item's own warehouse is ignored. No row for a branch means quotations for it are refused.",
+   "description": "Per branch: the warehouse every CRM quotation and sales order line uses, and the print formats the CRM's Print button uses. The Item's own warehouse is ignored. No row for a branch means quotations for it are refused.",
    "fieldname": "branch_warehouses",
    "fieldtype": "Table",
    "label": "Branch Warehouses",
@@ -73,33 +69,11 @@
    "fieldtype": "Table",
    "label": "Week Days",
    "options": "CRM Week Days"
-  },
-  {
-   "fieldname": "section_break_jvos",
-   "fieldtype": "Section Break"
-  },
-  {
-   "description": "Print format the CRM's Print button uses for sales orders. Leave blank to use the Sales Order doctype's own default.",
-   "fieldname": "sales_order_print_format",
-   "fieldtype": "Link",
-   "label": "Sales Order Print Format",
-   "options": "Print Format"
-  },
-  {
-   "fieldname": "column_break_yhmn",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Print format the CRM's Print button uses for quotations. Leave blank to use the Quotation doctype's own default.",
-   "fieldname": "quotation_print_format",
-   "fieldtype": "Link",
-   "label": "Quotation Print Format",
-   "options": "Print Format"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-09-28 20:44:36.567669",
+ "modified": "2026-09-29 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
