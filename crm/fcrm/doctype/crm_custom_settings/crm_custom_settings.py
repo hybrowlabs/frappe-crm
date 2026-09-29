@@ -35,8 +35,6 @@ class CRMCustomSettings(Document):
 		branch_warehouses: DF.Table[CRMBranchWarehouse]
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
-		quotation_print_format: DF.Link | None
-		sales_order_print_format: DF.Link | None
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
 		week_days: DF.Table[CRMWeekDays]
 	# end: auto-generated types
@@ -94,11 +92,17 @@ def get_branch_warehouse(branch):
 	)
 
 
-def get_print_format(fieldname):
-	"""The print format set in CRM Custom Settings, or None so the caller falls
-	back to the doctype's own default. `fieldname` is quotation_print_format or
+def get_print_format(branch, fieldname):
+	"""The print format this branch's row sets, or None so the caller falls back
+	to the doctype's own default. `fieldname` is quotation_print_format or
 	sales_order_print_format."""
-	return frappe.db.get_single_value("CRM Custom Settings", fieldname)
+	if not branch:
+		return None
+	return frappe.db.get_value(
+		"CRM Branch Warehouse",
+		{"parent": "CRM Custom Settings", "parentfield": "branch_warehouses", "branch": branch},
+		fieldname,
+	)
 
 
 def is_holiday(date, branch=None):

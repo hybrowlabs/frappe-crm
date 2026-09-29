@@ -208,7 +208,7 @@ def get_sales_order(name: str):
 		"discount_amount": doc.discount_amount,
 		"grand_total": doc.grand_total,
 		"rounded_total": doc.rounded_total,
-		# The print format from CRM Custom Settings; None means the screen prints
-		# with the doctype's own default.
-		"print_format": get_print_format("sales_order_print_format"),
+		# The print format this order's branch sets in CRM Custom Settings; None
+		# means the screen prints with the doctype's own default.
+		"print_format": get_print_format(doc.get("branch"), "sales_order_print_format"),
 	}

@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "branch",
-  "warehouse"
+  "warehouse",
+  "quotation_print_format",
+  "sales_order_print_format"
  ],
  "fields": [
   {
@@ -26,11 +28,27 @@
    "label": "Warehouse",
    "options": "Warehouse",
    "reqd": 1
+  },
+  {
+   "description": "Print format the CRM's Print button uses for this branch's quotations. Leave blank to use the Quotation doctype's own default.",
+   "fieldname": "quotation_print_format",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Quotation Print Format",
+   "options": "Print Format"
+  },
+  {
+   "description": "Print format the CRM's Print button uses for this branch's sales orders. Leave blank to use the Sales Order doctype's own default.",
+   "fieldname": "sales_order_print_format",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sales Order Print Format",
+   "options": "Print Format"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-09-28 20:43:44.982016",
+ "modified": "2026-09-29 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Branch Warehouse",
