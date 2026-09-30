@@ -46,8 +46,9 @@ def _block_outside_window(doc, fieldname, label):
 	)
 
 
-def block_holiday_creation(doc, method=None):
-	"""Quotation before_insert hook."""
+def block_holiday_creation(doc):
+	"""Called by create_quotation only, not as a doc hook, so quotations raised
+	from the ERPNext desk, the API or data import are not limited."""
 	_block_outside_window(doc, "quotation", _("Quotation"))
 
 
@@ -684,6 +685,7 @@ def create_quotation(
 		return refuse("tax_failed", _("Taxes could not be worked out for this quotation."))
 
 	try:
+		block_holiday_creation(doc)
 		doc.insert()
 	except frappe.PermissionError:
 		raise
@@ -825,6 +827,9 @@ def _make_sales_order(quotation):
 		row.delivery_date = delivery_date
 		# Always the branch's warehouse from CRM Warehouse Settings, not the item's.
 		row.warehouse = warehouse
+	# CRM Custom Settings window, checked here and not as a doc hook so orders
+	# raised from the ERPNext desk are not limited.
+	_block_outside_window(order, "sales_order", _("Sales Order"))
 	order.insert()
 	order.submit()
 	return order
