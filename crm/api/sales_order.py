@@ -1,14 +1,5 @@
 import frappe
-from frappe import _
 from frappe.utils import add_days, flt, getdate
-
-
-def block_creation_outside_window(doc, method=None):
-	"""Refuse a Sales Order outside the window CRM Custom Settings allows for it,
-	the same gate the Quotation gets (Time Setting rows ticked for Sales Order)."""
-	from crm.api.quotation import _block_outside_window
-
-	_block_outside_window(doc, "sales_order", _("Sales Order"))
 
 
 @frappe.whitelist()
