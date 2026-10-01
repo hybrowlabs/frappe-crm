@@ -274,6 +274,7 @@ def get_quotation(name: str):
 		"indicator": get_indicator(doc, get_active_workflow()),
 		"customer_name": doc.customer_name,
 		"party_name": doc.party_name,
+		"billing_address": _address_text(doc.customer_address),
 		"quotation_to": doc.quotation_to,
 		"transaction_date": doc.transaction_date,
 		"valid_till": doc.valid_till,
@@ -284,14 +285,20 @@ def get_quotation(name: str):
 		"sale_by": doc.get("custom_sale_by"),
 		"owner": doc.owner,
 		"owner_name": frappe.utils.get_fullname(doc.owner),
-		# Any draft or submitted Sales Order made from this quotation.
+		# Any draft or submitted Sales Order made from this quotation, with the
+		# state the CRM Sales Orders list shows for it.
 		"sales_orders": _sales_orders_for(name),
+		"sales_order_states": _sales_order_states(name),
 		"creation": doc.creation,
 		"items": [
 			{
 				"item_code": i.item_code,
 				"item_name": i.item_name,
-				"description": i.description,
+				"description": frappe.utils.strip_html(i.description or "").strip(),
+				"gst_hsn_code": i.get("gst_hsn_code") or "",
+				"gst_rate": _line_gst_rate(i),
+				"custom_no_of_packs": i.get("custom_no_of_packs"),
+				"custom_base_qty": i.get("custom_base_qty"),
 				"qty": i.qty,
 				"uom": i.uom,
 				"rate": i.rate,
@@ -312,6 +319,46 @@ def get_quotation(name: str):
 		# None means the screen prints with the doctype's own default.
 		"print_format": get_print_format(doc.get("custom_branch"), "quotation_print_format"),
 	}
+
+
+def _address_text(name):
+	"""An address as the new-quotation screen shows it: street lines, then
+	city / state / pincode, country and GSTIN, one per line."""
+	if not name:
+		return ""
+	a = frappe.db.get_value(
+		"Address",
+		name,
+		["address_line1", "address_line2", "city", "state", "pincode", "country", "gstin"],
+		as_dict=True,
+	)
+	if not a:
+		return ""
+	lines = [
+		a.address_line1,
+		a.address_line2,
+		", ".join(filter(None, [a.city, a.state, a.pincode])),
+		a.country,
+		a.gstin and f"GSTIN: {a.gstin}",
+	]
+	return "\n".join(filter(None, lines))
+
+
+def _line_gst_rate(item):
+	"""GST % on a saved quotation line: IGST, or CGST + SGST within the state;
+	None when the line has no Item Tax Template, as on the new-quotation screen."""
+	from frappe.utils import flt
+
+	if not item.get("item_tax_template"):
+		return None
+	return flt(item.get("igst_rate")) or flt(item.get("cgst_rate")) + flt(item.get("sgst_rate"))
+
+
+def _is_expired(doc):
+	"""Expired by status, or past Valid Till before ERPNext's nightly job marks it."""
+	from frappe.utils import getdate, nowdate
+
+	return doc.status == "Expired" or bool(doc.valid_till and getdate(doc.valid_till) < getdate(nowdate()))
 
 
 def _session_sales_person():
@@ -491,18 +538,68 @@ PRICE_STATUS = {
 }
 
 
-def _branch_currency(branch):
-	"""The currency on the user's Sales Person row for this branch; the branch
-	must be one of the user's own."""
+def _check_branch_currency(customer, branch, currency):
+	"""The Work Location / Currency pair must be a row on the user's Sales
+	Person, and the customer must have that Work Location in its Branch Details
+	and that Currency as its Billing Currency."""
 	sales_person = _session_sales_person()
-	currency = sales_person and frappe.db.get_value(
-		"Sales Person Branch",
-		{"parenttype": "Sales Person", "parent": sales_person, "parentfield": "custom_branches", "branch": branch},
-		"currency",
+	if not (
+		branch
+		and currency
+		and sales_person
+		and frappe.db.exists(
+			"Sales Person Branch",
+			{
+				"parenttype": "Sales Person",
+				"parent": sales_person,
+				"parentfield": "custom_branches",
+				"branch": branch,
+				"currency": currency,
+			},
+		)
+	):
+		frappe.throw(
+			_("Work Location {0} with Currency {1} is not set on your Sales Person.").format(branch, currency),
+			frappe.PermissionError,
+		)
+	if frappe.db.get_value("Customer", customer, "default_currency") != currency or not frappe.db.exists(
+		"Branch CT",
+		{"parenttype": "Customer", "parent": customer, "parentfield": "custom_branch_details", "branch": branch},
+	):
+		frappe.throw(
+			_("Customer {0} is not set up for Work Location {1} with Currency {2}.").format(
+				customer, branch, currency
+			),
+			frappe.PermissionError,
+		)
+
+
+@frappe.whitelist()
+def get_customer_branch_options(customer: str):
+	"""The user's Work Location / Currency rows this customer can be quoted in,
+	for a quotation opened with the customer already picked."""
+	_check_customer(customer)
+	sales_person = _session_sales_person()
+	currency = frappe.db.get_value("Customer", customer, "default_currency")
+	if not (sales_person and currency):
+		return []
+	branches = frappe.get_all(
+		"Branch CT",
+		filters={"parenttype": "Customer", "parent": customer, "parentfield": "custom_branch_details"},
+		pluck="branch",
 	)
-	if not currency:
-		frappe.throw(_("Branch {0} is not set on your Sales Person.").format(branch), frappe.PermissionError)
-	return currency
+	return frappe.get_all(
+		"Sales Person Branch",
+		filters={
+			"parenttype": "Sales Person",
+			"parent": sales_person,
+			"parentfield": "custom_branches",
+			"branch": ["in", branches or ["__none__"]],
+			"currency": currency,
+		},
+		fields=["branch", "currency"],
+		order_by="idx asc",
+	)
 
 
 def _price_line(item_code, qty, customer, branch, currency, allowed):
@@ -532,14 +629,14 @@ def _price_line(item_code, qty, customer, branch, currency, allowed):
 
 
 @frappe.whitelist()
-def get_items_price(customer: str, branch: str, items):
+def get_items_price(customer: str, branch: str, currency: str, items):
 	"""Rates for the lines on a new quotation, priced the way the quotation will
 	be on save. Each line is reported on its own so one bad line does not hide
 	the rest."""
 	from frappe.utils import flt
 
 	_check_customer(customer)
-	currency = _branch_currency(branch)
+	_check_branch_currency(customer, branch, currency)
 	allowed = set(_entitled_items(customer, branch))
 
 	rows = frappe.parse_json(items) if isinstance(items, str) else (items or [])
@@ -558,6 +655,19 @@ def get_items_price(customer: str, branch: str, items):
 	return {"currency": currency, "items": lines}
 
 
+def _refusal_reason(doc, default):
+	"""below_min_price when PAPL's validate priced a line under its Sales BOM's
+	Min Sale Price (the rate and minimum it set on the row before refusing);
+	the CRM screen does not show that refusal."""
+	from frappe.utils import flt
+
+	for row in doc.items:
+		minimum = flt(row.get("custom_min_sale_price"))
+		if minimum > 0 and flt(row.rate) < minimum:
+			return "below_min_price"
+	return default
+
+
 def _linked_to(doctype, name, link_doctype, link_name):
 	"""Whether an Address / Contact belongs to that Customer or Company."""
 	return frappe.db.exists(
@@ -570,6 +680,7 @@ def _linked_to(doctype, name, link_doctype, link_name):
 def create_quotation(
 	customer: str,
 	branch: str,
+	currency: str,
 	items,
 	addresses=None,
 	deal: str | None = None,
@@ -590,7 +701,7 @@ def create_quotation(
 		return {"ok": False, "reason": reason, "message": message}
 
 	_check_customer(customer)
-	currency = _branch_currency(branch)
+	_check_branch_currency(customer, branch, currency)
 	sales_person = _session_sales_person()
 	entitled = _entitled_items(customer, branch)
 	warehouse = get_branch_warehouse(branch)
@@ -694,7 +805,7 @@ def create_quotation(
 		# still the one from this except block.
 		frappe.db.rollback()
 		frappe.log_error(title="CRM quotation insert failed", message=frappe.get_traceback(with_context=True))
-		return refuse("validation_failed", strip_html(str(exc)))
+		return refuse(_refusal_reason(doc, "validation_failed"), strip_html(str(exc)))
 
 	# The rate is only known after PAPL's validate has priced the lines.
 	unpriced = [row.item_code for row in doc.items if flt(row.rate) <= 0]
@@ -721,7 +832,7 @@ def create_quotation(
 			reference_doctype="Quotation",
 			reference_name=quotation_name,
 		)
-		return refuse("failed", strip_html(str(exc)))
+		return refuse(_refusal_reason(doc, "failed"), strip_html(str(exc)))
 
 	return {"ok": True, "reason": "submitted", "message": "", "name": doc.name}
 
@@ -744,6 +855,13 @@ def create_sales_order(quotation: str):
 			"ok": False,
 			"reason": "not_orderable",
 			"message": _("Only a submitted quotation can be turned into a Sales Order."),
+		}
+
+	if _is_expired(doc):
+		return {
+			"ok": False,
+			"reason": "expired",
+			"message": _("This quotation has expired, so a Sales Order can't be created."),
 		}
 
 	existing = _sales_orders_for(doc.name)
@@ -773,7 +891,31 @@ def create_sales_order(quotation: str):
 		)
 		return {"ok": False, "reason": "failed", "message": strip_html(str(exc))}
 
+	if order.docstatus == 0:
+		return {
+			"ok": True,
+			"reason": "pending_approval",
+			"message": _("Sales Order {0} is waiting for credit approval.").format(order.name),
+			"sales_order": order.name,
+		}
 	return {"ok": True, "reason": "ordered", "message": "", "sales_order": order.name}
+
+
+def _sales_order_states(quotation):
+	"""{sales order: indicator} for the orders made from this quotation."""
+	from crm.api.sales_order_list import get_indicator as sales_order_indicator
+
+	names = _sales_orders_for(quotation)
+	if not names:
+		return {}
+	return {
+		d.name: sales_order_indicator(d)
+		for d in frappe.get_all(
+			"Sales Order",
+			filters={"name": ["in", names]},
+			fields=["name", "docstatus", "status", "per_delivered", "custom_credit_approval_status"],
+		)
+	}
 
 
 def _sales_orders_for(quotation):
@@ -797,9 +939,8 @@ def _make_sales_order(quotation):
 	so the caller can roll the quotation back with it.
 
 	Saved, then submitted, as the desk does (so ERPNext sets the order status).
-	PAPL's credit-limit hold only commits on its own when the hold status changed
-	since the save, which cannot happen within this one request, so a hold just
-	raises and is rolled back with everything else."""
+	An order over PAPL's floating limit is saved as a Pending draft and not
+	submitted; the Credit Approval Dashboard submits it when it is approved."""
 	from frappe.utils import add_days, nowdate
 	from papl_business_logic.papl_business_logic.custom.quotation import (
 		make_sales_order,
@@ -830,6 +971,17 @@ def _make_sales_order(quotation):
 	# CRM Custom Settings window, checked here and not as a doc hook so orders
 	# raised from the ERPNext desk are not limited.
 	_block_outside_window(order, "sales_order", _("Sales Order"))
-	order.insert()
-	order.submit()
+	# PAPL's floating-limit popup (HTML with a chart) is not for the CRM; the
+	# result below says what happened.
+	frappe.flags.mute_messages = True
+	try:
+		order.insert()
+		# Over the floating limit: PAPL has marked the draft Pending, which puts it
+		# on the Credit Approval Dashboard; approving it there submits it. Left as
+		# a draft, as the desk does, instead of submitting into PAPL's refusal.
+		if order.get("custom_credit_approval_status") == "Pending":
+			return order
+		order.submit()
+	finally:
+		frappe.flags.mute_messages = False
 	return order

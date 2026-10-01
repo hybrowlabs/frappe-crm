@@ -40,7 +40,7 @@
       >
         {{
           __(
-            'No Branch / Currency is set on your Sales Person ({0}). Ask your admin to add one before making quotations.',
+            'No Work Location / Currency is set on your Sales Person ({0}). Ask your admin to add one before making quotations.',
             [salesPerson],
           )
         }}
@@ -87,12 +87,33 @@
         <!-- Details -->
         <div v-show="tab === 'details'" class="flex flex-col gap-6">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <FormControl
+              v-model="doc.custom_branch"
+              type="select"
+              :label="__('Work Location') + ' *'"
+              :options="locationOptions"
+              :placeholder="__('Select {0}', [__('Work Location')])"
+              :disabled="locationOptions.length <= 1"
+            />
+            <FormControl
+              v-model="doc.currency"
+              type="select"
+              :label="__('Currency') + ' *'"
+              :options="currencyOptions"
+              :placeholder="__('Select {0}', [__('Currency')])"
+              :disabled="currencyOptions.length <= 1"
+            />
             <Link
               v-model="doc.party_name"
               :label="__('Customer') + ' *'"
               doctype="Customer"
               :filters="customerFilters"
-              :placeholder="__('Select {0}', [__('Customer')])"
+              :disabled="!doc.custom_branch || !doc.currency"
+              :placeholder="
+                doc.custom_branch && doc.currency
+                  ? __('Select {0}', [__('Customer')])
+                  : __('Select Work Location and Currency first')
+              "
             />
             <FormControl
               :modelValue="customerName"
@@ -113,13 +134,6 @@
               :min="doc.transaction_date"
               :label="__('Valid Till')"
               disabled
-            />
-            <FormControl
-              v-if="branches.length > 1"
-              v-model="doc.custom_branch"
-              type="select"
-              :label="__('Branch') + ' *'"
-              :options="branches.map((b) => b.branch)"
             />
           </div>
 
@@ -163,12 +177,6 @@
                         "
                         @update:modelValue="onItemChange(row)"
                       />
-                      <div
-                        v-if="row.item_name && row.item_name !== row.item_code"
-                        class="mt-1 text-sm text-ink-gray-5"
-                      >
-                        {{ row.item_name }}
-                      </div>
                       <div
                         v-if="row.priceMessage"
                         class="mt-1 text-sm"
@@ -457,8 +465,8 @@ onMounted(async () => {
     salesPerson.value = defaults?.sales_person || ''
     branches.value = defaults?.branches || []
     doc.company = defaults?.company || ''
-    if (branches.value.length) doc.custom_branch = branches.value[0].branch
-    applyPrefill()
+    if (locationOptions.value.length === 1) doc.custom_branch = locationOptions.value[0]
+    await applyPrefill()
   } catch {
     salesPerson.value = ''
   } finally {
@@ -466,22 +474,39 @@ onMounted(async () => {
   }
 })
 
-// Currency always follows the chosen branch's row.
+// Work Location, then Currency, then Customer. A field with a single choice is
+// filled in and locked; the Currency choices are the chosen location's rows.
+const locationOptions = computed(() => [...new Set(branches.value.map((b) => b.branch))])
+const currencyOptions = computed(() =>
+  branches.value.filter((b) => b.branch === doc.custom_branch).map((b) => b.currency),
+)
 watch(
   () => doc.custom_branch,
-  (branch) => {
-    doc.currency = branches.value.find((b) => b.branch === branch)?.currency || ''
+  () => {
+    const choices = currencyOptions.value
+    if (choices.includes(doc.currency) && choices.length > 1) return
+    doc.currency = choices.length === 1 ? choices[0] : ''
+  },
+)
+// The customer was picked for the old Work Location / Currency; a customer
+// opened from Ordered Items comes back whenever one of its pairs is chosen.
+watch(
+  () => [doc.custom_branch, doc.currency],
+  ([branch, currency]) => {
+    const fits = prefill.pairs.some((p) => p.branch === branch && p.currency === currency)
+    doc.party_name = fits ? prefill.customer : ''
   },
 )
 
-// Only customers whose Sales Team includes the user's Sales Person;
-// System Managers (and Administrator) can pick any customer.
+// Only customers with the chosen Work Location in their Branch Details and the
+// chosen Currency as their Billing Currency, and whose Sales Team includes the
+// user's Sales Person; System Managers (and Administrator) skip the Sales Team check.
 const { isAdmin } = usersStore()
-const customerFilters = computed(() =>
-  isAdmin()
-    ? []
-    : [['Sales Team', 'sales_person', '=', salesPerson.value || '__none__']],
-)
+const customerFilters = computed(() => [
+  ['Branch CT', 'branch', '=', doc.custom_branch || '__none__'],
+  ['Customer', 'default_currency', '=', doc.currency || '__none__'],
+  ...(isAdmin() ? [] : [['Sales Team', 'sales_person', '=', salesPerson.value || '__none__']]),
+])
 
 // ---- Party -------------------------------------------------------------
 function clearPartyDetails() {
@@ -574,16 +599,38 @@ watch(
 )
 
 // Opened from an organization's Ordered Items (?customer=...&items=a,b): pick
-// that customer, then add the ticked items that are set up for it.
+// that customer, then add the ticked items that are set up for it. A single
+// Work Location / Currency it fits is chosen too; with several, the user picks.
 const route = useRoute()
 let prefillItems = String(route.query.items || '')
   .split(',')
   .filter(Boolean)
+const prefill = { customer: '', pairs: [] }
 
-function applyPrefill() {
+async function applyPrefill() {
   if (route.query.deal) doc.custom_deal = String(route.query.deal)
-  if (route.query.customer && !doc.party_name) doc.party_name = String(route.query.customer)
+  const customer = String(route.query.customer || '')
+  if (!customer) return
+  const pairs = await call('crm.api.quotation.get_customer_branch_options', { customer }).catch(
+    () => [],
+  )
+  if (!pairs?.length) {
+    toast.error(__('{0} is not set up for any of your Work Location / Currency rows.', [customer]))
+    return
+  }
+  Object.assign(prefill, { customer, pairs })
+  const current = pairs.find((p) => p.branch === doc.custom_branch && p.currency === doc.currency)
+  if (current) doc.party_name = customer
+  else if (pairs.length === 1)
+    Object.assign(doc, { custom_branch: pairs[0].branch, currency: pairs[0].currency })
 }
+// Another customer picked by hand: the prefilled one is not brought back.
+watch(
+  () => doc.party_name,
+  (customer) => {
+    if (customer && customer !== prefill.customer) prefill.pairs = []
+  },
+)
 
 function applyPrefillItems() {
   if (!prefillItems.length) return
@@ -708,7 +755,7 @@ async function fetchPrices() {
   const rows = doc.items.filter(
     (r) => r.item_code && Number(r.qty) > 0 && r.priceState !== 'error',
   )
-  if (!rows.length || !doc.party_name || !doc.custom_branch) return
+  if (!rows.length || !doc.party_name || !doc.custom_branch || !doc.currency) return
   const request = ++priceRequest
   const asked = rows.map((r) => ({ item_code: r.item_code, qty: Number(r.qty) }))
   rows.forEach((r) => (r.priceState = 'loading'))
@@ -719,6 +766,7 @@ async function fetchPrices() {
     result = await call('crm.api.quotation.get_items_price', {
       customer: doc.party_name,
       branch: doc.custom_branch,
+      currency: doc.currency,
       items: asked,
     })
   } catch (e) {
@@ -788,7 +836,8 @@ async function loadAddress(name, target) {
 // ---- Save --------------------------------------------------------------
 function validate() {
   if (!salesPerson.value) return __('No Sales Person is linked to your login.')
-  if (!doc.custom_branch || !doc.currency) return __('No Branch / Currency is set on your Sales Person.')
+  if (!doc.custom_branch) return __('Please select a Work Location.')
+  if (!doc.currency) return __('Please select a Currency.')
   if (!doc.party_name) return __('Please select a Customer.')
   // More than one to choose from: the user has to say which, on the Address tab.
   if (addressChoices.billing.length > 1 && !doc.customer_address)
@@ -825,6 +874,7 @@ async function save() {
     const result = await call('crm.api.quotation.create_quotation', {
       customer: doc.party_name,
       branch: doc.custom_branch,
+      currency: doc.currency,
       deal: doc.custom_deal || null,
       items: doc.items
         .filter((r) => r.item_code)
@@ -840,7 +890,9 @@ async function save() {
       },
     })
     if (!result?.ok) {
-      toast.error(result?.message || __('Could not create the quotation.'))
+      // A line below its minimum price is refused without a message.
+      if (result?.reason !== 'below_min_price')
+        toast.error(result?.message || __('Could not create the quotation.'))
       return
     }
     toast.success(__('Quotation {0} created.', [result.name]))

@@ -12,6 +12,8 @@ from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_print_f
 # The order states the Customer Portal shows, plus ERPNext's own Draft / Cancelled / Closed / On Hold.
 STATE_COLORS = {
 	"Draft": "red",
+	"Pending Approval": "orange",
+	"Approval Rejected": "red",
 	"Confirmed": "blue",
 	"Dispatched": "orange",
 	"Delivered": "green",
@@ -22,10 +24,11 @@ STATE_COLORS = {
 
 
 def get_state(doc):
-	"""Draft, Confirmed, Dispatched (part delivered), Delivered, or ERPNext's
+	"""Pending Approval / Approval Rejected (a draft held by PAPL's floating
+	limit), Draft, Confirmed, Dispatched (part delivered), Delivered, or ERPNext's
 	Cancelled / Closed / On Hold."""
 	if doc.get("docstatus") == 0:
-		return "Draft"
+		return CREDIT_STATES.get(doc.get("custom_credit_approval_status"), "Draft")
 	if doc.get("docstatus") == 2:
 		return "Cancelled"
 	if doc.get("status") in ("Closed", "On Hold"):
@@ -37,6 +40,11 @@ def get_state(doc):
 	return "Confirmed"
 
 
+# PAPL's credit approval status on a draft order -> the state the CRM shows.
+# Approving submits the order, so an approved draft is not expected.
+CREDIT_STATES = {"Pending": "Pending Approval", "Rejected": "Approval Rejected"}
+
+
 def get_indicator(doc):
 	state = get_state(doc)
 	return {"label": state, "color": STATE_COLORS.get(state, "gray")}
@@ -45,7 +53,10 @@ def get_indicator(doc):
 def state_filter(value):
 	"""Filters matching a state from get_state()."""
 	if value == "Draft":
-		return {"docstatus": 0}
+		return {"docstatus": 0, "custom_credit_approval_status": ["not in", list(CREDIT_STATES)]}
+	for credit_status, state in CREDIT_STATES.items():
+		if value == state:
+			return {"docstatus": 0, "custom_credit_approval_status": credit_status}
 	if value == "Cancelled":
 		return {"docstatus": 2}
 	if value in ("Closed", "On Hold"):
@@ -120,7 +131,7 @@ class SalesOrderList:
 			for d in frappe.get_all(
 				"Sales Order",
 				filters={"name": ["in", names]},
-				fields=["name", "docstatus", "status", "per_delivered"],
+				fields=["name", "docstatus", "status", "per_delivered", "custom_credit_approval_status"],
 			)
 		}
 		for row in data:

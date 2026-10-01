@@ -23,7 +23,9 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center gap-2">
-            <span class="text-2xl font-semibold text-ink-gray-9">{{ q.name }}</span>
+            <span class="text-2xl font-semibold text-ink-gray-9">
+              {{ q.customer_name || q.party_name }}
+            </span>
             <Badge
               :label="__(q.indicator.label)"
               :theme="indicatorTheme(q.indicator.color)"
@@ -31,17 +33,16 @@
               size="lg"
             />
           </div>
-          <div class="text-base text-ink-gray-6">
-            {{ q.customer_name || q.party_name }}
-            <template v-if="q.deal">
-              ·
-              <router-link
+          <div v-if="q.billing_address" class="whitespace-pre-line text-base text-ink-gray-6">
+            {{ q.billing_address }}
+          </div>
+          <div v-if="q.deal" class="text-base text-ink-gray-6">
+            <router-link
                 :to="{ name: 'Deal', params: { dealId: q.deal } }"
                 class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
               >
-                {{ q.deal }}
-              </router-link>
-            </template>
+              {{ q.deal }}
+            </router-link>
           </div>
         </div>
         <div class="text-right">
@@ -73,40 +74,55 @@
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
         <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
-          <table class="w-full min-w-[40rem] text-base">
+          <table class="w-full min-w-[70rem] text-base">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="px-3 py-2 font-medium">#</th>
-                <th class="px-3 py-2 font-medium">{{ __('Item') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Qty') }}</th>
-                <th class="px-3 py-2 font-medium">{{ __('UOM') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
+                <th class="w-10 px-3 py-2 font-medium">#</th>
+                <th class="min-w-[14rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
+                <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
+                <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
+                <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
+                <th class="w-28 whitespace-nowrap px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
+                <th class="w-24 px-3 py-2 font-medium">{{ __('Qty') }}</th>
+                <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
+                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
+                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(item, i) in q.items"
                 :key="i"
-                class="border-t border-outline-gray-1"
+                class="border-t border-outline-gray-1 align-top"
               >
                 <td class="px-3 py-2.5 text-ink-gray-5">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
-                  <div class="text-ink-gray-8">{{ item.item_name || item.item_code }}</div>
-                  <div
-                    v-if="item.item_name && item.item_name !== item.item_code"
-                    class="text-sm text-ink-gray-5"
-                  >
-                    {{ item.item_code }}
+                  <div class="text-ink-gray-8">{{ item.item_code }}</div>
+                </td>
+                <td class="whitespace-pre-line px-3 py-2.5 text-sm text-ink-gray-6">
+                  {{ item.description || '—' }}
+                </td>
+                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.gst_hsn_code || '—' }}</td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-6">
+                  {{ item.gst_rate == null ? '—' : `${item.gst_rate}%` }}
+                </td>
+                <td class="px-3 py-2.5 text-ink-gray-8">
+                  {{ item.custom_no_of_packs || '—' }}
+                  <div v-if="item.custom_no_of_packs" class="mt-1 text-sm text-ink-gray-5">
+                    {{ __('{0} per pack', [item.custom_base_qty]) }}
                   </div>
                 </td>
-                <td class="px-3 py-2.5 text-right">{{ item.qty }}</td>
-                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom }}</td>
-                <td class="px-3 py-2.5 text-right">{{ amount(item.rate) }}</td>
-                <td class="px-3 py-2.5 text-right font-medium">{{ amount(item.amount) }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-8">{{ item.qty }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-8">
+                  {{ item.rate ? plain(item.rate) : '—' }}
+                </td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-8">
+                  {{ item.rate ? plain(item.amount) : '—' }}
+                </td>
               </tr>
               <tr v-if="!q.items.length">
-                <td colspan="6" class="px-3 py-6 text-center text-ink-gray-5">
+                <td colspan="10" class="px-3 py-6 text-center text-ink-gray-5">
                   {{ __('No items') }}
                 </td>
               </tr>
@@ -207,6 +223,11 @@ const errorTitle = computed(() =>
 )
 
 const amount = (v) => formatQuotationAmount(v, q.value?.currency)
+// The items table matches the new-quotation screen: plain numbers, no currency symbol.
+const plain = (v) =>
+  new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    v || 0,
+  )
 
 // The branch's print format from CRM Custom Settings; with none set, no `format`
 // param goes out and Frappe uses the doctype's default.
@@ -220,9 +241,16 @@ const printDoc = () => {
   )
 }
 
-// A submitted quotation can be ordered once; the button goes once a Sales
-// Order stands against it.
-const canOrder = computed(() => q.value?.docstatus === 1 && !q.value?.sales_orders?.length)
+// A submitted quotation can be ordered once, while it has not expired; the
+// button goes once a Sales Order stands against it. Valid Till is checked too,
+// since ERPNext only marks a quotation Expired in its nightly job.
+const today = new Date().toLocaleDateString('en-CA')
+const expired = computed(
+  () => q.value?.status === 'Expired' || (!!q.value?.valid_till && q.value.valid_till < today),
+)
+const canOrder = computed(
+  () => q.value?.docstatus === 1 && !expired.value && !q.value?.sales_orders?.length,
+)
 const ordering = ref(false)
 
 async function createSalesOrder() {
@@ -233,6 +261,8 @@ async function createSalesOrder() {
     })
     if (!result?.ok) {
       toast.error(result?.message || __('Could not create the Sales Order.'))
+    } else if (result.reason === 'pending_approval') {
+      toast.warning(result.message)
     } else {
       toast.success(__('Sales Order {0} created.', [result.sales_order]))
     }
@@ -254,7 +284,9 @@ const details = computed(() => [
   { label: __('Sale By'), value: q.value.sale_by },
   ...(q.value.sales_orders || []).map((name) => ({
     label: __('Sales Order'),
-    value: name,
+    value: q.value.sales_order_states?.[name]
+      ? `${name} · ${__(q.value.sales_order_states[name].label)}`
+      : name,
     to: { name: 'Sales Order', params: { salesOrderId: name } },
   })),
 ])
