@@ -253,7 +253,7 @@
             <div class="flex w-full max-w-xs flex-col gap-2 text-base">
               <div class="flex justify-between">
                 <span class="text-ink-gray-5">{{ __('Total Quantity') }}</span>
-                <span class="text-ink-gray-8">{{ totalQty }}</span>
+                <span class="text-ink-gray-8">{{ formatQty(totalQty) }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-ink-gray-5">{{ __('Net Total') }}</span>
@@ -345,6 +345,7 @@ import Link from '@/components/Controls/Link.vue'
 import { getMeta } from '@/stores/meta'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
+import { formatQty } from '@/utils/qty'
 import { Breadcrumbs, Button, FormControl, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -654,7 +655,7 @@ function applyPrefillItems() {
 // Discount slabs (qty ranges) from the customer's Item Discounts. With slabs,
 // the qty must fall inside one of them before the line can be priced; a blank
 // To Qty means no upper limit. Same check as the Customer Portal.
-const fmtQty = (n) => Number(n || 0).toLocaleString('en-IN')
+const fmtQty = (n) => formatQty(n || 0)
 
 function qtyError(row) {
   const item = customerItems.value.find((i) => i.item_code === row.item_code)

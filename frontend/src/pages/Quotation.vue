@@ -21,7 +21,7 @@
     <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
       <!-- Header -->
       <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="flex flex-col gap-1.5">
+        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
           <div class="flex items-center gap-2">
             <span class="text-2xl font-semibold text-ink-gray-9">
               {{ q.customer_name || q.party_name }}
@@ -33,14 +33,14 @@
               size="lg"
             />
           </div>
-          <div v-if="q.billing_address" class="whitespace-pre-line text-base text-ink-gray-6">
+          <div v-if="q.billing_address" class="max-w-xl whitespace-pre-line text-justify text-sm leading-relaxed text-ink-gray-6">
             {{ q.billing_address }}
           </div>
-          <div v-if="q.deal" class="text-base text-ink-gray-6">
+          <div v-if="q.deal" class="text-sm text-ink-gray-6">
             <router-link
-                :to="{ name: 'Deal', params: { dealId: q.deal } }"
-                class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
-              >
+              :to="{ name: 'Deal', params: { dealId: q.deal } }"
+              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+            >
               {{ q.deal }}
             </router-link>
           </div>
@@ -112,7 +112,7 @@
                     {{ __('{0} per pack', [item.custom_base_qty]) }}
                   </div>
                 </td>
-                <td class="px-3 py-2.5 text-ink-gray-8">{{ item.qty }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.qty) }}</td>
                 <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
                 <td class="px-3 py-2.5 text-right text-ink-gray-8">
                   {{ item.rate ? plain(item.rate) : '—' }}
@@ -200,6 +200,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
 import { indicatorTheme, formatQuotationAmount } from '@/utils/quotation'
+import { formatQty } from '@/utils/qty'
 import { Breadcrumbs, Badge, Button, call, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
@@ -289,6 +290,7 @@ const details = computed(() => [
       : name,
     to: { name: 'Sales Order', params: { salesOrderId: name } },
   })),
+  { label: __('Payment Terms'), value: q.value.payment_terms_template },
 ])
 
 const breadcrumbs = computed(() => [

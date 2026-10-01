@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import get_time, getdate
 
 BRANCH_FIELDS = {"MIDC": "midc", "FTWZ": "ftwz", "SEEPZ": "seepz"}
 
@@ -51,6 +51,8 @@ class CRMCustomSettings(Document):
 					)
 				)
 
+		self.validate_time_settings()
+
 		if self.holiday_list and (self.is_new() or self.has_value_changed("holiday_list")):
 			self.set("holiday_list_table", [])
 			for holiday_date in get_holiday_list_dates(self.holiday_list):
@@ -63,6 +65,44 @@ class CRMCustomSettings(Document):
 					"week_days",
 					{"week_day": day, **{f: int(working) for f in BRANCH_FIELDS.values()}},
 				)
+
+
+	def validate_time_settings(self):
+		"""From Time before To Time, and no two rows of one branch overlapping for
+		a document both tick (Quotation / Sales Order). Rows that only touch
+		(10:00-13:00 and 13:00-15:00) do not overlap."""
+		documents = (("quotation", _("Quotation")), ("sales_order", _("Sales Order")))
+		rows = self.time_setting_branch_wise
+		for row in rows:
+			if get_time(row.from_time) >= get_time(row.to_time):
+				frappe.throw(
+					_("Row #{0}: From Time must be before To Time for {1}.").format(row.idx, row.branch),
+					title=_("Invalid Time"),
+				)
+		for i, row in enumerate(rows):
+			for earlier in rows[:i]:
+				if earlier.branch != row.branch:
+					continue
+				if not (
+					get_time(row.from_time) < get_time(earlier.to_time)
+					and get_time(earlier.from_time) < get_time(row.to_time)
+				):
+					continue
+				shared = [label for field, label in documents if row.get(field) and earlier.get(field)]
+				if shared:
+					frappe.throw(
+						_("Row #{0}: {1} {2} - {3} overlaps with Row #{4} ({5} - {6}) for {7}.").format(
+							row.idx,
+							row.branch,
+							row.from_time,
+							row.to_time,
+							earlier.idx,
+							earlier.from_time,
+							earlier.to_time,
+							", ".join(shared),
+						),
+						title=_("Overlapping Time"),
+					)
 
 
 @frappe.whitelist()

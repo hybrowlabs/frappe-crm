@@ -280,6 +280,7 @@ def get_quotation(name: str):
 		"valid_till": doc.valid_till,
 		"company": doc.company,
 		"order_type": doc.order_type,
+		"payment_terms_template": doc.get("payment_terms_template"),
 		"currency": doc.currency,
 		"deal": doc.get("custom_deal"),
 		"sale_by": doc.get("custom_sale_by"),
