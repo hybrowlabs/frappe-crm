@@ -11,9 +11,11 @@
     <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
       <!-- Header -->
       <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="flex flex-col gap-1.5">
+        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
           <div class="flex items-center gap-2">
-            <span class="text-2xl font-semibold text-ink-gray-9">{{ q.name }}</span>
+            <span class="text-2xl font-semibold text-ink-gray-9">
+              {{ q.customer_name || q.customer }}
+            </span>
             <Badge
               :label="__(q.indicator.label)"
               :theme="indicatorTheme(q.indicator.color)"
@@ -21,17 +23,16 @@
               size="lg"
             />
           </div>
-          <div class="text-base text-ink-gray-6">
-            {{ q.customer_name || q.customer }}
-            <template v-if="q.quotation">
-              ·
-              <router-link
-                :to="{ name: 'Quotation', params: { quotationId: q.quotation } }"
-                class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
-              >
-                {{ q.quotation }}
-              </router-link>
-            </template>
+          <div v-if="q.billing_address" class="max-w-xl whitespace-pre-line text-justify text-sm leading-relaxed text-ink-gray-6">
+            {{ q.billing_address }}
+          </div>
+          <div v-if="q.quotation" class="text-sm text-ink-gray-6">
+            <router-link
+              :to="{ name: 'Quotation', params: { quotationId: q.quotation } }"
+              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+            >
+              {{ q.quotation }}
+            </router-link>
           </div>
         </div>
         <div class="text-right">
@@ -91,8 +92,8 @@
                     {{ item.item_code }}
                   </div>
                 </td>
-                <td class="px-3 py-2.5 text-right">{{ item.qty }}</td>
-                <td class="px-3 py-2.5 text-right">{{ item.delivered_qty || 0 }}</td>
+                <td class="px-3 py-2.5 text-right">{{ formatQty(item.qty) }}</td>
+                <td class="px-3 py-2.5 text-right">{{ formatQty(item.delivered_qty || 0) }}</td>
                 <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom }}</td>
                 <td class="px-3 py-2.5 text-right">{{ amount(item.rate) }}</td>
                 <td class="px-3 py-2.5 text-right font-medium">{{ amount(item.amount) }}</td>
@@ -176,6 +177,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
 import { indicatorTheme, formatQuotationAmount } from '@/utils/quotation'
+import { formatQty } from '@/utils/qty'
 import { Breadcrumbs, Badge, Button, createResource } from 'frappe-ui'
 import { computed } from 'vue'
 

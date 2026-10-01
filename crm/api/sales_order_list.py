@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from crm.api.quotation import can_see_all_quotations
+from crm.api.quotation import _address_text, can_see_all_quotations
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_print_format
 
 # CRM list/detail views over ERPNext's Sales Order, limited to orders created
@@ -189,6 +189,7 @@ def get_sales_order(name: str):
 		"indicator": get_indicator(doc),
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
+		"billing_address": _address_text(doc.customer_address),
 		"quotation": quotation,
 		"transaction_date": doc.transaction_date,
 		"delivery_date": doc.delivery_date,
