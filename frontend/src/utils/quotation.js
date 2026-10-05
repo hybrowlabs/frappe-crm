@@ -85,3 +85,26 @@ export function totalsLines(doc) {
   lines.push({ label: 'Rounding', value: Math.abs(rounding) >= 0.005 ? rounding : 0 })
   return lines
 }
+
+// The server sends the address one part per line: street line(s), then
+// "city, state, pincode", country, and "GSTIN: ...". Split for the address
+// card: the street lines as one paragraph, "City, State - Pincode, Country"
+// as the place line, and the GSTIN on its own. A line's own trailing comma is
+// dropped so none doubles up.
+export function addressParts(text) {
+  const lines = (text || '')
+    .split('\n')
+    .map((l) => l.trim().replace(/^,+|,+$/g, '').trim())
+    .filter(Boolean)
+  const gstinLine = lines.find((l) => /^GSTIN:/i.test(l))
+  const rest = lines.filter((l) => l !== gstinLine)
+  // Country and the city line are the last two; anything before is street.
+  const tail = rest.length > 2 ? rest.slice(-2) : rest.slice(rest.length > 1 ? 1 : 0)
+  const street = rest.slice(0, rest.length - tail.length)
+  const place = tail.map((l) => l.replace(/,\s*(\d{6})$/, ' - $1')).join(', ')
+  return {
+    street: street.join(', '),
+    place,
+    gstin: gstinLine ? gstinLine.replace(/^GSTIN:\s*/i, '') : '',
+  }
+}
