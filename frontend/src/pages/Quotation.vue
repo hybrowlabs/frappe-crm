@@ -33,8 +33,19 @@
               size="lg"
             />
           </div>
-          <div v-if="q.billing_address" class="max-w-2xl whitespace-pre-line text-left text-sm leading-relaxed text-ink-gray-6">
-            {{ q.billing_address }}
+          <div
+            v-if="q.billing_address"
+            class="mt-1 flex max-w-2xl flex-col gap-1"
+          >
+            <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
+            <span v-if="address.street" class="text-base leading-relaxed text-ink-gray-8">
+              {{ address.street }}
+            </span>
+            <span v-if="address.place" class="text-base text-ink-gray-8">{{ address.place }}</span>
+            <div v-if="address.gstin" class="mt-2 flex items-baseline gap-2">
+              <span class="text-sm text-ink-gray-5">{{ __('GSTIN') }}</span>
+              <span class="text-base text-ink-gray-8">{{ address.gstin }}</span>
+            </div>
           </div>
           <div v-if="q.deal" class="text-sm text-ink-gray-6">
             <router-link
@@ -165,7 +176,7 @@
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
-import { indicatorTheme, totalsLines, useCurrencyFormat } from '@/utils/quotation'
+import { addressParts, indicatorTheme, totalsLines, useCurrencyFormat } from '@/utils/quotation'
 import { formatQty } from '@/utils/qty'
 import { Breadcrumbs, Badge, Button, call, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
@@ -191,6 +202,7 @@ const errorTitle = computed(() =>
 
 // Tax lines with no amount (e.g. IGST on an intra-state sale) are left out.
 const totals = computed(() => totalsLines(q.value))
+const address = computed(() => addressParts(q.value?.billing_address))
 const amount = useCurrencyFormat(() => q.value?.currency)
 
 // The branch's print format from CRM Custom Settings; with none set, no `format`
