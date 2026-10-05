@@ -30,11 +30,13 @@ class CRMCustomSettings(Document):
 		from crm.fcrm.doctype.crm_week_days.crm_week_days import CRMWeekDays
 		from crm.fcrm.doctype.fcrm_holiday_list.fcrm_holiday_list import FCRMHolidayList
 		from crm.fcrm.doctype.fcrm_timing_setting.fcrm_timing_setting import FCRMTimingSetting
+		from crm.fcrm.doctype.non_inventory_item.non_inventory_item import NonInventoryItem
 		from frappe.types import DF
 
 		branch_warehouses: DF.Table[CRMBranchWarehouse]
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
+		non_inventory_items: DF.Table[NonInventoryItem]
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
 		week_days: DF.Table[CRMWeekDays]
 	# end: auto-generated types
@@ -52,6 +54,7 @@ class CRMCustomSettings(Document):
 				)
 
 		self.validate_time_settings()
+		self.validate_non_inventory_items()
 
 		if self.holiday_list and (self.is_new() or self.has_value_changed("holiday_list")):
 			self.set("holiday_list_table", [])
@@ -66,6 +69,22 @@ class CRMCustomSettings(Document):
 					{"week_day": day, **{f: int(working) for f in BRANCH_FIELDS.values()}},
 				)
 
+
+	def validate_non_inventory_items(self):
+		"""One row per Branch + Item. Rows without an item are not compared."""
+		seen = {}
+		for row in self.non_inventory_items:
+			if not row.item:
+				continue
+			key = (row.branch, row.item)
+			if key in seen:
+				frappe.throw(
+					_("Row #{0}: Item {1} is already added for Branch {2} in Row #{3}.").format(
+						row.idx, row.item, row.branch, seen[key]
+					),
+					title=_("Duplicate Entry"),
+				)
+			seen[key] = row.idx
 
 	def validate_time_settings(self):
 		"""From Time before To Time, and no two rows of one branch overlapping for

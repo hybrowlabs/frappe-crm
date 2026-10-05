@@ -317,22 +317,6 @@
               </div>
             </div>
           </section>
-
-          <section class="flex flex-col gap-3">
-            <div class="text-lg font-medium text-ink-gray-9">{{ __('Company Address') }}</div>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div class="flex flex-col gap-2">
-                <Link
-                  v-model="doc.company_address"
-                  :label="__('Company Address Name')"
-                  doctype="Address"
-                  :filters="companyLinkFilters"
-                  @update:modelValue="(v) => loadAddress(v, 'company')"
-                />
-                <AddressText :text="display.company" />
-              </div>
-            </div>
-          </section>
         </div>
       </fieldset>
     </div>
@@ -346,6 +330,7 @@ import { getMeta } from '@/stores/meta'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
 import { formatQty } from '@/utils/qty'
+import { useCurrencyFormat } from '@/utils/quotation'
 import { Breadcrumbs, Button, FormControl, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -414,10 +399,9 @@ const doc = reactive({
   items: [newRow()],
   customer_address: '',
   shipping_address_name: '',
-  company_address: '',
 })
 
-const display = reactive({ billing: '', shipping: '', company: '' })
+const display = reactive({ billing: '', shipping: '' })
 
 function selectOptions(fieldname) {
   const df = doctypeMeta.value?.fields?.find((f) => f.fieldname === fieldname)
@@ -433,10 +417,6 @@ const partyLinkFilters = computed(() =>
       ]
     : [['Dynamic Link', 'link_name', '=', '__none__']],
 )
-const companyLinkFilters = computed(() => [
-  ['Dynamic Link', 'link_doctype', '=', 'Company'],
-  ['Dynamic Link', 'link_name', '=', doc.company || '__none__'],
-])
 
 // ---- Sale By, Branch & Currency ---------------------------------------
 const salesPerson = ref('')
@@ -807,11 +787,7 @@ const netTotal = computed(() =>
 )
 // Taxes show 0 until the quotation is saved, when ERPNext works them out,
 // so Grand Total is the Net Total for now.
-// Plain numbers, no currency symbol.
-const amount = (v) =>
-  new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-    v || 0,
-  )
+const amount = useCurrencyFormat(() => doc.currency)
 
 // ---- Address & contact -------------------------------------------------
 async function loadAddress(name, target) {
@@ -887,13 +863,10 @@ async function save() {
       addresses: {
         customer_address: doc.customer_address,
         shipping_address_name: doc.shipping_address_name,
-        company_address: doc.company_address,
       },
     })
     if (!result?.ok) {
-      // A line below its minimum price is refused without a message.
-      if (result?.reason !== 'below_min_price')
-        toast.error(result?.message || __('Could not create the quotation.'))
+      toast.error(result?.message || __('Could not create the quotation.'))
       return
     }
     toast.success(__('Quotation {0} created.', [result.name]))

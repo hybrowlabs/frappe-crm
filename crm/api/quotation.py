@@ -372,6 +372,13 @@ def _session_sales_person():
 
 
 @frappe.whitelist()
+def get_currency_symbol(currency: str):
+	"""The symbol on the ERPNext Currency record (blank when none is set), so the
+	quotation and sales order screens show amounts the way the Currency master does."""
+	return frappe.get_cached_value("Currency", currency, "symbol") or ""
+
+
+@frappe.whitelist()
 def get_quotation_defaults():
 	"""Sales Person for "Sale By" and its Branch & Currency rows for a new quotation."""
 	sales_person = _session_sales_person()
@@ -421,6 +428,12 @@ def _check_customer(customer):
 		"Sales Team", {"parenttype": "Customer", "parent": customer, "sales_person": sales_person}
 	):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _is_gst_free_customer(customer):
+	"""SEZ and Overseas customers are charged no GST; India Compliance refuses a
+	quotation that carries GST for them."""
+	return frappe.db.get_value("Customer", customer, "gst_category") in ("SEZ", "Overseas")
 
 
 def _entitled_items(customer, branch):
@@ -483,7 +496,7 @@ def get_item_details(customer: str, item_code: str):
 	_check_customer(customer)
 	item = frappe.get_cached_doc("Item", item_code)
 	company = frappe.new_doc("Quotation").company
-	tax_category = resolve_tax_category(customer)
+	tax_category = None if _is_gst_free_customer(customer) else resolve_tax_category(customer)
 	template = (
 		item_tax_template(item_code, company, tax_category, frappe.utils.nowdate()) if tax_category else None
 	)
@@ -656,17 +669,23 @@ def get_items_price(customer: str, branch: str, currency: str, items):
 	return {"currency": currency, "items": lines}
 
 
-def _refusal_reason(doc, default):
-	"""below_min_price when PAPL's validate priced a line under its Sales BOM's
-	Min Sale Price (the rate and minimum it set on the row before refusing);
-	the CRM screen does not show that refusal."""
+def _refusal(doc, default_reason, message):
+	"""(reason, message) for a refused quotation. A line PAPL's validate priced
+	under its Sales BOM's Min Sale Price (the rate and minimum it set on the row
+	before refusing) is reported by item only: the CRM does not show the rate or
+	the minimum."""
 	from frappe.utils import flt
 
-	for row in doc.items:
-		minimum = flt(row.get("custom_min_sale_price"))
-		if minimum > 0 and flt(row.rate) < minimum:
-			return "below_min_price"
-	return default
+	below = [
+		row.item_code
+		for row in doc.items
+		if flt(row.get("custom_min_sale_price")) > 0 and flt(row.rate) < flt(row.custom_min_sale_price)
+	]
+	if below:
+		return "below_min_price", _("Price for item {0} is below the minimum allowed price.").format(
+			", ".join(below)
+		)
+	return default_reason, message
 
 
 def _linked_to(doctype, name, link_doctype, link_name):
@@ -791,7 +810,8 @@ def create_quotation(
 		doc.customer_address = get_default_address("Customer", customer)
 
 	try:
-		apply_quotation_taxes(doc)
+		if not _is_gst_free_customer(customer):
+			apply_quotation_taxes(doc)
 	except Exception:
 		frappe.log_error(title="CRM quotation taxes failed", message=frappe.get_traceback())
 		return refuse("tax_failed", _("Taxes could not be worked out for this quotation."))
@@ -806,7 +826,7 @@ def create_quotation(
 		# still the one from this except block.
 		frappe.db.rollback()
 		frappe.log_error(title="CRM quotation insert failed", message=frappe.get_traceback(with_context=True))
-		return refuse(_refusal_reason(doc, "validation_failed"), strip_html(str(exc)))
+		return refuse(*_refusal(doc, "validation_failed", strip_html(str(exc))))
 
 	# The rate is only known after PAPL's validate has priced the lines.
 	unpriced = [row.item_code for row in doc.items if flt(row.rate) <= 0]
@@ -833,7 +853,7 @@ def create_quotation(
 			reference_doctype="Quotation",
 			reference_name=quotation_name,
 		)
-		return refuse(_refusal_reason(doc, "failed"), strip_html(str(exc)))
+		return refuse(*_refusal(doc, "failed", strip_html(str(exc))))
 
 	return {"ok": True, "reason": "submitted", "message": "", "name": doc.name}
 

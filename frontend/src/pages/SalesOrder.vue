@@ -23,7 +23,7 @@
               size="lg"
             />
           </div>
-          <div v-if="q.billing_address" class="max-w-xl whitespace-pre-line text-justify text-sm leading-relaxed text-ink-gray-6">
+          <div v-if="q.billing_address" class="max-w-2xl whitespace-pre-line text-left text-sm leading-relaxed text-ink-gray-6">
             {{ q.billing_address }}
           </div>
           <div v-if="q.quotation" class="text-sm text-ink-gray-6">
@@ -108,58 +108,24 @@
         </div>
       </div>
 
-      <!-- Taxes -->
-      <div v-if="q.taxes.length" class="flex flex-col gap-2">
-        <div class="text-lg font-medium text-ink-gray-9">{{ __('Taxes') }}</div>
-        <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
-          <table class="w-full min-w-[28rem] text-base">
-            <thead>
-              <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="px-3 py-2 font-medium">{{ __('Description') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(tax, i) in q.taxes"
-                :key="i"
-                class="border-t border-outline-gray-1"
-              >
-                <td class="px-3 py-2.5 text-ink-gray-8">{{ tax.description }}</td>
-                <td class="px-3 py-2.5 text-right">{{ tax.rate ? `${tax.rate}%` : '' }}</td>
-                <td class="px-3 py-2.5 text-right">{{ amount(tax.tax_amount) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Totals -->
+      <!-- Totals: every line always shown, ₹0.00 when absent -->
       <div class="flex justify-end">
-        <div class="flex w-full max-w-xs flex-col gap-2 text-base">
+        <div class="flex w-full max-w-sm flex-col gap-2 rounded-lg border border-outline-gray-2 p-4 text-base">
           <div class="flex justify-between">
-            <span class="text-ink-gray-5">{{ __('Net Total') }}</span>
+            <span class="text-ink-gray-5">{{ __('Taxable Amount') }}</span>
             <span class="text-ink-gray-8">{{ amount(q.net_total) }}</span>
-          </div>
-          <div v-if="q.total_taxes_and_charges" class="flex justify-between">
-            <span class="text-ink-gray-5">{{ __('Taxes') }}</span>
-            <span class="text-ink-gray-8">{{ amount(q.total_taxes_and_charges) }}</span>
           </div>
           <div v-if="q.discount_amount" class="flex justify-between">
             <span class="text-ink-gray-5">{{ __('Discount') }}</span>
             <span class="text-ink-gray-8">− {{ amount(q.discount_amount) }}</span>
           </div>
+          <div v-for="line in totals" :key="line.label" class="flex justify-between">
+            <span class="text-ink-gray-5">{{ __(line.label) }}</span>
+            <span class="text-ink-gray-8">{{ amount(line.value) }}</span>
+          </div>
           <div class="flex justify-between border-t border-outline-gray-2 pt-2">
             <span class="font-medium text-ink-gray-8">{{ __('Grand Total') }}</span>
-            <span class="font-medium text-ink-gray-9">{{ amount(q.grand_total) }}</span>
-          </div>
-          <div
-            v-if="q.rounded_total && q.rounded_total !== q.grand_total"
-            class="flex justify-between"
-          >
-            <span class="text-ink-gray-5">{{ __('Rounded Total') }}</span>
-            <span class="font-medium text-ink-gray-9">{{ amount(q.rounded_total) }}</span>
+            <span class="font-medium text-ink-gray-9">{{ amount(q.rounded_total || q.grand_total) }}</span>
           </div>
         </div>
       </div>
@@ -176,7 +142,7 @@
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
-import { indicatorTheme, formatQuotationAmount } from '@/utils/quotation'
+import { indicatorTheme, totalsLines, useCurrencyFormat } from '@/utils/quotation'
 import { formatQty } from '@/utils/qty'
 import { Breadcrumbs, Badge, Button, createResource } from 'frappe-ui'
 import { computed } from 'vue'
@@ -200,7 +166,9 @@ const errorTitle = computed(() =>
     : __('Not permitted'),
 )
 
-const amount = (v) => formatQuotationAmount(v, q.value?.currency)
+// Tax lines with no amount (e.g. IGST on an intra-state sale) are left out.
+const totals = computed(() => totalsLines(q.value))
+const amount = useCurrencyFormat(() => q.value?.currency)
 
 // The branch's print format from CRM Custom Settings; with none set, no `format`
 // param goes out and Frappe uses the doctype's default.
