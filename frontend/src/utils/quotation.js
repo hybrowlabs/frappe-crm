@@ -1,4 +1,6 @@
 import { parseColor } from '@/utils'
+import { call } from 'frappe-ui'
+import { ref, toValue, watch } from 'vue'
 
 // Indicator colours come from the server (crm.api.quotation.get_indicator) and
 // follow ERPNext's list: red / orange / yellow / green / gray / blue ...
@@ -22,9 +24,64 @@ export function indicatorTheme(color) {
   )
 }
 
-export function formatQuotationAmount(value, currency) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: currency || 'INR',
-  }).format(value || 0)
+// Symbols come from the ERPNext Currency record, fetched once per currency.
+const symbolCache = {}
+
+async function fetchCurrencySymbol(currency) {
+  if (!(currency in symbolCache)) {
+    symbolCache[currency] = call('crm.api.quotation.get_currency_symbol', { currency }).catch(
+      () => '',
+    )
+  }
+  return symbolCache[currency]
+}
+
+// A function that formats an amount with the symbol of `currency` (a ref or getter).
+// A currency with no symbol on its record shows its code instead (e.g. "CNY 388.00").
+export function useCurrencyFormat(currency) {
+  const symbol = ref(null)
+
+  watch(
+    () => toValue(currency),
+    async (code) => {
+      symbol.value = null
+      if (!code) return
+      const found = await fetchCurrencySymbol(code)
+      if (code === toValue(currency)) symbol.value = found
+    },
+    { immediate: true },
+  )
+
+  return (value) => {
+    const number = new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Math.abs(value || 0))
+    const code = toValue(currency)
+    // Until the symbol arrives nothing is prefixed, so the screen doesn't flash the code.
+    const prefix = symbol.value === null ? '' : symbol.value || `${code} `
+    return `${value < 0 ? '-' : ''}${prefix}${number}`
+  }
+}
+
+// Tax lines a quotation / sales order always shows under Taxable Amount, ₹0.00
+// when absent, matched on the tax row's description. Any other tax row with an
+// amount follows them, then Rounding.
+const FIXED_TAX_LINES = ['CGST', 'SGST', 'IGST', 'Freight']
+
+export function totalsLines(doc) {
+  const taxes = doc?.taxes || []
+  const matches = (tax, name) => (tax.description || '').toUpperCase().includes(name.toUpperCase())
+  const sum = (rows) => rows.reduce((total, t) => total + (Number(t.tax_amount) || 0), 0)
+  const lines = FIXED_TAX_LINES.map((name) => ({
+    label: name,
+    value: sum(taxes.filter((t) => matches(t, name))),
+  }))
+  for (const tax of taxes) {
+    if (!FIXED_TAX_LINES.some((name) => matches(tax, name)) && Number(tax.tax_amount))
+      lines.push({ label: tax.description, value: Number(tax.tax_amount) })
+  }
+  const rounding = doc?.rounded_total ? doc.rounded_total - (doc.grand_total || 0) : 0
+  lines.push({ label: 'Rounding', value: Math.abs(rounding) >= 0.005 ? rounding : 0 })
+  return lines
 }

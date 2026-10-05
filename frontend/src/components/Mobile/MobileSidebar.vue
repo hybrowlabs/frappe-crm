@@ -55,14 +55,15 @@
                   </div>
                 </template>
                 <nav class="flex flex-col">
-                  <SidebarLink
-                    v-for="link in view.views"
-                    :key="link.label"
-                    :icon="link.icon"
-                    :label="__(link.label)"
-                    :to="link.to"
-                    class="mx-2 my-0.5"
-                  />
+                  <template v-for="link in view.views" :key="link.label">
+                    <div v-if="link.sepBefore" class="pa-nav-sep" />
+                    <SidebarLink
+                      :icon="link.icon"
+                      :label="__(link.label)"
+                      :to="link.to"
+                      class="mx-2 my-0.5"
+                    />
+                  </template>
                 </nav>
               </Section>
             </div>
@@ -90,59 +91,128 @@ import {
   Dialog,
   DialogOverlay,
 } from '@headlessui/vue'
+import LucideSparkles from '~icons/lucide/sparkles'
+import LucideCrown from '~icons/lucide/crown'
+import LucideCompass from '~icons/lucide/compass'
+import LucideRepeat from '~icons/lucide/repeat'
+import LucideFlaskConical from '~icons/lucide/flask-conical'
+import LucideUsers from '~icons/lucide/users'
+import LucideZap from '~icons/lucide/zap'
+import LucideContact from '~icons/lucide/contact'
+import LucideBuilding from '~icons/lucide/building'
+import LucideNotepadText from '~icons/lucide/notepad-text'
+import LucideCircleCheck from '~icons/lucide/circle-check'
+import LucidePhone from '~icons/lucide/phone'
+import LucideMegaphone from '~icons/lucide/megaphone'
+import LucideFileText from '~icons/lucide/file-text'
+import LucidePackageCheck from '~icons/lucide/package-check'
 import Section from '@/components/Section.vue'
 import PinIcon from '@/components/Icons/PinIcon.vue'
 import UserDropdown from '@/components/UserDropdown.vue'
-import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
-import DealsIcon from '@/components/Icons/DealsIcon.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
-import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
-import NoteIcon from '@/components/Icons/NoteIcon.vue'
-import TaskIcon from '@/components/Icons/TaskIcon.vue'
-import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import NotificationsIcon from '@/components/Icons/NotificationsIcon.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import { viewsStore } from '@/stores/views'
+import { usersStore } from '@/stores/users'
 import { unreadNotificationsCount } from '@/stores/notifications'
 import { computed, h } from 'vue'
 import { mobileSidebarOpened as sidebarOpened } from '@/composables/settings'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
+const {
+  isCEO,
+  isSalesManager,
+  isSalesperson,
+  isTechnicalTeam,
+  isMarketingTeam,
+} = usersStore()
 
+// Keep in sync with the links in Layouts/AppSidebar.vue
 const links = [
   {
+    label: 'Dashboard',
+    icon: LucideSparkles,
+    to: 'Dashboard',
+  },
+  {
+    label: 'CEO Dashboard',
+    icon: LucideCrown,
+    to: 'CEODashboard',
+    condition: () => isCEO(),
+  },
+  {
+    label: 'Sales Manager',
+    icon: LucideCompass,
+    to: 'SalesManagerDashboard',
+    condition: () => isSalesManager(),
+  },
+  {
+    label: 'Repeat Business',
+    icon: LucideRepeat,
+    to: 'RepeatBusinessDashboard',
+    condition: () => isSalesManager() || isCEO(),
+  },
+  {
+    label: 'Technical Pre-Sale',
+    icon: LucideFlaskConical,
+    to: 'TechnicalPresaleDashboard',
+    condition: () => isTechnicalTeam(),
+  },
+  {
+    label: 'My Dashboard',
+    icon: LucideSparkles,
+    to: 'MyDashboard',
+    condition: () => isSalesperson(),
+  },
+  {
+    label: 'Marketing',
+    icon: LucideMegaphone,
+    to: 'MarketingDashboard',
+    condition: () => isMarketingTeam(),
+  },
+  {
     label: 'Leads',
-    icon: LeadsIcon,
+    icon: LucideUsers,
+    sepBefore: true,
     to: 'Leads',
   },
   {
     label: 'Deals',
-    icon: DealsIcon,
+    icon: LucideZap,
     to: 'Deals',
   },
   {
+    label: 'Quotations',
+    icon: LucideFileText,
+    to: 'Quotations',
+  },
+  {
+    label: 'Sales Orders',
+    icon: LucidePackageCheck,
+    to: 'Sales Orders',
+  },
+  {
     label: 'Contacts',
-    icon: ContactsIcon,
+    icon: LucideContact,
     to: 'Contacts',
   },
   {
     label: 'Organizations',
-    icon: OrganizationsIcon,
+    icon: LucideBuilding,
     to: 'Organizations',
   },
   {
     label: 'Notes',
-    icon: NoteIcon,
+    icon: LucideNotepadText,
     to: 'Notes',
   },
   {
     label: 'Tasks',
-    icon: TaskIcon,
+    icon: LucideCircleCheck,
     to: 'Tasks',
   },
   {
     label: 'Call Logs',
-    icon: PhoneIcon,
+    icon: LucidePhone,
     to: 'Call Logs',
   },
 ]
@@ -153,7 +223,12 @@ const allViews = computed(() => {
       name: 'All Views',
       hideLabel: true,
       opened: true,
-      views: links,
+      views: links.filter((link) => {
+        if (link.condition) {
+          return link.condition()
+        }
+        return true
+      }),
     },
   ]
   if (getPublicViews().length) {
@@ -193,17 +268,21 @@ function getIcon(routeName, icon) {
 
   switch (routeName) {
     case 'Leads':
-      return LeadsIcon
+      return LucideUsers
     case 'Deals':
-      return DealsIcon
+      return LucideZap
+    case 'Quotations':
+      return LucideFileText
+    case 'Sales Orders':
+      return LucidePackageCheck
     case 'Contacts':
-      return ContactsIcon
+      return LucideContact
     case 'Organizations':
-      return OrganizationsIcon
+      return LucideBuilding
     case 'Notes':
-      return NoteIcon
+      return LucideNotepadText
     case 'Call Logs':
-      return PhoneIcon
+      return LucidePhone
     default:
       return PinIcon
   }

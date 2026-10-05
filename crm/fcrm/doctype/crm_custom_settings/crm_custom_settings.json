@@ -13,7 +13,9 @@
   "quotation_tab",
   "time_setting_branch_wise",
   "days_setting_section",
-  "week_days"
+  "week_days",
+  "non_inventory_item_tab",
+  "non_inventory_items"
  ],
  "fields": [
   {
@@ -69,11 +71,22 @@
    "fieldtype": "Table",
    "label": "Week Days",
    "options": "CRM Week Days"
+  },
+  {
+   "fieldname": "non_inventory_item_tab",
+   "fieldtype": "Tab Break",
+   "label": "Non Inventory Item"
+  },
+  {
+   "fieldname": "non_inventory_items",
+   "fieldtype": "Table",
+   "label": "Non Inventory Items",
+   "options": "Non Inventory Item"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-09-29 12:30:00.000000",
+ "modified": "2026-10-05 18:41:04.226249",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
