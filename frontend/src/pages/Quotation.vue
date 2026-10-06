@@ -254,8 +254,7 @@ async function createSalesOrder() {
 const details = computed(() => [
   { label: __('Date'), value: formatDate(q.value.transaction_date, '', true) },
   { label: __('Valid Till'), value: formatDate(q.value.valid_till, '', true) },
-  { label: __('Customer'), value: q.value.customer_name || q.value.party_name },
-  { label: __('Company'), value: q.value.company },
+  { label: __('Work Location'), value: q.value.branch },
   { label: __('Order Type'), value: q.value.order_type },
   { label: __('Sale By'), value: q.value.sale_by },
   ...(q.value.sales_orders || []).map((name) => ({

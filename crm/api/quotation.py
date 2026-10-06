@@ -20,7 +20,8 @@ def _block_outside_window(doc, fieldname, label):
 	holiday, then weekday, then the branch's from/to time. Only Time Setting rows
 	ticked for this document (`fieldname`) count, so a Quotation window does not
 	let a Sales Order through and the other way round."""
-	branch = doc.get("custom_branch") or _sales_person_branch()
+	# A Quotation keeps its branch in custom_branch; a Sales Order in branch.
+	branch = doc.get("custom_branch") or doc.get("branch") or _sales_person_branch()
 	if is_holiday(doc.transaction_date, branch):
 		frappe.throw(_(HOLIDAY_BLOCKED).format(label, branch or _("(none)")), title=_("Holiday"))
 
@@ -279,6 +280,7 @@ def get_quotation(name: str):
 		"transaction_date": doc.transaction_date,
 		"valid_till": doc.valid_till,
 		"company": doc.company,
+		"branch": doc.get("custom_branch"),
 		"order_type": doc.order_type,
 		"payment_terms_template": doc.get("payment_terms_template"),
 		"currency": doc.currency,
