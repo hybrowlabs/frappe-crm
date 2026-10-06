@@ -20,64 +20,60 @@
   <div v-if="q" class="flex-1 overflow-y-auto">
     <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
       <!-- Header -->
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl font-semibold text-ink-gray-9">
-              {{ q.customer_name || q.party_name }}
-            </span>
-            <Badge
-              :label="__(q.indicator.label)"
-              :theme="indicatorTheme(q.indicator.color)"
-              variant="subtle"
-              size="lg"
-            />
-          </div>
-          <div
-            v-if="q.billing_address"
-            class="mt-1 flex max-w-2xl flex-col gap-1"
-          >
-            <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
-            <span v-if="address.street" class="text-base leading-relaxed text-ink-gray-8">
-              {{ address.street }}
-            </span>
-            <span v-if="address.place" class="text-base text-ink-gray-8">{{ address.place }}</span>
-            <div v-if="address.gstin" class="mt-2 flex items-baseline gap-2">
-              <span class="text-sm text-ink-gray-5">{{ __('GSTIN') }}</span>
-              <span class="text-base text-ink-gray-8">{{ address.gstin }}</span>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl font-semibold text-ink-gray-9">
+            {{ q.customer_name || q.party_name }}
+          </span>
+          <Badge
+            :label="__(q.indicator.label)"
+            :theme="indicatorTheme(q.indicator.color)"
+            variant="subtle"
+            size="lg"
+          />
+        </div>
+
+        <!-- Address and details, in one box -->
+        <div
+          class="grid rounded-lg border border-outline-gray-2 p-4"
+          style="grid-template-columns: repeat(2, minmax(0, 1fr))"
+        >
+          <div class="flex min-w-0 flex-col gap-1.5 pr-6">
+            <div v-if="q.billing_address" class="flex flex-col gap-1">
+              <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
+              <span v-if="address.street" class="break-words text-base leading-relaxed text-ink-gray-8">
+                {{ address.street }}
+              </span>
+              <span v-if="address.place" class="text-base text-ink-gray-8">{{ address.place }}</span>
+              <div v-if="address.gstin" class="mt-2 flex items-baseline gap-2">
+                <span class="text-sm text-ink-gray-5">{{ __('GSTIN') }}</span>
+                <span class="text-base text-ink-gray-8">{{ address.gstin }}</span>
+              </div>
+            </div>
+            <div v-if="q.deal" class="text-sm text-ink-gray-6">
+              <router-link
+                :to="{ name: 'Deal', params: { dealId: q.deal } }"
+                class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+              >
+                {{ q.deal }}
+              </router-link>
             </div>
           </div>
-          <div v-if="q.deal" class="text-sm text-ink-gray-6">
-            <router-link
-              :to="{ name: 'Deal', params: { dealId: q.deal } }"
-              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
-            >
-              {{ q.deal }}
-            </router-link>
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="text-sm text-ink-gray-5">{{ __('Grand Total') }}</div>
-          <div class="text-2xl font-semibold text-ink-gray-9">
-            {{ amount(q.rounded_total || q.grand_total) }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Details -->
-      <div
-        class="grid grid-cols-2 gap-x-6 gap-y-4 rounded-lg border border-outline-gray-2 p-4 sm:grid-cols-4"
-      >
-        <div v-for="d in details" :key="d.label" class="flex flex-col gap-1">
-          <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
-          <router-link
-            v-if="d.to"
-            :to="d.to"
-            class="truncate text-base text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+          <div
+            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-l border-outline-gray-2 pl-6"
           >
-            {{ d.value }}
-          </router-link>
-          <span v-else class="truncate text-base text-ink-gray-8">{{ d.value || '—' }}</span>
+            <div v-for="d in details" :key="d.label" class="flex min-w-0 flex-col gap-1">
+              <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
+              <router-link
+                v-if="d.to"
+                :to="d.to"
+                class="break-words text-base text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+              >
+                {{ d.value }}
+              </router-link>
+              <span v-else class="break-words text-base text-ink-gray-8">{{ d.value || '—' }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -85,11 +81,11 @@
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
         <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
-          <table class="w-full min-w-[70rem] text-base">
+          <table class="w-full min-w-[62rem] text-base">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
                 <th class="w-10 px-3 py-2 font-medium">#</th>
-                <th class="min-w-[14rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
+                <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
                 <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
                 <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
                 <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
@@ -254,9 +250,8 @@ async function createSalesOrder() {
 const details = computed(() => [
   { label: __('Date'), value: formatDate(q.value.transaction_date, '', true) },
   { label: __('Valid Till'), value: formatDate(q.value.valid_till, '', true) },
-  { label: __('Work Location'), value: q.value.branch },
-  { label: __('Order Type'), value: q.value.order_type },
   { label: __('Sale By'), value: q.value.sale_by },
+  { label: __('Work Location'), value: q.value.branch },
   ...(q.value.sales_orders || []).map((name) => ({
     label: __('Sales Order'),
     value: q.value.sales_order_states?.[name]
