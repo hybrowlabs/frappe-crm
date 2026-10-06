@@ -88,7 +88,8 @@ class CRMCustomSettings(Document):
 
 	def validate_time_settings(self):
 		"""From Time before To Time, and no two rows of one branch overlapping for
-		a document both tick (Quotation / Sales Order). Rows that only touch
+		a document both tick (Quotation / Sales Order), or when either row ticks
+		neither. Rows that only touch
 		(10:00-13:00 and 13:00-15:00) do not overlap."""
 		documents = (("quotation", _("Quotation")), ("sales_order", _("Sales Order")))
 		rows = self.time_setting_branch_wise
@@ -108,7 +109,12 @@ class CRMCustomSettings(Document):
 				):
 					continue
 				shared = [label for field, label in documents if row.get(field) and earlier.get(field)]
-				if shared:
+				# A row with neither document ticked gates nothing, so it can
+				# never be told apart from the row it overlaps: refuse that too.
+				untouched = not any(row.get(f) for f, _label in documents) or not any(
+					earlier.get(f) for f, _label in documents
+				)
+				if shared or untouched:
 					frappe.throw(
 						_("Row #{0}: {1} {2} - {3} overlaps with Row #{4} ({5} - {6}) for {7}.").format(
 							row.idx,
@@ -118,7 +124,7 @@ class CRMCustomSettings(Document):
 							earlier.idx,
 							earlier.from_time,
 							earlier.to_time,
-							", ".join(shared),
+							", ".join(shared) or _("Quotation / Sales Order"),
 						),
 						title=_("Overlapping Time"),
 					)
