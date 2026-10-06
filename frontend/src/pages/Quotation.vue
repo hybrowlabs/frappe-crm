@@ -84,7 +84,7 @@
           <table class="w-full min-w-[62rem] text-base">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="w-10 px-3 py-2 font-medium">#</th>
+                <th class="w-10 px-3 py-2 font-medium">SR No.</th>
                 <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
                 <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
                 <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>

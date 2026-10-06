@@ -10,64 +10,60 @@
   <div v-if="q" class="flex-1 overflow-y-auto">
     <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
       <!-- Header -->
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl font-semibold text-ink-gray-9">
-              {{ q.customer_name || q.customer }}
-            </span>
-            <Badge
-              :label="__(q.indicator.label)"
-              :theme="indicatorTheme(q.indicator.color)"
-              variant="subtle"
-              size="lg"
-            />
-          </div>
-          <div
-            v-if="q.billing_address"
-            class="mt-1 flex max-w-2xl flex-col gap-1"
-          >
-            <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
-            <span v-if="address.street" class="text-base leading-relaxed text-ink-gray-8">
-              {{ address.street }}
-            </span>
-            <span v-if="address.place" class="text-base text-ink-gray-8">{{ address.place }}</span>
-            <div v-if="address.gstin" class="mt-2 flex items-baseline gap-2">
-              <span class="text-sm text-ink-gray-5">{{ __('GSTIN') }}</span>
-              <span class="text-base text-ink-gray-8">{{ address.gstin }}</span>
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl font-semibold text-ink-gray-9">
+            {{ q.customer_name || q.customer }}
+          </span>
+          <Badge
+            :label="__(q.indicator.label)"
+            :theme="indicatorTheme(q.indicator.color)"
+            variant="subtle"
+            size="lg"
+          />
+        </div>
+
+        <!-- Address and details, in one box -->
+        <div
+          class="grid rounded-lg border border-outline-gray-2 p-4"
+          style="grid-template-columns: repeat(2, minmax(0, 1fr))"
+        >
+          <div class="flex min-w-0 flex-col gap-1.5 pr-6">
+            <div v-if="q.billing_address" class="flex flex-col gap-1">
+              <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
+              <span v-if="address.street" class="break-words text-base leading-relaxed text-ink-gray-8">
+                {{ address.street }}
+              </span>
+              <span v-if="address.place" class="text-base text-ink-gray-8">{{ address.place }}</span>
+              <div v-if="address.gstin" class="mt-2 flex items-baseline gap-2">
+                <span class="text-sm text-ink-gray-5">{{ __('GSTIN') }}</span>
+                <span class="text-base text-ink-gray-8">{{ address.gstin }}</span>
+              </div>
+            </div>
+            <div v-if="q.quotation" class="text-sm text-ink-gray-6">
+              <router-link
+                :to="{ name: 'Quotation', params: { quotationId: q.quotation } }"
+                class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+              >
+                {{ q.quotation }}
+              </router-link>
             </div>
           </div>
-          <div v-if="q.quotation" class="text-sm text-ink-gray-6">
-            <router-link
-              :to="{ name: 'Quotation', params: { quotationId: q.quotation } }"
-              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
-            >
-              {{ q.quotation }}
-            </router-link>
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="text-sm text-ink-gray-5">{{ __('Grand Total') }}</div>
-          <div class="text-2xl font-semibold text-ink-gray-9">
-            {{ amount(q.rounded_total || q.grand_total) }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Details -->
-      <div
-        class="grid grid-cols-2 gap-x-6 gap-y-4 rounded-lg border border-outline-gray-2 p-4 sm:grid-cols-4"
-      >
-        <div v-for="d in details" :key="d.label" class="flex flex-col gap-1">
-          <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
-          <router-link
-            v-if="d.to"
-            :to="d.to"
-            class="truncate text-base text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+          <div
+            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-l border-outline-gray-2 pl-6"
           >
-            {{ d.value }}
-          </router-link>
-          <span v-else class="truncate text-base text-ink-gray-8">{{ d.value || '—' }}</span>
+            <div v-for="d in details" :key="d.label" class="flex min-w-0 flex-col gap-1">
+              <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
+              <router-link
+                v-if="d.to"
+                :to="d.to"
+                class="break-words text-base text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2 hover:text-ink-gray-9"
+              >
+                {{ d.value }}
+              </router-link>
+              <span v-else class="break-words text-base text-ink-gray-8">{{ d.value || '—' }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -75,42 +71,57 @@
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
         <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
-          <table class="w-full min-w-[40rem] text-base">
+          <table class="w-full min-w-[62rem] text-base">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="px-3 py-2 font-medium">#</th>
-                <th class="px-3 py-2 font-medium">{{ __('Item') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Qty') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Delivered') }}</th>
-                <th class="px-3 py-2 font-medium">{{ __('UOM') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
-                <th class="px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
+                <th class="w-10 px-3 py-2 font-medium">SR No.</th>
+                <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
+                <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
+                <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
+                <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
+                <th class="w-28 whitespace-nowrap px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
+                <th class="w-24 px-3 py-2 font-medium">{{ __('Qty') }}</th>
+                <th class="w-24 px-3 py-2 font-medium">{{ __('Delivered') }}</th>
+                <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
+                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
+                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(item, i) in q.items"
                 :key="i"
-                class="border-t border-outline-gray-1"
+                class="border-t border-outline-gray-1 align-top"
               >
                 <td class="px-3 py-2.5 text-ink-gray-5">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
-                  <div class="text-ink-gray-8">{{ item.item_name || item.item_code }}</div>
-                  <div
-                    v-if="item.item_name && item.item_name !== item.item_code"
-                    class="text-sm text-ink-gray-5"
-                  >
-                    {{ item.item_code }}
+                  <div class="text-ink-gray-8">{{ item.item_code }}</div>
+                </td>
+                <td class="whitespace-pre-line px-3 py-2.5 text-sm text-ink-gray-6">
+                  {{ item.description || '—' }}
+                </td>
+                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.gst_hsn_code || '—' }}</td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-6">
+                  {{ item.gst_rate == null ? '—' : `${item.gst_rate}%` }}
+                </td>
+                <td class="px-3 py-2.5 text-ink-gray-8">
+                  {{ item.custom_no_of_packs || '—' }}
+                  <div v-if="item.custom_no_of_packs" class="mt-1 text-sm text-ink-gray-5">
+                    {{ __('{0} per pack', [item.custom_base_qty]) }}
                   </div>
                 </td>
-                <td class="px-3 py-2.5 text-right">{{ formatQty(item.qty) }}</td>
-                <td class="px-3 py-2.5 text-right">{{ formatQty(item.delivered_qty || 0) }}</td>
-                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom }}</td>
-                <td class="px-3 py-2.5 text-right">{{ amount(item.rate) }}</td>
-                <td class="px-3 py-2.5 text-right font-medium">{{ amount(item.amount) }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.qty) }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.delivered_qty || 0) }}</td>
+                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-8">
+                  {{ item.rate ? amount(item.rate) : '—' }}
+                </td>
+                <td class="px-3 py-2.5 text-right text-ink-gray-8">
+                  {{ item.rate ? amount(item.amount) : '—' }}
+                </td>
               </tr>
               <tr v-if="!q.items.length">
-                <td colspan="7" class="px-3 py-6 text-center text-ink-gray-5">
+                <td colspan="11" class="px-3 py-6 text-center text-ink-gray-5">
                   {{ __('No items') }}
                 </td>
               </tr>

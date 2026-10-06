@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from crm.api.quotation import _address_text, can_see_all_quotations
+from crm.api.quotation import _address_text, _line_gst_rate, can_see_all_quotations
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_print_format
 
 # CRM list/detail views over ERPNext's Sales Order, limited to orders created
@@ -171,6 +171,17 @@ def get_quick_filter_fields():
 	return fields
 
 
+def _pack_details(item):
+	"""No of Packs and the pack size for a Sales Order line. The order line does
+	not keep them, so they come from the Item's pack rule: packs = qty / base qty."""
+	in_packs, base_qty = frappe.get_cached_value(
+		"Item", item.item_code, ["custom_sell_only_as_a_multiple_of_base_qty", "custom_base_qty"]
+	)
+	if not in_packs or flt(base_qty) <= 0:
+		return {"custom_no_of_packs": None, "custom_base_qty": None}
+	return {"custom_no_of_packs": round(flt(item.qty) / flt(base_qty)), "custom_base_qty": base_qty}
+
+
 @frappe.whitelist()
 def get_sales_order(name: str):
 	"""Read-only view of one CRM sales order for the CRM sales order page."""
@@ -203,6 +214,10 @@ def get_sales_order(name: str):
 			{
 				"item_code": i.item_code,
 				"item_name": i.item_name,
+				"description": frappe.utils.strip_html(i.description or "").strip(),
+				"gst_hsn_code": i.get("gst_hsn_code") or "",
+				"gst_rate": _line_gst_rate(i),
+				**_pack_details(i),
 				"qty": i.qty,
 				"delivered_qty": i.delivered_qty,
 				"uom": i.uom,
