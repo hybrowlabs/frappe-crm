@@ -12,6 +12,8 @@ from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import (
 
 HOLIDAY_BLOCKED = "{0} cannot be created on holiday for branch {1}."
 DAY_BLOCKED = "{0} for branch {1} cannot be created on {2}."
+METAL_RATE_PREFIX = "Metal rate for"
+METAL_RATE_RISEN = "Metal rate has risen since this quotation was made. Please revise the quotation."
 TIME_BLOCKED = "{0} for branch {1} can only be created during: {2}."
 
 
@@ -976,7 +978,14 @@ def _make_sales_order(quotation):
 
 	# Same gate as the desk's Create > Sales Order button: no order once the
 	# metal rate has risen past the tolerance it was quoted at.
-	validate_metal_rate_before_so(quotation.name)
+	try:
+		validate_metal_rate_before_so(quotation.name)
+	except frappe.ValidationError as exc:
+		# PAPL's message carries the new metal rate; the CRM only asks for a revision.
+		if not str(exc).startswith(METAL_RATE_PREFIX):
+			raise
+		frappe.clear_messages()
+		frappe.throw(_(METAL_RATE_RISEN), title=_("Metal Rate Exceeded"))
 
 	delivery_date = add_days(nowdate(), 7)
 	order = make_sales_order(quotation.name)
