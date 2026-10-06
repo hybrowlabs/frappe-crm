@@ -279,6 +279,7 @@ def get_quotation(name: str):
 		"transaction_date": doc.transaction_date,
 		"valid_till": doc.valid_till,
 		"company": doc.company,
+		"branch": doc.get("custom_branch"),
 		"order_type": doc.order_type,
 		"payment_terms_template": doc.get("payment_terms_template"),
 		"currency": doc.currency,
