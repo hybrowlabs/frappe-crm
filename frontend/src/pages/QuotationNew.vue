@@ -178,6 +178,12 @@
                         @update:modelValue="onItemChange(row)"
                       />
                       <div
+                        v-if="isFreight(row) && freightError(row)"
+                        class="mt-1 text-sm text-ink-red-4"
+                      >
+                        {{ freightError(row) }}
+                      </div>
+                      <div
                         v-if="row.priceMessage"
                         class="mt-1 text-sm"
                         :class="row.priceState === 'error' ? 'text-ink-red-4' : 'text-ink-gray-5'"
@@ -212,8 +218,17 @@
                       <FormControl v-model="row.qty" type="number" min="0" />
                     </td>
                     <td class="px-3 py-2.5 text-ink-gray-6">{{ row.uom || '—' }}</td>
-                    <td class="px-3 py-2.5 text-right text-ink-gray-8">
-                      {{ rateLabel(row) }}
+                    <td
+                      :class="isFreight(row) ? 'px-3 py-1.5' : 'px-3 py-2.5 text-right text-ink-gray-8'"
+                    >
+                      <FormControl
+                        v-if="isFreight(row)"
+                        v-model="row.rate"
+                        type="number"
+                        min="0"
+                        :placeholder="__('Min {0}', [freightInfo(row).min_pricing])"
+                      />
+                      <template v-else>{{ rateLabel(row) }}</template>
                     </td>
                     <td class="px-3 py-2.5 text-right text-ink-gray-8">
                       {{ row.rate ? amount(row.rate * (row.qty || 0)) : '—' }}
@@ -637,6 +652,21 @@ function applyPrefillItems() {
 // To Qty means no upper limit. Same check as the Customer Portal.
 const fmtQty = (n) => formatQty(n || 0)
 
+// Service (freight) items from CRM Custom Settings > Non Inventory Item: no Sales
+// BOM, so the rate is typed here and may not be under the branch's Min Pricing.
+const freightInfo = (row) =>
+  customerItems.value.find((i) => i.item_code === row.item_code && i.non_inventory)
+const isFreight = (row) => !!row.item_code && !!freightInfo(row)
+
+function freightError(row) {
+  const rate = Number(row.rate)
+  const minimum = Number(freightInfo(row)?.min_pricing) || 0
+  if (rate > 0 && rate < minimum) {
+    return __('Rate for {0} cannot be below the minimum price {1}.', [row.item_code, minimum])
+  }
+  return ''
+}
+
 function qtyError(row) {
   const item = customerItems.value.find((i) => i.item_code === row.item_code)
   const slabs = item?.slabs || []
@@ -725,6 +755,10 @@ function clearPrice(row) {
 watch(priceKey, () => {
   clearTimeout(priceTimer)
   for (const row of doc.items) {
+    if (isFreight(row)) {
+      row.priceState = 'manual'
+      continue
+    }
     clearPrice(row)
     const error = row.item_code ? qtyError(row) : ''
     if (error) Object.assign(row, { priceState: 'error', priceMessage: error })
@@ -734,7 +768,7 @@ watch(priceKey, () => {
 
 async function fetchPrices() {
   const rows = doc.items.filter(
-    (r) => r.item_code && Number(r.qty) > 0 && r.priceState !== 'error',
+    (r) => r.item_code && Number(r.qty) > 0 && r.priceState !== 'error' && !isFreight(r),
   )
   if (!rows.length || !doc.party_name || !doc.custom_branch || !doc.currency) return
   const request = ++priceRequest
@@ -825,10 +859,16 @@ function validate() {
   if (!items.length) return __('Please add at least one item.')
   const noQty = items.find((r) => !(Number(r.qty) > 0))
   if (noQty) return __('Please set a Qty for {0}.', [noQty.item_code])
-  const pending = items.find((r) => r.priceState === 'loading' || (!r.priceState && !r.rate))
+  const freight = items.filter(isFreight)
+  const noRate = freight.find((r) => !(Number(r.rate) > 0))
+  if (noRate) return __('Please enter the rate for {0}.', [noRate.item_code])
+  const lowRate = freight.find((r) => freightError(r))
+  if (lowRate) return freightError(lowRate)
+  const priced = items.filter((r) => !isFreight(r))
+  const pending = priced.find((r) => r.priceState === 'loading' || (!r.priceState && !r.rate))
   if (pending) return __('Please wait for the rates to load.')
   // Like the Customer Portal, every line needs a rate before it can be quoted.
-  const unpriced = items.find((r) => r.priceState !== 'priced' || !(r.rate > 0))
+  const unpriced = priced.find((r) => r.priceState !== 'priced' || !(r.rate > 0))
   if (unpriced)
     return __('{0} has no rate: {1}', [
       unpriced.item_code,
@@ -859,6 +899,7 @@ async function save() {
           item_code: r.item_code,
           qty: Number(r.qty),
           no_of_packs: r.sold_in_packs ? Number(r.custom_no_of_packs) : null,
+          rate: isFreight(r) ? Number(r.rate) : null,
         })),
       addresses: {
         customer_address: doc.customer_address,

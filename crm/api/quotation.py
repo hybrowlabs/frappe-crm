@@ -453,7 +453,7 @@ def _entitled_items(customer, branch):
 	rows = [row for row in rows if row.item_code and (not row.branch or row.branch == branch)]
 	codes = list(dict.fromkeys(row.item_code for row in rows))
 	if not codes:
-		return {}
+		return _non_inventory_items(branch)
 	uoms = dict(
 		frappe.get_all(
 			"Item",
@@ -462,7 +462,7 @@ def _entitled_items(customer, branch):
 			as_list=True,
 		)
 	)
-	return {
+	entitled = {
 		code: {
 			"item_code": code,
 			"stock_uom": uoms[code],
@@ -474,6 +474,44 @@ def _entitled_items(customer, branch):
 		}
 		for code in codes
 		if code in uoms
+	}
+	entitled.update(_non_inventory_items(branch))
+	return entitled
+
+
+def _non_inventory_items(branch):
+	"""{item_code: {item_code, stock_uom, slabs, min_pricing, non_inventory}} for the
+	service items (freight) CRM Custom Settings lists for this branch. They have no
+	Sales BOM, so the sales person types the rate, never below Min Pricing."""
+	if not branch:
+		return {}
+	rows = frappe.get_all(
+		"Non Inventory Item",
+		filters={"parent": "CRM Custom Settings", "parentfield": "non_inventory_items", "branch": branch},
+		fields=["item", "min_pricing"],
+		order_by="idx asc",
+	)
+	codes = [row.item for row in rows if row.item]
+	if not codes:
+		return {}
+	uoms = dict(
+		frappe.get_all(
+			"Item",
+			filters={"name": ["in", codes], "disabled": 0, "is_sales_item": 1, "is_stock_item": 0},
+			fields=["name", "stock_uom"],
+			as_list=True,
+		)
+	)
+	return {
+		row.item: {
+			"item_code": row.item,
+			"stock_uom": uoms[row.item],
+			"slabs": [],
+			"min_pricing": row.min_pricing,
+			"non_inventory": 1,
+		}
+		for row in rows
+		if row.item in uoms
 	}
 
 
@@ -783,6 +821,18 @@ def create_quotation(
 		if item_code not in entitled:
 			return refuse("not_entitled", _("Item {0} is not set up for this customer.").format(item_code))
 
+		# A service (freight) item has no Sales BOM: the rate is typed on the screen,
+		# and may not be under the Min Pricing set for this branch.
+		freight = entitled[item_code].get("non_inventory")
+		if freight:
+			rate = flt(row.get("rate"))
+			minimum = flt(entitled[item_code].get("min_pricing"))
+			if rate <= 0 or rate < minimum:
+				return refuse(
+					"below_min_price",
+					_("Rate for item {0} cannot be below the minimum price {1}.").format(item_code, minimum),
+				)
+
 		# Pack items: qty is always packs x base qty, never taken from the screen.
 		base_qty, in_packs = frappe.db.get_value(
 			"Item", item_code, ["custom_base_qty", "custom_sell_only_as_a_multiple_of_base_qty"]
@@ -796,16 +846,26 @@ def create_quotation(
 		if qty <= 0:
 			return refuse("invalid_qty", _("Quantity for item {0} must be more than zero.").format(item_code))
 
-		doc.append(
-			"items",
-			{
-				"item_code": item_code,
-				"qty": qty,
-				"uom": entitled[item_code]["stock_uom"],
-				"custom_no_of_packs": packs,
-				"custom_base_qty": base_qty,
-				"warehouse": warehouse,
-			},
+		line = {
+			"item_code": item_code,
+			"qty": qty,
+			"uom": entitled[item_code]["stock_uom"],
+			"custom_no_of_packs": packs,
+			"custom_base_qty": base_qty,
+			"warehouse": warehouse,
+		}
+		if freight:
+			line.update(rate=rate, price_list_rate=rate)
+		doc.append("items", line)
+
+	# PAPL refuses to submit a customer with Apply Freight ticked unless a service
+	# (non-stock) item is on the quotation; say so before saving anything.
+	if frappe.db.get_value("Customer", customer, "custom_apply_freight") and not any(
+		not frappe.get_cached_value("Item", row.item_code, "is_stock_item") for row in doc.items
+	):
+		return refuse(
+			"freight_missing",
+			_("Customer {0} has Apply Freight enabled. Please add a freight item.").format(customer),
 		)
 
 	# Billing address before taxes: India Compliance re-derives place of supply

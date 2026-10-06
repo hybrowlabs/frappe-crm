@@ -16,6 +16,7 @@ class NonInventoryItem(Document):
 
 		branch: DF.Link
 		item: DF.Link | None
+		min_pricing: DF.Currency
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data

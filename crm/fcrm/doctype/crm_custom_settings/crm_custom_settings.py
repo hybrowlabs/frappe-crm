@@ -76,6 +76,13 @@ class CRMCustomSettings(Document):
 		for row in self.non_inventory_items:
 			if not row.item:
 				continue
+			if frappe.get_cached_value("Item", row.item, "is_stock_item"):
+				frappe.throw(
+					_("Row #{0}: {1} is a stock item. Pick a non-inventory (service) item.").format(
+						row.idx, row.item
+					),
+					title=_("Not a Non-Inventory Item"),
+				)
 			key = (row.branch, row.item)
 			if key in seen:
 				frappe.throw(
