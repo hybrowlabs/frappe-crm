@@ -226,7 +226,7 @@
                         v-model="row.rate"
                         type="number"
                         min="0"
-                        :placeholder="__('Min {0}', [freightInfo(row).min_pricing])"
+                        :placeholder="__('Min {0} {1}', [doc.currency, freightInfo(row).min_pricing])"
                       />
                       <template v-else>{{ rateLabel(row) }}</template>
                     </td>
@@ -257,9 +257,6 @@
             </div>
             <div class="flex items-center justify-between">
               <Button :label="__('Add Row')" iconLeft="plus" @click="addRow" />
-              <span class="text-sm text-ink-gray-5">
-                {{ __('Rates are worked out again when the quotation is saved.') }}
-              </span>
             </div>
           </div>
 
@@ -558,8 +555,9 @@ const needsAddressChoice = computed(
 )
 
 // ---- Items -------------------------------------------------------------
-// Only the items on the customer's Item Discounts for this branch; picking a
-// different customer or branch starts the items over.
+// Only the items on the customer's Item Discounts for this branch (plus the
+// freight items for this branch and currency); picking a different customer,
+// branch or currency starts the items over.
 const customerItems = ref([])
 const customerItemsLoaded = ref(false)
 // An empty "in" list would match every item, so fall back to one that can't exist.
@@ -571,8 +569,8 @@ const itemFilters = computed(() => ({
 }))
 
 watch(
-  () => [doc.party_name, doc.custom_branch],
-  async ([customer, branch], [oldCustomer]) => {
+  () => [doc.party_name, doc.custom_branch, doc.currency],
+  async ([customer, branch, currency], [oldCustomer]) => {
     if (customer !== oldCustomer) clearPartyDetails()
     doc.items.splice(0, doc.items.length, newRow())
     customerItems.value = []
@@ -581,12 +579,13 @@ watch(
     const list = await call('crm.api.quotation.get_customer_items', {
       customer,
       branch,
+      currency,
     }).catch((e) => {
       toast.error(e?.messages?.[0] || __('Could not load the items for this customer.'))
       return []
     })
-    // Ignore a stale reply if the customer or branch changed meanwhile.
-    if (customer === doc.party_name && branch === doc.custom_branch) {
+    // Ignore a stale reply if the customer, branch or currency changed meanwhile.
+    if (customer === doc.party_name && branch === doc.custom_branch && currency === doc.currency) {
       customerItems.value = list || []
       customerItemsLoaded.value = true
       applyPrefillItems()
@@ -653,7 +652,8 @@ function applyPrefillItems() {
 const fmtQty = (n) => formatQty(n || 0)
 
 // Service (freight) items from CRM Custom Settings > Non Inventory Item: no Sales
-// BOM, so the rate is typed here and may not be under the branch's Min Pricing.
+// BOM, so the rate is typed here and may not be under the Min Pricing of the
+// branch and currency.
 const freightInfo = (row) =>
   customerItems.value.find((i) => i.item_code === row.item_code && i.non_inventory)
 const isFreight = (row) => !!row.item_code && !!freightInfo(row)
@@ -662,7 +662,11 @@ function freightError(row) {
   const rate = Number(row.rate)
   const minimum = Number(freightInfo(row)?.min_pricing) || 0
   if (rate > 0 && rate < minimum) {
-    return __('Rate for {0} cannot be below the minimum price {1}.', [row.item_code, minimum])
+    return __('Rate for {0} cannot be below the minimum price {1} {2}.', [
+      row.item_code,
+      minimum,
+      doc.currency,
+    ])
   }
   return ''
 }

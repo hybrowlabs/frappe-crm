@@ -69,11 +69,20 @@ export function useCurrencyFormat(currency) {
 // amount follows them, then Rounding.
 const FIXED_TAX_LINES = ['CGST', 'SGST', 'IGST', 'Freight']
 
+// GST is either intra-state (CGST + SGST) or inter-state (IGST), never both:
+// IGST shows when it has an amount or the party is SEZ / Overseas (even at 0),
+// otherwise CGST + SGST show, 0 included.
+const IGST_ONLY_CATEGORIES = ['SEZ', 'Overseas']
+
 export function totalsLines(doc) {
   const taxes = doc?.taxes || []
   const matches = (tax, name) => (tax.description || '').toUpperCase().includes(name.toUpperCase())
   const sum = (rows) => rows.reduce((total, t) => total + (Number(t.tax_amount) || 0), 0)
-  const lines = FIXED_TAX_LINES.map((name) => ({
+  const showIgst =
+    IGST_ONLY_CATEGORIES.includes(doc?.gst_category) || sum(taxes.filter((t) => matches(t, 'IGST'))) !== 0
+  const lines = FIXED_TAX_LINES.filter(
+    (name) => !(['CGST', 'SGST'].includes(name) && showIgst) && !(name === 'IGST' && !showIgst),
+  ).map((name) => ({
     label: name,
     value: sum(taxes.filter((t) => matches(t, name))),
   }))

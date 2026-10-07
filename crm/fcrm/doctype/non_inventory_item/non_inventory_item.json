@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "branch",
+  "currency_type",
   "item",
   "min_pricing"
  ],
@@ -32,6 +33,15 @@
    "in_list_view": 1,
    "label": "Min Pricing",
    "non_negative": 1,
+   "options": "currency_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Currency Type",
+   "options": "Currency",
    "reqd": 1
   }
  ],
@@ -39,7 +49,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-06 13:47:15.601965",
+ "modified": "2026-10-07 10:40:49.776165",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "Non Inventory Item",

@@ -71,7 +71,7 @@ class CRMCustomSettings(Document):
 
 
 	def validate_non_inventory_items(self):
-		"""One row per Branch + Item. Rows without an item are not compared."""
+		"""One row per Branch + Currency + Item. Rows without an item are not compared."""
 		seen = {}
 		for row in self.non_inventory_items:
 			if not row.item:
@@ -83,11 +83,11 @@ class CRMCustomSettings(Document):
 					),
 					title=_("Not a Non-Inventory Item"),
 				)
-			key = (row.branch, row.item)
+			key = (row.branch, row.currency_type, row.item)
 			if key in seen:
 				frappe.throw(
-					_("Row #{0}: Item {1} is already added for Branch {2} in Row #{3}.").format(
-						row.idx, row.item, row.branch, seen[key]
+					_("Row #{0}: Item {1} is already added for Branch {2} and Currency {3} in Row #{4}.").format(
+						row.idx, row.item, row.branch, row.currency_type, seen[key]
 					),
 					title=_("Duplicate Entry"),
 				)
