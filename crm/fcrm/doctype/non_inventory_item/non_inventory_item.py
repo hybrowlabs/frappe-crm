@@ -15,6 +15,7 @@ class NonInventoryItem(Document):
 		from frappe.types import DF
 
 		branch: DF.Link
+		currency_type: DF.Link
 		item: DF.Link | None
 		min_pricing: DF.Currency
 		parent: DF.Data

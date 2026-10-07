@@ -84,7 +84,7 @@
           <table class="w-full min-w-[62rem] text-base">
             <thead>
               <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="w-10 px-3 py-2 font-medium">#</th>
+                <th class="w-10 px-3 py-2 font-medium">SR No.</th>
                 <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
                 <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
                 <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
@@ -139,11 +139,15 @@
       </div>
 
       <!-- Totals: every line always shown, ₹0.00 when absent -->
-      <div class="flex justify-end">
-        <div class="flex w-full max-w-sm flex-col gap-2 rounded-lg border border-outline-gray-2 p-4 text-base">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div v-if="q.in_words" class="flex min-w-0 flex-col gap-1">
+          <span class="text-sm text-ink-gray-5">{{ __('Amount in Words') }}</span>
+          <span class="text-base font-medium text-ink-gray-8">{{ q.in_words }}</span>
+        </div>
+        <div class="flex w-full max-w-sm flex-col gap-2 rounded-lg border border-outline-gray-2 p-4 text-base sm:ml-auto">
           <div class="flex justify-between">
-            <span class="text-ink-gray-5">{{ __('Taxable Amount') }}</span>
-            <span class="text-ink-gray-8">{{ amount(q.net_total) }}</span>
+            <span class="font-semibold text-ink-gray-8">{{ __('Taxable Amount') }}</span>
+            <span class="font-semibold text-ink-gray-9">{{ amount(q.net_total) }}</span>
           </div>
           <div v-if="q.discount_amount" class="flex justify-between">
             <span class="text-ink-gray-5">{{ __('Discount') }}</span>

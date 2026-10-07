@@ -320,6 +320,8 @@ def get_quotation(name: str):
 		"discount_amount": doc.discount_amount,
 		"grand_total": doc.grand_total,
 		"rounded_total": doc.rounded_total,
+		"in_words": doc.in_words,
+		"gst_category": doc.get("gst_category"),
 		# The print format this quotation's branch sets in CRM Custom Settings;
 		# None means the screen prints with the doctype's own default.
 		"print_format": get_print_format(doc.get("custom_branch"), "quotation_print_format"),
@@ -440,10 +442,11 @@ def _is_gst_free_customer(customer):
 	return frappe.db.get_value("Customer", customer, "gst_category") in ("SEZ", "Overseas")
 
 
-def _entitled_items(customer, branch):
+def _entitled_items(customer, branch, currency=None):
 	"""{item_code: {item_code, stock_uom, slabs}} for the rows on the customer's
 	Item Discounts table for this branch or with the branch left blank. Same
-	rule as the Customer Portal's item list."""
+	rule as the Customer Portal's item list. Service items are added for this
+	branch and currency."""
 	rows = frappe.get_all(
 		"Customer Item Discount",
 		filters={"parenttype": "Customer", "parent": customer, "parentfield": "custom_item_discounts"},
@@ -453,7 +456,7 @@ def _entitled_items(customer, branch):
 	rows = [row for row in rows if row.item_code and (not row.branch or row.branch == branch)]
 	codes = list(dict.fromkeys(row.item_code for row in rows))
 	if not codes:
-		return _non_inventory_items(branch)
+		return _non_inventory_items(branch, currency)
 	uoms = dict(
 		frappe.get_all(
 			"Item",
@@ -475,19 +478,25 @@ def _entitled_items(customer, branch):
 		for code in codes
 		if code in uoms
 	}
-	entitled.update(_non_inventory_items(branch))
+	entitled.update(_non_inventory_items(branch, currency))
 	return entitled
 
 
-def _non_inventory_items(branch):
-	"""{item_code: {item_code, stock_uom, slabs, min_pricing, non_inventory}} for the
-	service items (freight) CRM Custom Settings lists for this branch. They have no
-	Sales BOM, so the sales person types the rate, never below Min Pricing."""
-	if not branch:
+def _non_inventory_items(branch, currency):
+	"""{item_code: {item_code, stock_uom, slabs, min_pricing, currency, non_inventory}}
+	for the service items (freight) CRM Custom Settings lists for this branch and
+	currency. They have no Sales BOM, so the sales person types the rate, never
+	below Min Pricing (which is in that same currency)."""
+	if not (branch and currency):
 		return {}
 	rows = frappe.get_all(
 		"Non Inventory Item",
-		filters={"parent": "CRM Custom Settings", "parentfield": "non_inventory_items", "branch": branch},
+		filters={
+			"parent": "CRM Custom Settings",
+			"parentfield": "non_inventory_items",
+			"branch": branch,
+			"currency_type": currency,
+		},
 		fields=["item", "min_pricing"],
 		order_by="idx asc",
 	)
@@ -508,6 +517,7 @@ def _non_inventory_items(branch):
 			"stock_uom": uoms[row.item],
 			"slabs": [],
 			"min_pricing": row.min_pricing,
+			"currency": currency,
 			"non_inventory": 1,
 		}
 		for row in rows
@@ -516,11 +526,11 @@ def _non_inventory_items(branch):
 
 
 @frappe.whitelist()
-def get_customer_items(customer: str, branch: str | None = None):
-	"""The items this customer can be quoted in this branch, with their
-	discount slabs (qty ranges) so the screen can check the qty first."""
+def get_customer_items(customer: str, branch: str | None = None, currency: str | None = None):
+	"""The items this customer can be quoted in this branch and currency, with
+	their discount slabs (qty ranges) so the screen can check the qty first."""
 	_check_customer(customer)
-	return list(_entitled_items(customer, branch).values())
+	return list(_entitled_items(customer, branch, currency).values())
 
 
 @frappe.whitelist()
@@ -693,7 +703,7 @@ def get_items_price(customer: str, branch: str, currency: str, items):
 
 	_check_customer(customer)
 	_check_branch_currency(customer, branch, currency)
-	allowed = set(_entitled_items(customer, branch))
+	allowed = set(_entitled_items(customer, branch, currency))
 
 	rows = frappe.parse_json(items) if isinstance(items, str) else (items or [])
 	lines = []
@@ -765,7 +775,7 @@ def create_quotation(
 	_check_customer(customer)
 	_check_branch_currency(customer, branch, currency)
 	sales_person = _session_sales_person()
-	entitled = _entitled_items(customer, branch)
+	entitled = _entitled_items(customer, branch, currency)
 	warehouse = get_branch_warehouse(branch)
 	if not warehouse:
 		return refuse("no_warehouse", _(NO_WAREHOUSE).format(branch))
@@ -822,7 +832,7 @@ def create_quotation(
 			return refuse("not_entitled", _("Item {0} is not set up for this customer.").format(item_code))
 
 		# A service (freight) item has no Sales BOM: the rate is typed on the screen,
-		# and may not be under the Min Pricing set for this branch.
+		# and may not be under the Min Pricing set for this branch and currency.
 		freight = entitled[item_code].get("non_inventory")
 		if freight:
 			rate = flt(row.get("rate"))
@@ -830,7 +840,9 @@ def create_quotation(
 			if rate <= 0 or rate < minimum:
 				return refuse(
 					"below_min_price",
-					_("Rate for item {0} cannot be below the minimum price {1}.").format(item_code, minimum),
+					_("Rate for item {0} cannot be below the minimum price {1} {2}.").format(
+						item_code, minimum, currency
+					),
 				)
 
 		# Pack items: qty is always packs x base qty, never taken from the screen.
