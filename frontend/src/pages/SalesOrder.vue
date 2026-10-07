@@ -8,11 +8,14 @@
     </template>
   </LayoutHeader>
   <div v-if="q" class="flex-1 overflow-y-auto">
-    <div class="mx-auto flex max-w-5xl flex-col gap-6 p-5">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 p-5">
       <!-- Header -->
       <div class="flex flex-col gap-3">
         <div class="flex items-center gap-2">
-          <span class="text-2xl font-semibold text-ink-gray-9">
+          <span
+            class="rounded-lg px-4 py-2 text-2xl font-extrabold uppercase tracking-wide text-white"
+            style="background: linear-gradient(90deg, #5b6cf0, #8193f7)"
+          >
             {{ q.customer_name || q.customer }}
           </span>
           <Badge
@@ -50,7 +53,7 @@
             </div>
           </div>
           <div
-            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-l border-outline-gray-2 pl-6"
+            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-l border-blue-500 pl-6"
           >
             <div v-for="d in details" :key="d.label" class="flex min-w-0 flex-col gap-1">
               <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
@@ -70,10 +73,10 @@
       <!-- Items -->
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
-        <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
+        <div class="overflow-x-auto rounded-lg border border-outline-gray-2 border-t-blue-500">
           <table class="w-full min-w-[62rem] text-base">
             <thead>
-              <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
+              <tr class="border-b border-blue-500 bg-surface-gray-2 text-left text-sm text-ink-gray-5">
                 <th class="w-10 px-3 py-2 font-medium">SR No.</th>
                 <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
                 <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
@@ -91,7 +94,7 @@
               <tr
                 v-for="(item, i) in q.items"
                 :key="i"
-                class="border-t border-outline-gray-1 align-top"
+                class="border-t border-outline-gray-1 align-top first:border-t-0"
               >
                 <td class="px-3 py-2.5 text-ink-gray-5">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
