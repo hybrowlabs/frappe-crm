@@ -28,7 +28,7 @@
 
         <!-- Address and details, in one box -->
         <div
-          class="grid rounded-lg border border-outline-gray-2 p-4"
+          class="grid rounded-lg border border-blue-500 p-4"
           style="grid-template-columns: repeat(2, minmax(0, 1fr))"
         >
           <div class="flex min-w-0 flex-col gap-1.5 pr-6">
@@ -73,7 +73,7 @@
       <!-- Items -->
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
-        <div class="overflow-x-auto rounded-lg border border-outline-gray-2 border-t-blue-500">
+        <div class="overflow-x-auto rounded-lg border border-blue-500">
           <table class="w-full min-w-[62rem] text-base">
             <thead>
               <tr class="border-b border-blue-500 bg-surface-gray-2 text-left text-sm text-ink-gray-5">
@@ -94,7 +94,7 @@
               <tr
                 v-for="(item, i) in q.items"
                 :key="i"
-                class="border-t border-outline-gray-1 align-top first:border-t-0"
+                class="border-t border-blue-500 align-top"
               >
                 <td class="px-3 py-2.5 text-ink-gray-5">{{ i + 1 }}</td>
                 <td class="px-3 py-2.5">
@@ -139,10 +139,10 @@
           <span class="text-sm text-ink-gray-5">{{ __('Amount in Words') }}</span>
           <span class="text-base font-medium text-ink-gray-8">{{ q.in_words }}</span>
         </div>
-        <div class="flex w-full max-w-sm flex-col gap-2 rounded-lg border border-outline-gray-2 p-4 text-base sm:ml-auto">
+        <div class="flex w-full max-w-sm flex-col gap-2 rounded-lg border border-blue-500 p-4 text-base sm:ml-auto">
           <div class="flex justify-between">
-            <span class="font-semibold text-ink-gray-8">{{ __('Taxable Amount') }}</span>
-            <span class="font-semibold text-ink-gray-9">{{ amount(q.net_total) }}</span>
+            <span class="font-bold text-ink-gray-9">{{ __('Taxable Amount') }}</span>
+            <span class="font-bold text-ink-gray-9">{{ amount(q.net_total) }}</span>
           </div>
           <div v-if="q.discount_amount" class="flex justify-between">
             <span class="text-ink-gray-5">{{ __('Discount') }}</span>
@@ -152,7 +152,7 @@
             <span class="text-ink-gray-5">{{ __(line.label) }}</span>
             <span class="text-ink-gray-8">{{ amount(line.value) }}</span>
           </div>
-          <div class="flex justify-between border-t border-outline-gray-2 pt-2">
+          <div class="flex justify-between border-t border-blue-500 pt-2">
             <span class="font-medium text-ink-gray-8">{{ __('Grand Total') }}</span>
             <span class="font-medium text-ink-gray-9">{{ amount(q.rounded_total || q.grand_total) }}</span>
           </div>
