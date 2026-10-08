@@ -109,9 +109,6 @@
                 </td>
                 <td class="px-3 py-2.5 text-ink-gray-8">
                   {{ item.custom_no_of_packs || '—' }}
-                  <div v-if="item.custom_no_of_packs" class="mt-1 text-sm text-ink-gray-5">
-                    {{ __('{0} per pack', [item.custom_base_qty]) }}
-                  </div>
                 </td>
                 <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.qty) }}</td>
                 <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.delivered_qty || 0) }}</td>
