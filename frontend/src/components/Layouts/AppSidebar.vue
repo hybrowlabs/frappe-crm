@@ -173,6 +173,7 @@ import LucideChevronsLeft from '~icons/lucide/chevrons-left'
 import LucideMegaphone from '~icons/lucide/megaphone'
 import LucideFileText from '~icons/lucide/file-text'
 import LucidePackageCheck from '~icons/lucide/package-check'
+import LucideWarehouse from '~icons/lucide/warehouse'
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import InviteIcon from '@/components/Icons/InviteIcon.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
@@ -293,6 +294,11 @@ const links = [
     to: 'Sales Orders',
   },
   {
+    label: 'Available Stock',
+    icon: LucideWarehouse,
+    to: 'Available Stock',
+  },
+  {
     label: 'Contacts',
     icon: LucideContact,
     to: 'Contacts',
@@ -377,6 +383,8 @@ function getIcon(routeName, icon) {
       return LucideFileText
     case 'Sales Orders':
       return LucidePackageCheck
+    case 'Available Stock':
+      return LucideWarehouse
     case 'Contacts':
       return LucideContact
     case 'Organizations':

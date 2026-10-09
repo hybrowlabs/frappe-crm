@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "creation": "2026-10-09 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "branch",
+  "parent_warehouse",
+  "select_warehouses",
+  "child_warehouses"
+ ],
+ "fields": [
+  {
+   "description": "The branch, matched against the Sales Person's Branch & Currency rows.",
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "description": "Group warehouse whose child warehouses hold this branch's stock.",
+   "fieldname": "parent_warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Parent Warehouse",
+   "link_filters": "[[\"Warehouse\",\"is_group\",\"=\",1]]",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "select_warehouses",
+   "fieldtype": "Button",
+   "in_list_view": 1,
+   "label": "Select Warehouses"
+  },
+  {
+   "description": "Warehouses under the parent whose stock is added up on the CRM's Available Stock page. Set with Select Warehouses.",
+   "fieldname": "child_warehouses",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Child Warehouses",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-09 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "FCRM",
+ "name": "CRM Branch Stock Warehouse",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

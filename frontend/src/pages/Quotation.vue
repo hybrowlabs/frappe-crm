@@ -92,9 +92,9 @@
                 <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
                 <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
                 <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
+                <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
                 <th class="w-28 whitespace-nowrap px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
                 <th class="w-24 px-3 py-2 font-medium">{{ __('Qty') }}</th>
-                <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
                 <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
                 <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
               </tr>
@@ -116,11 +116,11 @@
                 <td class="px-3 py-2.5 text-right text-ink-gray-6">
                   {{ item.gst_rate == null ? '—' : `${item.gst_rate}%` }}
                 </td>
+                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
                 <td class="px-3 py-2.5 text-ink-gray-8">
                   {{ item.custom_no_of_packs || '—' }}
                 </td>
                 <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.qty) }}</td>
-                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
                 <td class="px-3 py-2.5 text-right text-ink-gray-8">
                   {{ item.rate ? amount(item.rate) : '—' }}
                 </td>

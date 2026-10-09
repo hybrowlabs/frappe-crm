@@ -26,6 +26,9 @@ class CRMCustomSettings(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
+		from crm.fcrm.doctype.crm_branch_stock_warehouse.crm_branch_stock_warehouse import (
+			CRMBranchStockWarehouse,
+		)
 		from crm.fcrm.doctype.crm_branch_warehouse.crm_branch_warehouse import CRMBranchWarehouse
 		from crm.fcrm.doctype.crm_week_days.crm_week_days import CRMWeekDays
 		from crm.fcrm.doctype.fcrm_holiday_list.fcrm_holiday_list import FCRMHolidayList
@@ -33,9 +36,11 @@ class CRMCustomSettings(Document):
 		from crm.fcrm.doctype.non_inventory_item.non_inventory_item import NonInventoryItem
 		from frappe.types import DF
 
+		branch_stock_warehouses: DF.Table[CRMBranchStockWarehouse]
 		branch_warehouses: DF.Table[CRMBranchWarehouse]
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
+		lead_sla_days: DF.Int
 		non_inventory_items: DF.Table[NonInventoryItem]
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
 		week_days: DF.Table[CRMWeekDays]
@@ -53,6 +58,7 @@ class CRMCustomSettings(Document):
 					)
 				)
 
+		self.validate_branch_stock_warehouses()
 		self.validate_time_settings()
 		self.validate_non_inventory_items()
 
@@ -69,6 +75,35 @@ class CRMCustomSettings(Document):
 					{"week_day": day, **{f: int(working) for f in BRANCH_FIELDS.values()}},
 				)
 
+
+	def validate_branch_stock_warehouses(self):
+		"""One row per branch, at least one child warehouse, and every child a
+		stock-holding warehouse under the row's parent warehouse."""
+		seen = set()
+		for row in self.branch_stock_warehouses:
+			if row.branch in seen:
+				frappe.throw(
+					_("Stock Warehouses Row #{0}: Branch {1} is listed more than once.").format(
+						row.idx, row.branch
+					)
+				)
+			seen.add(row.branch)
+			children = split_warehouses(row.child_warehouses)
+			if not children:
+				frappe.throw(
+					_("Stock Warehouses Row #{0}: select at least one child warehouse for {1}.").format(
+						row.idx, row.branch
+					)
+				)
+			allowed = set(get_child_warehouses(row.parent_warehouse))
+			for warehouse in children:
+				if warehouse not in allowed:
+					frappe.throw(
+						_("Stock Warehouses Row #{0}: {1} is not under {2}.").format(
+							row.idx, warehouse, row.parent_warehouse
+						)
+					)
+			row.child_warehouses = "\n".join(children)
 
 	def validate_non_inventory_items(self):
 		"""One row per Branch + Currency + Item. Rows without an item are not compared."""
@@ -161,6 +196,40 @@ def get_branch_warehouse(branch):
 		"CRM Branch Warehouse",
 		{"parent": "CRM Custom Settings", "parentfield": "branch_warehouses", "branch": branch},
 		"warehouse",
+	)
+
+
+def split_warehouses(value):
+	"""The warehouse names in a Child Warehouses field (one per line), in order, without repeats."""
+	return list(dict.fromkeys(w.strip() for w in (value or "").splitlines() if w.strip()))
+
+
+@frappe.whitelist()
+def get_child_warehouses(parent_warehouse):
+	"""Stock-holding (non-group) warehouses anywhere under a group warehouse, for
+	the Select Warehouses checklist."""
+	frappe.has_permission("CRM Custom Settings", "write", throw=True)
+	if not parent_warehouse:
+		return []
+	lft, rgt = frappe.db.get_value("Warehouse", parent_warehouse, ["lft", "rgt"]) or (None, None)
+	if lft is None:
+		return []
+	return frappe.get_all(
+		"Warehouse",
+		filters={"lft": (">", lft), "rgt": ("<", rgt), "is_group": 0},
+		pluck="name",
+		order_by="lft asc",
+	)
+
+
+def get_branch_stock_warehouses(branch):
+	"""The child warehouses whose stock the Available Stock page adds up for this branch."""
+	return split_warehouses(
+		frappe.db.get_value(
+			"CRM Branch Stock Warehouse",
+			{"parent": "CRM Custom Settings", "parentfield": "branch_stock_warehouses", "branch": branch},
+			"child_warehouses",
+		)
 	)
 
 

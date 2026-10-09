@@ -6,6 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "branch_warehouses",
+  "section_break_sazs",
+  "lead_sla_days",
   "tab_2_tab",
   "holiday_list",
   "section_break_mkaq",
@@ -14,6 +16,8 @@
   "time_setting_branch_wise",
   "days_setting_section",
   "week_days",
+  "available_stock_tab",
+  "branch_stock_warehouses",
   "non_inventory_item_tab",
   "non_inventory_items"
  ],
@@ -82,11 +86,33 @@
    "fieldtype": "Table",
    "label": "Non Inventory Items",
    "options": "Non Inventory Item"
+  },
+  {
+   "fieldname": "section_break_sazs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "lead_sla_days",
+   "fieldtype": "Int",
+   "label": "Lead SLA Days",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "available_stock_tab",
+   "fieldtype": "Tab Break",
+   "label": "Available Stock"
+  },
+  {
+   "description": "Per branch: the parent warehouse and the child warehouses under it whose stock the CRM's Available Stock page adds up. One row per branch.",
+   "fieldname": "branch_stock_warehouses",
+   "fieldtype": "Table",
+   "label": "Stock Warehouses",
+   "options": "CRM Branch Stock Warehouse"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-05 18:41:04.226249",
+ "modified": "2026-10-09 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
