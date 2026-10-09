@@ -207,12 +207,6 @@
                         :placeholder="row.sold_in_packs ? '' : '—'"
                         @update:modelValue="onPacksChange(row)"
                       />
-                      <div
-                        v-if="row.sold_in_packs"
-                        class="mt-1 text-sm text-ink-gray-5"
-                      >
-                        {{ __('{0} per pack', [row.custom_base_qty]) }}
-                      </div>
                     </td>
                     <td class="px-3 py-1.5">
                       <FormControl v-model="row.qty" type="number" min="0" />
@@ -343,6 +337,7 @@ import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
 import { formatQty } from '@/utils/qty'
 import { useCurrencyFormat } from '@/utils/quotation'
+import { createDialog } from '@/utils/dialogs'
 import { Breadcrumbs, Button, FormControl, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -884,12 +879,37 @@ function validate() {
 const router = useRouter()
 const saving = ref(false)
 
-async function save() {
+// Validate first, then ask the user to confirm before the quotation is created.
+function save() {
   const error = validate()
   if (error) {
     toast.error(error)
     return
   }
+  const count = doc.items.filter((r) => r.item_code).length
+  createDialog({
+    title: __('Create Quotation'),
+    message: __('Create a quotation for {0} with {1} item(s), Net Total {2} (before taxes)?', [
+      customerName.value || doc.party_name,
+      count,
+      amount(netTotal.value),
+    ]),
+    actions: [
+      // No onClick: the dialog just closes and nothing is created.
+      { label: __('Cancel') },
+      {
+        label: __('Create'),
+        variant: 'solid',
+        onClick: ({ close }) => {
+          close()
+          createQuotation()
+        },
+      },
+    ],
+  })
+}
+
+async function createQuotation() {
   saving.value = true
   try {
     const result = await call('crm.api.quotation.create_quotation', {

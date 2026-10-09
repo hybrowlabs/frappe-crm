@@ -11,7 +11,7 @@
           variant="solid"
           iconLeft="shopping-cart"
           :loading="ordering"
-          @click="createSalesOrder"
+          @click="confirmCreateSalesOrder"
         />
         <Button :label="__('Print')" iconLeft="printer" @click="printDoc" />
       </div>
@@ -178,6 +178,7 @@ import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'
 import { addressParts, indicatorTheme, totalsLines, useCurrencyFormat } from '@/utils/quotation'
 import { formatQty } from '@/utils/qty'
+import { createDialog } from '@/utils/dialogs'
 import { Breadcrumbs, Badge, Button, call, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
@@ -228,6 +229,30 @@ const canOrder = computed(
   () => q.value?.docstatus === 1 && !expired.value && !q.value?.sales_orders?.length,
 )
 const ordering = ref(false)
+
+// Ask the user to confirm before the Sales Order is created.
+function confirmCreateSalesOrder() {
+  createDialog({
+    title: __('Create Sales Order'),
+    message: __('Create a Sales Order from quotation {0} for {1}, Grand Total {2}?', [
+      props.quotationId,
+      q.value.customer_name || q.value.party_name,
+      amount(q.value.rounded_total || q.value.grand_total),
+    ]),
+    actions: [
+      // No onClick: the dialog just closes and nothing is created.
+      { label: __('Cancel') },
+      {
+        label: __('Create'),
+        variant: 'solid',
+        onClick: ({ close }) => {
+          close()
+          createSalesOrder()
+        },
+      },
+    ],
+  })
+}
 
 async function createSalesOrder() {
   ordering.value = true
