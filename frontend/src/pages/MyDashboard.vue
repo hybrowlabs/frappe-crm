@@ -24,14 +24,60 @@
             :sub="__('{0} open deals', [d.pipeline.total_count])" tone="green" />
         </div>
 
-        <Card :title="__('Pipeline by Stage')" class="mb-8">
-          <Bars>
-            <BarRow v-for="st in d.pipeline.by_stage" :key="st.stage" :label="st.stage"
-              :value="__('{0} deals · {1}', [st.count, fmtINR(st.value)])"
-              :ratio="ratio(st.count, maxStage)" color="blue" @click="drillStage(st.stage)" />
-          </Bars>
-          <Empty v-if="!d.pipeline.by_stage.length" />
-        </Card>
+        <div class="mb-8 grid grid-cols-1 gap-3.5" :class="sla ? 'lg:grid-cols-2' : ''">
+          <Card :title="__('Pipeline by Stage')">
+            <Bars>
+              <BarRow v-for="st in d.pipeline.by_stage" :key="st.stage" :label="st.stage"
+                :value="__('{0} deals · {1}', [st.count, fmtINR(st.value)])"
+                :ratio="ratio(st.count, maxStage)" color="blue" @click="drillStage(st.stage)" />
+            </Bars>
+            <Empty v-if="!d.pipeline.by_stage.length" />
+          </Card>
+
+          <!-- Lead SLA breaches (CFO / Administrator only) -->
+          <Card v-if="sla" flush :title="__('Lead SLA Breach')"
+            :sub="sla.sla_days ? __('Leads with no deal within {0} days of creation', [sla.sla_days]) : ''">
+            <template #right>
+              <span v-if="sla.total" class="flex items-center gap-1 rounded-full bg-surface-red-2 px-2.5 py-1 text-xs font-semibold text-ink-red-4">
+                <LucideAlarmClock class="size-3.5" />
+                {{ __('{0} breached', [sla.total]) }}
+              </span>
+            </template>
+            <div v-if="!sla.sla_days" class="p-4"><Empty :text="__('Lead SLA not set')" /></div>
+            <div v-else-if="!sla.rows.length" class="p-4"><Empty :text="__('No SLA breaches 🎉')" /></div>
+            <template v-else>
+              <div :class="{ 'opacity-50': slaRes.loading }">
+                <div v-for="l in sla.rows" :key="l.name"
+                  class="group flex cursor-pointer items-center gap-3 border-b border-l-[3px] border-b-outline-gray-1 border-l-red-500 py-2.5 pl-[15px] pr-[18px] hover:bg-surface-red-1"
+                  @click="goLead(l.name)">
+                  <Avatar :label="l.lead_name || l.name" size="lg" />
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm font-medium text-ink-gray-8 group-hover:text-ink-red-4">{{ l.lead_name || l.name }}</div>
+                    <div class="truncate text-xs text-ink-gray-5">
+                      {{ l.organization || __('No organization') }} · {{ l.lead_owner ? getUser(l.lead_owner).full_name : __('Unassigned') }}
+                    </div>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <div class="rounded-md bg-surface-red-1 px-2 py-0.5 text-sm font-semibold text-ink-red-4">{{ fmtBreach(l.breached_hours) }}</div>
+                    <div class="mt-0.5 text-[11px] text-ink-gray-4">{{ __('overdue') }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between px-[18px] py-2.5 text-xs text-ink-gray-5">
+                <span>{{ __('Showing {0}–{1} of {2}', [(sla.page - 1) * sla.page_size + 1, (sla.page - 1) * sla.page_size + sla.rows.length, sla.total]) }}</span>
+                <div v-if="slaPages > 1" class="flex items-center gap-2">
+                  <Button variant="ghost" :disabled="sla.page <= 1 || slaRes.loading" @click="slaGo(sla.page - 1)">
+                    <template #icon><LucideChevronLeft class="size-4" /></template>
+                  </Button>
+                  <span>{{ __('Page {0} of {1}', [sla.page, slaPages]) }}</span>
+                  <Button variant="ghost" :disabled="sla.page >= slaPages || slaRes.loading" @click="slaGo(sla.page + 1)">
+                    <template #icon><LucideChevronRight class="size-4" /></template>
+                  </Button>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
 
         <!-- MY TASKS -->
         <SectionLabel :label="__('My Tasks')" />
@@ -223,7 +269,10 @@
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import { SectionLabel, Tile, Card, BarRow, Bars, Empty } from '@/components/Dashboard/ui'
+import LucideAlarmClock from '~icons/lucide/alarm-clock'
 import LucideArrowLeftRight from '~icons/lucide/arrow-left-right'
+import LucideChevronLeft from '~icons/lucide/chevron-left'
+import LucideChevronRight from '~icons/lucide/chevron-right'
 import LucideCircleCheck from '~icons/lucide/circle-check'
 import LucideClock from '~icons/lucide/clock'
 import LucideFunnel from '~icons/lucide/funnel'
@@ -253,6 +302,24 @@ const dash = createResource({
   auto: true,
 })
 const d = computed(() => dash.data)
+
+const goLead = (name) => name && router.push({ name: 'Lead', params: { leadId: name } })
+// Returns null for users who are not CFO / Administrator, which hides the card.
+const slaRes = createResource({
+  url: 'crm.api.ae_dashboard.get_lead_sla_breaches',
+  params: { page: 1 },
+  auto: true,
+})
+const sla = computed(() => slaRes.data)
+const slaPages = computed(() => Math.max(1, Math.ceil((sla.value?.total || 0) / (sla.value?.page_size || 5))))
+const slaGo = (page) => slaRes.submit({ page })
+function fmtBreach(h) {
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}m`
+  if (h < 24) return `${Math.round(h)}h`
+  const days = Math.floor(h / 24)
+  const hrs = Math.round(h % 24)
+  return hrs ? `${days}d ${hrs}h` : `${days}d`
+}
 const meName = computed(() => (d.value ? getUser(d.value.user).full_name || d.value.user : ''))
 const maxStage = computed(() => Math.max(1, ...(d.value?.pipeline.by_stage || []).map((s) => s.count)))
 

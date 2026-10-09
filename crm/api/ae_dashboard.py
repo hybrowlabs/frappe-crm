@@ -1,5 +1,6 @@
 import frappe
-from frappe.query_builder.functions import Sum
+from frappe.query_builder.functions import Count, Sum
+from pypika.terms import ExistsCriterion
 from frappe.utils import add_days, flt, get_datetime, getdate, now_datetime
 
 from crm.api.aggregate import aggregate
@@ -229,3 +230,57 @@ def get_ae_dashboard() -> dict:
 		"accounts": _accounts(me),
 		"performance": _performance(me),
 	}
+
+
+SLA_PAGE_SIZE = 5
+
+
+def _can_see_sla_breaches():
+	return frappe.session.user == "Administrator" or "CFO" in frappe.get_roles()
+
+
+@frappe.whitelist()
+def get_lead_sla_breaches(page: int = 1) -> dict | None:
+	"""Leads with no deal created within `lead_sla_days` (CRM Custom Settings)
+	of their creation. CFO / Administrator only; lost leads are skipped."""
+	if not _can_see_sla_breaches():
+		return None
+
+	sla_days = frappe.db.get_single_value("CRM Custom Settings", "lead_sla_days") or 0
+	result = {"sla_days": sla_days, "page": 1, "page_size": SLA_PAGE_SIZE, "total": 0, "rows": []}
+	if sla_days <= 0:
+		return result
+
+	lead = frappe.qb.DocType("CRM Lead")
+	deal = frappe.qb.DocType("CRM Deal")
+	status = frappe.qb.DocType("CRM Lead Status")
+	cutoff = add_days(now_datetime(), -sla_days)
+
+	has_deal = frappe.qb.from_(deal).select(deal.name).where(deal.lead == lead.name)
+	lost = frappe.qb.from_(status).select(status.name).where(status.type == "Lost")
+	base = (
+		frappe.qb.from_(lead)
+		.where(lead.creation < cutoff)
+		.where(lead.status.notin(lost))
+		.where(~ExistsCriterion(has_deal))
+	)
+
+	total = base.select(Count(lead.name)).run()[0][0]
+	pages = max(1, -(-total // SLA_PAGE_SIZE))
+	page = min(max(1, int(page or 1)), pages)
+
+	rows = (
+		base.select(lead.name, lead.lead_name, lead.organization, lead.lead_owner, lead.status, lead.creation)
+		.orderby(lead.creation)
+		.limit(SLA_PAGE_SIZE)
+		.offset((page - 1) * SLA_PAGE_SIZE)
+		.run(as_dict=True)
+	)
+	now = now_datetime()
+	for r in rows:
+		due = add_days(get_datetime(r.creation), sla_days)
+		r.due_on = due
+		r.breached_hours = round((now - due).total_seconds() / 3600, 1)
+
+	result.update(page=page, total=total, rows=rows)
+	return result

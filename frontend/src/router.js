@@ -102,6 +102,11 @@ const routes = [
     props: true,
   },
   {
+    path: '/available-stock',
+    name: 'Available Stock',
+    component: () => import('@/pages/AvailableStock.vue'),
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',
