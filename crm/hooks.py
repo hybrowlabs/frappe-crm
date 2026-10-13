@@ -191,6 +191,9 @@ doc_events = {
 	"Quotation": {
 		"after_insert": ["crm.api.sales_order.add_quotation_items_to_previous_order_items"],
 	},
+	"Item": {
+		"validate": ["crm.api.item.validate"],
+	},
 }
 
 # Scheduled Tasks

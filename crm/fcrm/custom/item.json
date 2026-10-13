@@ -1,0 +1,33 @@
+{
+ "custom_fields": [
+  {
+   "doctype": "Custom Field",
+   "dt": "Item",
+   "module": "FCRM",
+   "is_system_generated": 0,
+   "name": "Item-custom_crm_branch_section",
+   "fieldname": "custom_crm_branch_section",
+   "fieldtype": "Section Break",
+   "label": "CRM Available Stock",
+   "insert_after": "uoms",
+   "description": "The CRM's Available Stock page shows this item's stock only for these branches."
+  },
+  {
+   "doctype": "Custom Field",
+   "dt": "Item",
+   "module": "FCRM",
+   "is_system_generated": 0,
+   "name": "Item-custom_branches",
+   "fieldname": "custom_branches",
+   "fieldtype": "Table",
+   "label": "Branches",
+   "options": "Item Branch",
+   "insert_after": "custom_crm_branch_section"
+  }
+ ],
+ "custom_perms": [],
+ "doctype": "Item",
+ "links": [],
+ "property_setters": [],
+ "sync_on_migrate": 1
+}

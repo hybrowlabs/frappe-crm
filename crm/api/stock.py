@@ -6,7 +6,8 @@ from crm.api.quotation import _session_sales_person, can_see_all_quotations
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_branch_stock_warehouses
 
 # CRM "Available Stock" page: item-wise stock of a branch, added up over the
-# child warehouses CRM Custom Settings -> Stock Warehouses sets for it.
+# child warehouses CRM Custom Settings -> Stock Warehouses sets for it. Only
+# items whose Branches table (Item -> custom_branches) holds the branch show.
 
 
 def _allowed_branches():
@@ -40,8 +41,8 @@ def get_stock_branches():
 
 @frappe.whitelist()
 def get_available_stock(branch: str):
-	"""Items with stock above zero in the branch's warehouses, with the total
-	Actual Qty across them."""
+	"""Items set for the branch with stock above zero in its warehouses, with
+	the total Actual Qty across them."""
 	if branch not in _allowed_branches():
 		frappe.throw(_("Branch {0} is not set on your Sales Person.").format(branch), frappe.PermissionError)
 
@@ -51,11 +52,19 @@ def get_available_stock(branch: str):
 
 	bin = frappe.qb.DocType("Bin")
 	item = frappe.qb.DocType("Item")
+	item_branch = frappe.qb.DocType("Item Branch")
 	total = Sum(bin.actual_qty)
 	items = (
 		frappe.qb.from_(bin)
 		.join(item)
 		.on(item.name == bin.item_code)
+		.join(item_branch)
+		.on(
+			(item_branch.parent == item.name)
+			& (item_branch.parenttype == "Item")
+			& (item_branch.parentfield == "custom_branches")
+			& (item_branch.branch == branch)
+		)
 		.select(bin.item_code, item.item_name, item.stock_uom, total.as_("qty"))
 		.where(bin.warehouse.isin(warehouses))
 		.groupby(bin.item_code, item.item_name, item.stock_uom)
