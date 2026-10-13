@@ -32,6 +32,7 @@ def after_install(force=False):
 	create_assignment_rule_custom_fields()
 	add_assignment_rule_property_setters()
 	add_precious_alloys_roles()
+	add_crm_only_user_field()
 	frappe.db.commit()
 
 
@@ -47,6 +48,12 @@ def add_precious_alloys_roles():
 			frappe.get_doc(
 				{"doctype": "Role", "role_name": role_name, "desk_access": 1}
 			).insert(ignore_permissions=True)
+
+
+def add_crm_only_user_field():
+	from crm.patches.v1_0.add_crm_only_user_field import execute
+
+	execute()
 
 
 def add_default_lead_statuses():
