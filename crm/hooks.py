@@ -274,6 +274,10 @@ ignore_links_on_delete = ["Failed Lead Sync Log"]
 # Authentication and authorization
 # --------------------------------
 
+# "CRM Only" users (User.crm_only) land on /crm and can't open the ERPNext desk
+on_login = ["crm.api.crm_only.redirect_crm_only_user"]
+update_website_context = ["crm.api.crm_only.block_desk_for_crm_only"]
+
 # auth_hooks = [
 # "crm.auth.validate"
 # ]
