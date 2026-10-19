@@ -191,6 +191,7 @@ class CRMDeal(Document):
         product_sub_category: DF.Link | None
         product_suggestions: DF.Table[CRMProductSuggestion]
         product_variant: DF.Link | None
+        direct_quotation: DF.Check
         repeat_deal: DF.Check
         requirement_note: DF.SmallText | None
         response_by: DF.Datetime | None
@@ -340,13 +341,16 @@ class CRMDeal(Document):
         # stages (before Proposal/Quotation) would collect is skipped. The
         # quotation gate and any later gates are still enforced.
         quotation_pos = positions.get("Proposal/Quotation")
+        # "Ready to buy" deals (direct_quotation) skip the same early stages, but
+        # start at Req. Discussion like any new deal and move to the quotation later.
+        skip_early_stages = self.repeat_deal or self.direct_quotation
 
         missing_sections = []
         for gate in STAGE_GATES:
             gate_pos = positions.get(gate["status"])
             if gate_pos is None or gate_pos > new_pos:
                 continue
-            if self.repeat_deal and quotation_pos and gate_pos < quotation_pos:
+            if skip_early_stages and quotation_pos and gate_pos < quotation_pos:
                 continue
             # No trial required → the evaluation isn't recorded, so its gate doesn't apply.
             if gate["status"] == "Evaluation Completed" and not self.trial_required:

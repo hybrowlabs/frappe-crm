@@ -26,6 +26,42 @@
           </div>
         </div>
         <div>
+          <div class="mb-5">
+            <div class="mb-2 text-sm text-ink-gray-5">
+              {{ __('What does the customer need?') }}
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                v-for="option in dealFlowOptions"
+                :key="option.value"
+                type="button"
+                class="rounded-lg border p-3 text-left"
+                :class="
+                  dealFlow === option.value
+                    ? 'border-outline-gray-4 bg-surface-gray-2'
+                    : 'border-outline-gray-1 hover:bg-surface-gray-1'
+                "
+                @click="dealFlow = option.value"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-outline-gray-4"
+                  >
+                    <span
+                      v-if="dealFlow === option.value"
+                      class="h-2 w-2 rounded-full bg-surface-gray-7"
+                    />
+                  </span>
+                  <span class="text-base font-medium text-ink-gray-9">
+                    {{ option.label }}
+                  </span>
+                </div>
+                <div class="mt-1 pl-6 text-sm text-ink-gray-5">
+                  {{ option.description }}
+                </div>
+              </button>
+            </div>
+          </div>
           <div
             v-if="hasOrganizationSections || hasContactSections"
             class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3"
@@ -50,13 +86,74 @@
             class="h-px w-full border-t my-5"
           />
           <div v-if="!chooseExistingOrganization" class="mb-4">
-            <FormControl
-              type="text"
-              :label="__('GSTIN')"
-              v-model="deal.doc.gstin"
-              placeholder="27AABCM1234E1Z5"
+            <FieldSelect
+              v-model="gstType"
+              :label="__('GST Registration Type')"
+              required
+              :options="GST_TYPE_OPTIONS"
             />
-            <p class="mt-1 text-xs text-ink-gray-5">{{ gstinHelp }}</p>
+            <template v-if="!exempt">
+              <FieldText
+                v-model="gstin"
+                :label="__('GSTIN')"
+                required
+                placeholder="27AABCM1234E1Z5"
+                :help="gstinHelp"
+              />
+              <StageCallout v-if="valid" theme="green" icon="check" class="mt-1">
+                {{ __('State') }} <b>{{ fetchedState || stateCode }}</b>
+                {{
+                  __(
+                    '· Deal territory and tax (CGST/SGST vs IGST) will be set from this GSTIN.',
+                  )
+                }}
+              </StageCallout>
+            </template>
+            <StageCallout v-else theme="amber" icon="alert" class="mt-1">
+              {{
+                __(
+                  'Unregistered — quotation allowed on advance payment only. No input tax credit; credit terms blocked.',
+                )
+              }}
+            </StageCallout>
+
+            <StageSection :title="__('Billing Address')" icon="building" class="mt-2">
+              <FieldText v-model="billing.address_line1" :label="__('Address Line 1')" />
+              <FieldText v-model="billing.address_line2" :label="__('Address Line 2')" />
+              <FieldGrid :cols="2">
+                <FieldText v-model="billing.city" :label="__('City')" />
+                <FieldText v-model="billing.state" :label="__('State')" />
+              </FieldGrid>
+              <FieldGrid :cols="2">
+                <FieldText v-model="billing.pincode" :label="__('Pincode')" />
+                <FieldText v-model="billing.country" :label="__('Country')" />
+              </FieldGrid>
+            </StageSection>
+
+            <StageSection :title="__('Shipping Address')" icon="package">
+              <FieldCheckbox
+                :label="__('Shipping address same as billing')"
+                :checked="sameAsBilling"
+                @change="sameAsBilling = !sameAsBilling"
+              />
+              <template v-if="!sameAsBilling">
+                <FieldText
+                  v-model="shipping.address_line1"
+                  :label="__('Address Line 1')"
+                  required
+                  class="mt-2"
+                />
+                <FieldText v-model="shipping.address_line2" :label="__('Address Line 2')" />
+                <FieldGrid :cols="2">
+                  <FieldText v-model="shipping.city" :label="__('City')" required />
+                  <FieldText v-model="shipping.state" :label="__('State')" />
+                </FieldGrid>
+                <FieldGrid :cols="2">
+                  <FieldText v-model="shipping.pincode" :label="__('Pincode')" />
+                  <FieldText v-model="shipping.country" :label="__('Country')" />
+                </FieldGrid>
+              </template>
+            </StageSection>
           </div>
           <FieldLayout
             v-if="tabs.data?.length"
@@ -86,13 +183,20 @@
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import { isTenDigitPhone } from '@/utils/phoneFields'
 import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
+import StageSection from '@/components/StageForms/StageSection.vue'
+import StageCallout from '@/components/StageForms/StageCallout.vue'
+import FieldSelect from '@/components/StageForms/FieldSelect.vue'
+import FieldGrid from '@/components/StageForms/FieldGrid.vue'
+import FieldText from '@/components/StageForms/FieldText.vue'
+import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
+import { useGstin, GST_TYPE_OPTIONS } from '@/composables/useGstin'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
 import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { FormControl, Switch, createResource, call, toast } from 'frappe-ui'
+import { Switch, createResource } from 'frappe-ui'
 import { computed, ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -111,6 +215,27 @@ const { document: deal, triggerOnBeforeCreate } = useDocument('CRM Deal')
 
 const hasOrganizationSections = ref(true)
 const hasContactSections = ref(true)
+
+// "Needs discussion / trial" is today's flow (starts at Req. Discussion).
+// "Ready to buy" creates the deal, then opens Create Customer and moves it to
+// Proposal/Quotation on the Deal page.
+const dealFlowOptions = [
+  {
+    value: 'discussion',
+    label: __('Needs discussion / trial'),
+    description: __(
+      'We first understand their need, suggest a product, and may run a trial before the quotation.',
+    ),
+  },
+  {
+    value: 'ready',
+    label: __('Ready to buy – send quotation now'),
+    description: __(
+      'Small or medium business that already knows what it wants. Go straight to the price quote.',
+    ),
+  },
+]
+const dealFlow = ref('discussion')
 
 const isDealCreating = ref(false)
 const chooseExistingContact = ref(false)
@@ -178,76 +303,26 @@ const tabs = createResource({
 
 const dealStatuses = computed(() => statusOptions('deal'))
 
-// Auto-fetch name & address from the GSTIN via india_compliance.
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/
-const gstinLoading = ref(false)
-let lastFetchedGstin = ''
-const fetchedAddress = ref(null)
-
-const gstinHelp = computed(() =>
-  gstinLoading.value
-    ? __('Fetching GST details…')
-    : __('Enter a valid GSTIN to auto-fill name & address'),
-)
-
-watch(
-  () => deal.doc.gstin,
-  (value) => {
-    const clean = (value || '').toUpperCase().replace(/\s/g, '')
-    if (clean !== value) deal.doc.gstin = clean
-    if (!GSTIN_REGEX.test(clean) || clean === lastFetchedGstin) return
-    lastFetchedGstin = clean
-    fetchGstinInfo(clean)
+// Auto-fill name, GST type, state and address from the GSTIN (same as Lead → Deal).
+const {
+  gstType,
+  gstin,
+  fetchedState,
+  billing,
+  shipping,
+  sameAsBilling,
+  clean,
+  valid,
+  stateCode,
+  exempt,
+  gstinHelp,
+  createDealAddresses,
+} = useGstin({
+  onBusinessName(name) {
+    deal.doc.legal_name = name
+    deal.doc.organization_name = name
   },
-)
-
-async function fetchGstinInfo(value) {
-  gstinLoading.value = true
-  try {
-    const info = await call(
-      'india_compliance.gst_india.utils.gstin_info.get_gstin_info',
-      { gstin: value },
-    )
-    if (info?.business_name) {
-      deal.doc.legal_name = info.business_name
-      deal.doc.organization_name = info.business_name
-    }
-    if (info?.permanent_address) fetchedAddress.value = info.permanent_address
-    toast.success(__('GST details fetched'))
-  } catch (err) {
-    toast.error(err.messages?.[0] || __('Could not fetch GST details'))
-  } finally {
-    gstinLoading.value = false
-  }
-}
-
-async function createDealAddress(dealName) {
-  if (!fetchedAddress.value) return
-  const addr = fetchedAddress.value
-  const links = [{ link_doctype: 'CRM Deal', link_name: dealName }]
-  const address = await call('frappe.client.insert', {
-    doc: {
-      doctype: 'Address',
-      address_title: deal.doc.legal_name || deal.doc.organization_name || dealName,
-      address_type: 'Billing',
-      gstin: deal.doc.gstin || '',
-      address_line1: addr.address_line1 || '',
-      address_line2: addr.address_line2 || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      pincode: addr.pincode || '',
-      country: addr.country || 'India',
-      links,
-    },
-  }).catch(() => null)
-  if (address?.name) {
-    await call('frappe.client.set_value', {
-      doctype: 'CRM Deal',
-      name: dealName,
-      fieldname: { billing_address: address.name, shipping_address: address.name },
-    }).catch(() => {})
-  }
-}
+})
 
 async function createDeal() {
   if (deal.doc.website && !deal.doc.website.startsWith('http')) {
@@ -260,6 +335,11 @@ async function createDeal() {
     deal.doc['mobile_no'] = null
   } else deal.doc['contact'] = null
 
+  if (!chooseExistingOrganization.value) {
+    deal.doc.gstin = exempt.value ? '' : clean.value
+  }
+  deal.doc.direct_quotation = dealFlow.value === 'ready' ? 1 : 0
+
   await triggerOnBeforeCreate?.()
 
   createResource({
@@ -268,9 +348,18 @@ async function createDeal() {
     auto: true,
     validate() {
       error.value = null
-      if (!chooseExistingOrganization.value && !deal.doc.gstin) {
-        error.value = __('GSTIN is required')
-        return error.value
+      if (!chooseExistingOrganization.value) {
+        if (!exempt.value && !valid.value) {
+          error.value = __('Enter a valid 15-character GSTIN')
+          return error.value
+        }
+        if (
+          !sameAsBilling.value &&
+          (!shipping.address_line1 || !shipping.city)
+        ) {
+          error.value = __('Shipping address line 1 and city are required')
+          return error.value
+        }
       }
       if (deal.doc.annual_revenue) {
         if (typeof deal.doc.annual_revenue === 'string') {
@@ -303,10 +392,20 @@ async function createDeal() {
     },
     async onSuccess(name) {
       capture('deal_created')
-      await createDealAddress(name)
+      if (!chooseExistingOrganization.value) {
+        await createDealAddresses(
+          name,
+          deal.doc.legal_name || deal.doc.organization_name,
+        )
+      }
       isDealCreating.value = false
       show.value = false
-      router.push({ name: 'Deal', params: { dealId: name } })
+      router.push({
+        name: 'Deal',
+        params: { dealId: name },
+        // Tells the Deal page to open Create Customer straight away.
+        query: dealFlow.value === 'ready' ? { quote: '1' } : {},
+      })
     },
     onError(err) {
       isDealCreating.value = false
@@ -328,6 +427,7 @@ function openQuickEntryModal() {
 onMounted(() => {
   deal.doc.no_of_employees = '1-10'
   Object.assign(deal.doc, props.defaults)
+  if (deal.doc.gstin) gstin.value = deal.doc.gstin
 
   if (!deal.doc.deal_owner) {
     deal.doc.deal_owner = getUser().name
