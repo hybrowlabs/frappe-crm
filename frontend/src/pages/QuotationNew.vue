@@ -67,12 +67,12 @@
         :class="{ 'pointer-events-none opacity-50': !ready }"
       >
         <!-- Tabs -->
-        <div class="flex gap-7 border-b border-outline-gray-2">
+        <div class="flex gap-5 overflow-x-auto border-b border-outline-gray-2 sm:gap-7">
           <button
             v-for="t in tabs"
             :key="t.key"
             type="button"
-            class="-mb-px border-b py-2.5 text-base duration-300 ease-in-out hover:text-ink-gray-9"
+            class="-mb-px shrink-0 whitespace-nowrap border-b py-2.5 text-base duration-300 ease-in-out hover:text-ink-gray-9"
             :class="
               tab === t.key
                 ? 'border-outline-gray-9 text-ink-gray-9'
@@ -142,7 +142,106 @@
             <div class="text-lg font-medium text-ink-gray-9">
               {{ __('Items') }} *
             </div>
-            <div class="overflow-x-auto rounded-lg border border-outline-gray-2">
+            <!-- Items as cards on mobile and tablet, where the table is too wide -->
+            <div v-if="compactItems" class="flex flex-col gap-3">
+              <div
+                v-for="(row, i) in doc.items"
+                :key="row.key"
+                class="flex flex-col gap-3 rounded-lg border border-outline-gray-2 p-3"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-ink-gray-5">
+                    {{ __('Item') }} #{{ i + 1 }}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    icon="x"
+                    :aria-label="__('Remove row')"
+                    @click="removeRow(i)"
+                  />
+                </div>
+                <div>
+                  <Link
+                    v-model="row.item_code"
+                    doctype="Item"
+                    :filters="itemFilters"
+                    :disabled="!doc.party_name"
+                    :placeholder="
+                      doc.party_name ? __('Select item') : __('Select a customer first')
+                    "
+                    @update:modelValue="onItemChange(row)"
+                  />
+                  <div
+                    v-if="isFreight(row) && freightError(row)"
+                    class="mt-1 text-sm text-ink-red-4"
+                  >
+                    {{ freightError(row) }}
+                  </div>
+                  <div
+                    v-if="row.priceMessage"
+                    class="mt-1 text-sm"
+                    :class="row.priceState === 'error' ? 'text-ink-red-4' : 'text-ink-gray-5'"
+                  >
+                    {{ row.priceMessage }}
+                  </div>
+                </div>
+                <div
+                  v-if="row.description"
+                  class="whitespace-pre-line text-sm text-ink-gray-6"
+                >
+                  {{ row.description }}
+                </div>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-gray-6">
+                  <span>{{ __('HSN') }}: {{ row.gst_hsn_code || '—' }}</span>
+                  <span>
+                    {{ __('GST') }}:
+                    {{ row.gst_rate == null ? '—' : `${row.gst_rate}%` }}
+                  </span>
+                  <span>{{ __('UOM') }}: {{ row.uom || '—' }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <FormControl
+                    v-model="row.custom_no_of_packs"
+                    type="number"
+                    min="0"
+                    :label="__('No of Packs')"
+                    :disabled="!row.sold_in_packs"
+                    :placeholder="row.sold_in_packs ? '' : '—'"
+                    @update:modelValue="onPacksChange(row)"
+                  />
+                  <FormControl
+                    v-model="row.qty"
+                    type="number"
+                    min="0"
+                    :label="__('Qty')"
+                  />
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-base">
+                  <FormControl
+                    v-if="isFreight(row)"
+                    v-model="row.rate"
+                    type="number"
+                    min="0"
+                    :label="__('Rate')"
+                    :placeholder="__('Min {0} {1}', [doc.currency, freightInfo(row).min_pricing])"
+                  />
+                  <div v-else class="flex flex-col gap-1.5">
+                    <span class="text-xs text-ink-gray-5">{{ __('Rate') }}</span>
+                    <span class="text-ink-gray-8">{{ rateLabel(row) }}</span>
+                  </div>
+                  <div class="flex flex-col gap-1.5 text-right">
+                    <span class="text-xs text-ink-gray-5">{{ __('Amount') }}</span>
+                    <span class="font-medium text-ink-gray-8">
+                      {{ row.rate ? amount(row.rate * (row.qty || 0)) : '—' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
+              class="overflow-x-auto rounded-lg border border-outline-gray-2"
+            >
               <table class="w-full min-w-[70rem] text-base">
                 <thead>
                   <tr class="bg-surface-gray-2 text-left text-sm text-ink-gray-5">
@@ -250,7 +349,12 @@
               }}
             </div>
             <div class="flex items-center justify-between">
-              <Button :label="__('Add Row')" iconLeft="plus" @click="addRow" />
+              <Button
+                :label="__('Add Row')"
+                iconLeft="plus"
+                :class="{ 'w-full': compactItems }"
+                @click="addRow"
+              />
             </div>
           </div>
 
@@ -341,6 +445,7 @@ import { createDialog } from '@/utils/dialogs'
 import { Breadcrumbs, Button, FormControl, call, toast } from 'frappe-ui'
 import { ref, reactive, computed, onMounted, watch, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { isMobileView, isTabletView } from '@/composables/settings'
 
 // Multi-line read-only text under an address / contact picker.
 const AddressText = (props) =>
@@ -355,6 +460,9 @@ const AddressText = (props) =>
       )
     : null
 AddressText.props = ['text']
+
+// The items table needs ~70rem, so narrower screens show each row as a card.
+const compactItems = computed(() => isMobileView.value || isTabletView.value)
 
 const { user } = sessionStore()
 const { doctypeMeta } = getMeta('Quotation')
