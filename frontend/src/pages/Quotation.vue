@@ -92,59 +92,7 @@
       <!-- Items -->
       <div class="flex flex-col gap-2">
         <div class="text-lg font-medium text-ink-gray-9">{{ __('Items') }}</div>
-        <div class="overflow-x-auto rounded-lg border border-blue-500">
-          <table class="w-full min-w-[62rem] text-base">
-            <thead>
-              <tr class="border-b border-blue-500 bg-surface-gray-2 text-left text-sm text-ink-gray-5">
-                <th class="w-10 px-3 py-2 font-medium">SR No.</th>
-                <th class="min-w-[8rem] px-3 py-2 font-medium">{{ __('Item') }}</th>
-                <th class="min-w-[12rem] px-3 py-2 font-medium">{{ __('Description') }}</th>
-                <th class="w-24 px-3 py-2 font-medium">{{ __('HSN') }}</th>
-                <th class="w-16 px-3 py-2 text-right font-medium">{{ __('GST') }}</th>
-                <th class="w-16 px-3 py-2 font-medium">{{ __('UOM') }}</th>
-                <th class="w-28 whitespace-nowrap px-3 py-2 font-medium">{{ __('No of Packs') }}</th>
-                <th class="w-24 px-3 py-2 font-medium">{{ __('Qty') }}</th>
-                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Rate') }}</th>
-                <th class="w-24 px-3 py-2 text-right font-medium">{{ __('Amount') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(item, i) in q.items"
-                :key="i"
-                class="border-t border-blue-500 align-top"
-              >
-                <td class="px-3 py-2.5 text-ink-gray-5">{{ i + 1 }}</td>
-                <td class="px-3 py-2.5">
-                  <div class="text-ink-gray-8">{{ item.item_code }}</div>
-                </td>
-                <td class="whitespace-pre-line px-3 py-2.5 text-sm text-ink-gray-6">
-                  {{ item.description || '—' }}
-                </td>
-                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.gst_hsn_code || '—' }}</td>
-                <td class="px-3 py-2.5 text-right text-ink-gray-6">
-                  {{ item.gst_rate == null ? '—' : `${item.gst_rate}%` }}
-                </td>
-                <td class="px-3 py-2.5 text-ink-gray-6">{{ item.uom || '—' }}</td>
-                <td class="px-3 py-2.5 text-ink-gray-8">
-                  {{ item.custom_no_of_packs || '—' }}
-                </td>
-                <td class="px-3 py-2.5 text-ink-gray-8">{{ formatQty(item.qty) }}</td>
-                <td class="px-3 py-2.5 text-right text-ink-gray-8">
-                  {{ item.rate ? amount(item.rate) : '—' }}
-                </td>
-                <td class="px-3 py-2.5 text-right text-ink-gray-8">
-                  {{ item.rate ? amount(item.amount) : '—' }}
-                </td>
-              </tr>
-              <tr v-if="!q.items.length">
-                <td colspan="10" class="px-3 py-6 text-center text-ink-gray-5">
-                  {{ __('No items') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DocItems :items="q.items" :amount="amount" />
       </div>
 
       <!-- Totals: every line always shown, ₹0.00 when absent -->
@@ -185,9 +133,9 @@
 import { isMobileView } from '@/composables/settings'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
+import DocItems from '@/components/DocItems.vue'
 import { formatDate } from '@/utils'
 import { addressParts, indicatorTheme, totalsLines, useCurrencyFormat } from '@/utils/quotation'
-import { formatQty } from '@/utils/qty'
 import { createDialog } from '@/utils/dialogs'
 import { Breadcrumbs, Badge, Button, call, createResource, toast } from 'frappe-ui'
 import { computed, ref } from 'vue'

@@ -63,7 +63,7 @@
 
       <fieldset
         :disabled="!ready"
-        class="flex flex-col gap-5"
+        class="flex min-w-0 flex-col gap-5"
         :class="{ 'pointer-events-none opacity-50': !ready }"
       >
         <!-- Tabs -->

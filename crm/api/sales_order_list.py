@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from crm.api.quotation import _address_text, _line_gst_rate, can_see_all_quotations
+from crm.api.quotation import _address_text, _plain_text, _line_gst_rate, can_see_all_quotations
 from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import get_print_format
 
 # CRM list/detail views over ERPNext's Sales Order, limited to orders created
@@ -214,7 +214,7 @@ def get_sales_order(name: str):
 			{
 				"item_code": i.item_code,
 				"item_name": i.item_name,
-				"description": frappe.utils.strip_html(i.description or "").strip(),
+				"description": _plain_text(i.description),
 				"gst_hsn_code": i.get("gst_hsn_code") or "",
 				"gst_rate": _line_gst_rate(i),
 				**_pack_details(i),
