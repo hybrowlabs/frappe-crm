@@ -4,16 +4,23 @@
       <Breadcrumbs :items="breadcrumbs" />
     </template>
     <template #right-header>
-      <Button :label="__('Print')" iconLeft="printer" @click="printDoc" />
+      <Button
+        v-bind="
+          isMobileView
+            ? { icon: 'printer', tooltip: __('Print') }
+            : { label: __('Print'), iconLeft: 'printer' }
+        "
+        @click="printDoc"
+      />
     </template>
   </LayoutHeader>
   <div v-if="q" class="flex-1 overflow-y-auto">
-    <div class="mx-auto flex max-w-7xl flex-col gap-6 p-5">
+    <div class="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-5">
       <!-- Header -->
       <div class="flex flex-col gap-3">
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span
-            class="rounded-lg px-4 py-2 text-2xl font-extrabold uppercase tracking-wide text-white"
+            class="min-w-0 break-words rounded-lg px-3 py-1.5 text-lg font-extrabold uppercase tracking-wide text-white sm:px-4 sm:py-2 sm:text-2xl"
             style="background: linear-gradient(90deg, #5b6cf0, #8193f7)"
           >
             {{ q.customer_name || q.customer }}
@@ -28,10 +35,9 @@
 
         <!-- Address and details, in one box -->
         <div
-          class="grid rounded-lg border border-blue-500 p-4"
-          style="grid-template-columns: repeat(2, minmax(0, 1fr))"
+          class="grid grid-cols-1 gap-4 rounded-lg border border-blue-500 p-4 md:grid-cols-2 md:gap-0"
         >
-          <div class="flex min-w-0 flex-col gap-1.5 pr-6">
+          <div class="flex min-w-0 flex-col gap-1.5 md:pr-6">
             <div v-if="q.billing_address" class="flex flex-col gap-1">
               <span class="text-sm text-ink-gray-5">{{ __('Billing Address') }}</span>
               <span v-if="address.street" class="break-words text-base leading-relaxed text-ink-gray-8">
@@ -53,7 +59,7 @@
             </div>
           </div>
           <div
-            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-l border-blue-500 pl-6"
+            class="grid min-w-0 grid-cols-2 content-start gap-x-6 gap-y-4 border-t border-blue-500 pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0"
           >
             <div v-for="d in details" :key="d.label" class="flex min-w-0 flex-col gap-1">
               <span class="text-sm text-ink-gray-5">{{ d.label }}</span>
@@ -165,6 +171,7 @@
 </template>
 
 <script setup>
+import { isMobileView } from '@/composables/settings'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import ErrorPage from '@/components/ErrorPage.vue'
 import { formatDate } from '@/utils'

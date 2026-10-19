@@ -89,24 +89,26 @@
 
         <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Today\'s Tasks & Follow-ups')">
-            <table v-if="d.tasks.today.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Task') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Reference') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Priority') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="t in d.tasks.today" :key="t.name"
-                  class="border-t border-outline-gray-1" :class="t.reference_docname ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
-                  @click="goRef(t)">
-                  <td class="py-1.5 font-medium text-ink-gray-8">{{ t.title }}</td>
-                  <td class="py-1.5 text-ink-gray-5">{{ t.reference_docname || '—' }}</td>
-                  <td class="py-1.5 text-right"><Badge v-if="t.priority" :theme="t.priority === 'High' ? 'red' : t.priority === 'Medium' ? 'orange' : 'gray'" :label="t.priority" variant="subtle" /></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.tasks.today.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Task') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Reference') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Priority') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="t in d.tasks.today" :key="t.name"
+                    class="border-t border-outline-gray-1" :class="t.reference_docname ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
+                    @click="goRef(t)">
+                    <td class="py-1.5 font-medium text-ink-gray-8">{{ t.title }}</td>
+                    <td class="py-1.5 text-ink-gray-5">{{ t.reference_docname || '—' }}</td>
+                    <td class="py-1.5 text-right"><Badge v-if="t.priority" :theme="t.priority === 'High' ? 'red' : t.priority === 'Medium' ? 'orange' : 'gray'" :label="t.priority" variant="subtle" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No tasks due today')" />
           </Card>
           <Card>
@@ -116,24 +118,26 @@
                 <Badge v-if="d.tasks.overdue_count" theme="red" :label="String(d.tasks.overdue_count)" variant="subtle" />
               </div>
             </template>
-            <table v-if="d.tasks.overdue.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Task') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Due') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Overdue') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="t in d.tasks.overdue" :key="t.name"
-                  class="border-t border-outline-gray-1" :class="t.reference_docname ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
-                  @click="goRef(t)">
-                  <td class="py-1.5 font-medium text-ink-gray-8">{{ t.title }}</td>
-                  <td class="py-1.5 text-ink-gray-5">{{ t.due_date ? formatDate(t.due_date) : '—' }}</td>
-                  <td class="py-1.5 text-right"><Badge theme="red" :label="`${t.days}d`" variant="subtle" /></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.tasks.overdue.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Task') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Due') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Overdue') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="t in d.tasks.overdue" :key="t.name"
+                    class="border-t border-outline-gray-1" :class="t.reference_docname ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
+                    @click="goRef(t)">
+                    <td class="py-1.5 font-medium text-ink-gray-8">{{ t.title }}</td>
+                    <td class="py-1.5 text-ink-gray-5">{{ t.due_date ? formatDate(t.due_date) : '—' }}</td>
+                    <td class="py-1.5 text-right"><Badge theme="red" :label="`${t.days}d`" variant="subtle" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('Nothing overdue')" />
           </Card>
         </div>
@@ -145,23 +149,25 @@
               <Badge v-if="d.tasks.pending_tech_count" theme="orange" :label="String(d.tasks.pending_tech_count)" variant="subtle" />
             </div>
           </template>
-          <table v-if="d.tasks.pending_tech.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Assignment') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Elapsed / SLA') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="t in d.tasks.pending_tech" :key="t.name"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goDeal(t.name)">
-                <td class="py-1.5 font-medium text-ink-gray-8">{{ t.name }}</td>
-                <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="t.organization_name" size="sm" /><span class="text-ink-gray-8">{{ t.organization_name }}</span></span></td>
-                <td class="py-1.5 text-right"><Badge :theme="slaTheme(t.elapsed_hours)" :label="`${fmtElapsed(t.elapsed_hours)} · ${slaLabel(t.elapsed_hours)}`" variant="subtle" /></td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.tasks.pending_tech.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Assignment') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Elapsed / SLA') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in d.tasks.pending_tech" :key="t.name"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goDeal(t.name)">
+                  <td class="py-1.5 font-medium text-ink-gray-8">{{ t.name }}</td>
+                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="t.organization_name" size="sm" /><span class="text-ink-gray-8">{{ t.organization_name }}</span></span></td>
+                  <td class="py-1.5 text-right"><Badge :theme="slaTheme(t.elapsed_hours)" :label="`${fmtElapsed(t.elapsed_hours)} · ${slaLabel(t.elapsed_hours)}`" variant="subtle" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('No pending technical responses')" />
         </Card>
 
@@ -169,25 +175,27 @@
         <SectionLabel :label="__('My Accounts')" />
         <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('My Accounts — Last Contact')">
-            <table v-if="d.accounts.last_contact.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Last Contact') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.accounts.last_contact" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-right">
-                    <Badge v-if="a.contact_days > 30" theme="red" :label="__('{0}d ago', [a.contact_days])" variant="subtle" />
-                    <Badge v-else-if="a.contact_days > 14" theme="orange" :label="__('{0}d ago', [a.contact_days])" variant="subtle" />
-                    <span v-else class="text-ink-gray-5">{{ __('{0}d ago', [a.contact_days]) }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.accounts.last_contact.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Last Contact') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.accounts.last_contact" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                    <td class="py-1.5 text-right">
+                      <Badge v-if="a.contact_days > 30" theme="red" :label="__('{0}d ago', [a.contact_days])" variant="subtle" />
+                      <Badge v-else-if="a.contact_days > 14" theme="orange" :label="__('{0}d ago', [a.contact_days])" variant="subtle" />
+                      <span v-else class="text-ink-gray-5">{{ __('{0}d ago', [a.contact_days]) }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No accounts assigned to you')" />
           </Card>
           <Card>
@@ -197,23 +205,25 @@
                 <Badge v-if="d.accounts.dormant30_count" theme="red" :label="String(d.accounts.dormant30_count)" variant="subtle" />
               </div>
             </template>
-            <table v-if="d.accounts.dormant30.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.accounts.dormant30" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-ink-gray-5">{{ formatDate(a.last_order) }}</td>
-                  <td class="py-1.5 text-right"><Badge theme="red" :label="`${a.days}d`" variant="subtle" /></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.accounts.dormant30.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.accounts.dormant30" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                    <td class="py-1.5 text-ink-gray-5">{{ formatDate(a.last_order) }}</td>
+                    <td class="py-1.5 text-right"><Badge theme="red" :label="`${a.days}d`" variant="subtle" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No dormant accounts')" />
           </Card>
         </div>

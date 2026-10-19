@@ -47,7 +47,7 @@
           class="overflow-hidden flex h-full flex-col gap-6 mt-4"
         >
           <!-- Form -->
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormControl
               v-model="syncSource.type"
               type="autocomplete"
