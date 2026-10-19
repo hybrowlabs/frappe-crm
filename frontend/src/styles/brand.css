@@ -285,6 +285,12 @@ div {
   color: var(--ink-gray-9);
 }
 .pa-kpi .pa-s { font-size: 12px; color: var(--ink-gray-5); }
+/* Two tiles per row on phones: long amounts wrap instead of spilling out */
+.pa-kpi .pa-v { overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .pa-kpi { padding: 12px; gap: 10px; }
+  .pa-kpi .pa-v { font-size: 20px; }
+}
 .pa-v.good { color: var(--ink-green-3); }
 .pa-v.bad { color: var(--ink-red-3); }
 .pa-v.warn { color: var(--ink-amber-3); }
@@ -320,15 +326,12 @@ div {
 .pa-pb { padding: 14px 18px 16px; flex: 1; }
 .pa-pb.flush { padding: 0; }
 
-/* Tables inside panels: edge to edge, uppercase sticky head, row hover */
+/* Tables inside panels: edge to edge, uppercase sticky head, row hover. The
+   body scrolls sideways, since the panel clips and cells don't wrap (phones). */
+.pa-pb:has(> table),
+.pa-pb:has(> .overflow-x-auto) { padding: 0; overflow-x: auto; }
 .pa-pb > table,
-.pa-pb > .overflow-x-auto {
-  margin: -14px -18px -16px;
-  width: calc(100% + 36px);
-  max-width: none;
-}
-.pa-pb.flush > table,
-.pa-pb.flush > .overflow-x-auto { margin: 0; width: 100%; }
+.pa-pb > .overflow-x-auto { margin: 0; width: 100%; }
 .pa-panel table { border-collapse: collapse; font-size: 13px; }
 .pa-panel table th {
   text-align: left;

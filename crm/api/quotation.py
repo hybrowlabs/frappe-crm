@@ -1,3 +1,6 @@
+import html
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import get_time, getdate, now_datetime
@@ -9,6 +12,14 @@ from crm.fcrm.doctype.crm_custom_settings.crm_custom_settings import (
 	is_holiday,
 	is_working_day,
 )
+
+
+def _plain_text(value):
+	"""Item description as plain text: tags stripped and entities such as &nbsp; decoded.
+	Decoded twice, since descriptions typed into the editor can be escaped twice (&amp;nbsp;)."""
+	text = html.unescape(html.unescape(frappe.utils.strip_html(value or "")))
+	return re.sub(r"[ \xa0]{2,}", " ", text.replace("\xa0", " ")).strip()
+
 
 HOLIDAY_BLOCKED = "{0} cannot be created on holiday for branch {1}."
 DAY_BLOCKED = "{0} for branch {1} cannot be created on {2}."
@@ -299,7 +310,7 @@ def get_quotation(name: str):
 			{
 				"item_code": i.item_code,
 				"item_name": i.item_name,
-				"description": frappe.utils.strip_html(i.description or "").strip(),
+				"description": _plain_text(i.description),
 				"gst_hsn_code": i.get("gst_hsn_code") or "",
 				"gst_rate": _line_gst_rate(i),
 				"custom_no_of_packs": i.get("custom_no_of_packs"),
@@ -538,7 +549,6 @@ def get_item_details(customer: str, item_code: str):
 	"""Item fields the new-quotation screen shows read-only, plus the pack rule it
 	uses for Qty. GST rate is the one the quotation will get on save (same Item Tax
 	Template as apply_quotation_taxes picks)."""
-	from frappe.utils import strip_html
 	from papl_business_logic.papl_business_logic.api.quotation_tax import (
 		_template_rate,
 		item_tax_template,
@@ -555,7 +565,7 @@ def get_item_details(customer: str, item_code: str):
 	return {
 		"item_name": item.item_name,
 		"stock_uom": item.stock_uom,
-		"description": strip_html(item.description or "").strip(),
+		"description": _plain_text(item.description),
 		"gst_hsn_code": item.get("gst_hsn_code") or "",
 		"gst_rate": _template_rate(template) if template else None,
 		"custom_sell_only_as_a_multiple_of_base_qty": item.get("custom_sell_only_as_a_multiple_of_base_qty"),
