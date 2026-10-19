@@ -43,39 +43,41 @@
               </span>
             </div>
           </template>
-          <table v-if="d.order_frequency.rows.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('Last Month') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('This Qtr') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('YTD') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Status') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.order_frequency.rows" :key="a.organization"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                <td class="py-1.5">
-                  <span class="flex items-center gap-2">
-                    <span class="h-5 w-1 rounded-sm" :class="statusBar(a.status)"></span>
-                    <Avatar :label="a.organization_name" size="sm" />
-                    <span class="font-medium text-ink-gray-8">{{ a.organization_name }}</span>
-                  </span>
-                </td>
-                <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
-                <td class="py-1.5 text-center font-semibold text-ink-gray-9">{{ a.this_month }}</td>
-                <td class="py-1.5 text-center text-ink-gray-5">{{ a.last_month }}</td>
-                <td class="py-1.5 text-center text-ink-gray-5">{{ a.this_qtr }}</td>
-                <td class="py-1.5 text-center text-ink-gray-5">{{ a.ytd_orders }}</td>
-                <td class="py-1.5 text-right">
-                  <Badge :theme="statusTheme(a.status)" :label="a.status" variant="subtle" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.order_frequency.rows.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('Last Month') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('This Qtr') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('YTD') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Status') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.order_frequency.rows" :key="a.organization"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                  <td class="py-1.5">
+                    <span class="flex items-center gap-2">
+                      <span class="h-5 w-1 rounded-sm" :class="statusBar(a.status)"></span>
+                      <Avatar :label="a.organization_name" size="sm" />
+                      <span class="font-medium text-ink-gray-8">{{ a.organization_name }}</span>
+                    </span>
+                  </td>
+                  <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
+                  <td class="py-1.5 text-center font-semibold text-ink-gray-9">{{ a.this_month }}</td>
+                  <td class="py-1.5 text-center text-ink-gray-5">{{ a.last_month }}</td>
+                  <td class="py-1.5 text-center text-ink-gray-5">{{ a.this_qtr }}</td>
+                  <td class="py-1.5 text-center text-ink-gray-5">{{ a.ytd_orders }}</td>
+                  <td class="py-1.5 text-right">
+                    <Badge :theme="statusTheme(a.status)" :label="a.status" variant="subtle" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('No accounts with order history yet')" />
         </Card>
 
@@ -92,45 +94,49 @@
 
         <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Ordering Below Average')">
-            <table v-if="d.early_warning.below_avg.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                  <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
-                  <th class="py-1.5 text-center font-normal">{{ __('3-mo Avg') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.early_warning.below_avg" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-center font-semibold text-ink-red-3">{{ a.this_month }}</td>
-                  <td class="py-1.5 text-center text-ink-gray-5">{{ a.avg3mo }}</td>
-                  <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.early_warning.below_avg.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                    <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
+                    <th class="py-1.5 text-center font-normal">{{ __('3-mo Avg') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.early_warning.below_avg" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                    <td class="py-1.5 text-center font-semibold text-ink-red-3">{{ a.this_month }}</td>
+                    <td class="py-1.5 text-center text-ink-gray-5">{{ a.avg3mo }}</td>
+                    <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No accounts below their average')" />
           </Card>
           <Card :title="__('Declining Order Value')">
-            <table v-if="d.early_warning.declining_value.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('AOV This Qtr') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Last Qtr') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.early_warning.declining_value" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-right font-semibold text-ink-red-3">{{ fmtINR(a.aov_q) }}</td>
-                  <td class="py-1.5 text-right text-ink-gray-5">{{ fmtINR(a.aov_lastq) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.early_warning.declining_value.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('AOV This Qtr') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Last Qtr') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.early_warning.declining_value" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                    <td class="py-1.5 text-right font-semibold text-ink-red-3">{{ fmtINR(a.aov_q) }}</td>
+                    <td class="py-1.5 text-right text-ink-gray-5">{{ fmtINR(a.aov_lastq) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No accounts with declining order value')" />
           </Card>
         </div>
@@ -145,32 +151,34 @@
         </div>
 
         <Card :title="__('Dormant Accounts — Escalation View')" class="mb-8">
-          <table v-if="d.dormant.rows.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('Days Since') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Last Interaction') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Tier') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.dormant.rows" :key="a.organization"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
-                <td class="py-1.5 text-ink-gray-5">{{ a.last_order ? formatDate(a.last_order) : '—' }}</td>
-                <td class="py-1.5 text-center font-semibold text-ink-red-3">{{ a.days }}d</td>
-                <td class="py-1.5 text-ink-gray-5">{{ __('{0}d ago', [a.last_interaction_days]) }}</td>
-                <td class="py-1.5 text-right">
-                  <Badge :theme="a.days >= 60 ? 'red' : 'orange'"
-                    :label="a.days >= 90 ? __('Win-back') : a.days > 60 ? __('60+ escalate') : __('30+ act')" variant="subtle" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.dormant.rows.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('AE') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('Days Since') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Last Interaction') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Tier') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.dormant.rows" :key="a.organization"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                  <td class="py-1.5 text-ink-gray-6">{{ aeName(a.ae) }}</td>
+                  <td class="py-1.5 text-ink-gray-5">{{ a.last_order ? formatDate(a.last_order) : '—' }}</td>
+                  <td class="py-1.5 text-center font-semibold text-ink-red-3">{{ a.days }}d</td>
+                  <td class="py-1.5 text-ink-gray-5">{{ __('{0}d ago', [a.last_interaction_days]) }}</td>
+                  <td class="py-1.5 text-right">
+                    <Badge :theme="a.days >= 60 ? 'red' : 'orange'"
+                      :label="a.days >= 90 ? __('Win-back') : a.days > 60 ? __('60+ escalate') : __('30+ act')" variant="subtle" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('No dormant accounts')" />
         </Card>
 
@@ -178,25 +186,27 @@
         <SectionLabel :label="__('Revenue Trend')" />
         <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('Revenue per Account — This Year vs Last')">
-            <table v-if="d.revenue_trend.rows.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('This Year') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Last Year') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Trend') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.revenue_trend.rows" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                  <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ fmtINR(a.rev_ytd) }}</td>
-                  <td class="py-1.5 text-right text-ink-gray-5">{{ fmtINR(a.rev_last_year) }}</td>
-                  <td class="py-1.5 text-right"><Badge :theme="trend(a).theme" :label="trend(a).label" variant="subtle" /></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.revenue_trend.rows.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('This Year') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Last Year') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Trend') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.revenue_trend.rows" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                    <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ fmtINR(a.rev_ytd) }}</td>
+                    <td class="py-1.5 text-right text-ink-gray-5">{{ fmtINR(a.rev_last_year) }}</td>
+                    <td class="py-1.5 text-right"><Badge :theme="trend(a).theme" :label="trend(a).label" variant="subtle" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No revenue recorded')" />
           </Card>
           <div class="flex flex-col gap-3.5">
@@ -247,54 +257,58 @@
               <span class="text-xs font-normal text-ink-gray-5">{{ __('● buys  ○ gap') }}</span>
             </div>
           </template>
-          <table v-if="d.cross_sell.gap_rows.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                <th v-for="c in d.cross_sell.categories" :key="c" class="py-1.5 text-center font-normal">{{ c }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Gaps') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.cross_sell.gap_rows" :key="a.organization"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                <td v-for="(c, i) in d.cross_sell.categories" :key="c" class="py-1.5 text-center">
-                  <span v-if="a.cats.includes(c)" class="inline-block h-3 w-3 rounded-full" :class="catColor(c, i)"></span>
-                  <span v-else class="inline-block h-3 w-3 rounded-full border-[1.5px] border-outline-gray-3"></span>
-                </td>
-                <td class="py-1.5 text-right">
-                  <Badge v-if="gaps(a).length" theme="orange" :label="__('{0} gap', [gaps(a).length])" variant="subtle" />
-                  <Badge v-else theme="green" :label="__('Full')" variant="subtle" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.cross_sell.gap_rows.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                  <th v-for="c in d.cross_sell.categories" :key="c" class="py-1.5 text-center font-normal">{{ c }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Gaps') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.cross_sell.gap_rows" :key="a.organization"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                  <td v-for="(c, i) in d.cross_sell.categories" :key="c" class="py-1.5 text-center">
+                    <span v-if="a.cats.includes(c)" class="inline-block h-3 w-3 rounded-full" :class="catColor(c, i)"></span>
+                    <span v-else class="inline-block h-3 w-3 rounded-full border-[1.5px] border-outline-gray-3"></span>
+                  </td>
+                  <td class="py-1.5 text-right">
+                    <Badge v-if="gaps(a).length" theme="orange" :label="__('{0} gap', [gaps(a).length])" variant="subtle" />
+                    <Badge v-else theme="green" :label="__('Full')" variant="subtle" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('No purchase-category data on accounts')" />
         </Card>
 
         <!-- MARKETING REPEAT -->
         <SectionLabel :label="__('Marketing Repeat')" />
         <Card :title="__('Marketing-Sourced Accounts Now on Repeat Cycle')" class="mb-4">
-          <table v-if="d.marketing_repeat.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('Orders YTD') }}</th>
-                <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Revenue YTD') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.marketing_repeat" :key="a.organization"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
-                <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
-                <td class="py-1.5 text-center font-semibold text-ink-gray-9">{{ a.ytd_orders }}</td>
-                <td class="py-1.5 text-center text-ink-gray-5">{{ a.this_month }}</td>
-                <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ fmtINR(a.rev_ytd) }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.marketing_repeat.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Account') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('Orders YTD') }}</th>
+                  <th class="py-1.5 text-center font-normal">{{ __('This Month') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Revenue YTD') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.marketing_repeat" :key="a.organization"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1" @click="goOrg(a.organization)">
+                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="a.organization_name" size="sm" /><span class="text-ink-gray-8">{{ a.organization_name }}</span></span></td>
+                  <td class="py-1.5 text-center font-semibold text-ink-gray-9">{{ a.ytd_orders }}</td>
+                  <td class="py-1.5 text-center text-ink-gray-5">{{ a.this_month }}</td>
+                  <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ fmtINR(a.rev_ytd) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('No marketing-sourced accounts on a repeat cycle yet')" />
         </Card>
       </template>

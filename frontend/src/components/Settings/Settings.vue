@@ -8,7 +8,9 @@
     <template #body>
       <div class="flex h-[calc(100vh_-_8rem)] bg-surface-menu-bar">
         <div
-          class="flex flex-col m-1 rounded-l-lg w-56 shrink-0 bg-surface-menu-bar overflow-y-auto"
+          v-show="!isMobileView || showMobileMenu"
+          class="flex flex-col m-1 rounded-l-lg bg-surface-menu-bar overflow-y-auto"
+          :class="isMobileView ? 'flex-1' : 'w-56 shrink-0'"
         >
           <template v-for="(tab, i) in tabs" :key="tab.label">
             <div v-if="!tab.hideLabel && i != 0" class="mx-1 mb-0.5 mt-[5px]" />
@@ -30,12 +32,29 @@
                     ? 'bg-surface-selected shadow-sm hover:bg-surface-selected'
                     : 'hover:bg-surface-gray-3'
                 "
-                @click="activeSettingsPage = item.label"
+                @click="openPage(item.label)"
               />
             </nav>
           </template>
         </div>
-        <div class="flex flex-col flex-1 overflow-y-auto bg-surface-modal">
+        <div
+          v-show="!isMobileView || !showMobileMenu"
+          class="flex flex-col flex-1 min-w-0 overflow-y-auto bg-surface-modal"
+        >
+          <div
+            v-if="isMobileView"
+            class="sticky top-0 z-10 flex items-center gap-1 border-b bg-surface-modal px-2 py-2"
+          >
+            <Button
+              variant="ghost"
+              icon="chevron-left"
+              :tooltip="__('Back')"
+              @click="showMobileMenu = true"
+            />
+            <span class="truncate text-base font-medium text-ink-gray-8">
+              {{ __(activeTab?.label) }}
+            </span>
+          </div>
           <component :is="activeTab.component" v-if="activeTab" />
         </div>
       </div>
@@ -77,9 +96,10 @@ import {
   showSettings,
   activeSettingsPage,
   disableSettingModalOutsideClick,
+  isMobileView,
 } from '@/composables/settings'
 import { isWhatsappInstalled } from '@/composables/whatsapp'
-import { Dialog, Avatar } from 'frappe-ui'
+import { Dialog, Avatar, Button } from 'frappe-ui'
 import { ref, markRaw, computed, watch, h } from 'vue'
 import AssignmentRulePage from './AssignmentRules/AssignmentRulePage.vue'
 import ShieldCheck from '~icons/lucide/shield-check'
@@ -258,5 +278,21 @@ function setActiveTab(tabName) {
     tabs.value[0].items[0]
 }
 
-watch(activeSettingsPage, (activePage) => setActiveTab(activePage))
+watch(activeSettingsPage, (activePage) => {
+  setActiveTab(activePage)
+  if (activePage) showMobileMenu.value = false
+})
+
+// On mobile the menu and the page share the screen: the menu shows first and
+// picking an item swaps it for that page, with a back button to return.
+const showMobileMenu = ref(true)
+
+function openPage(label) {
+  activeSettingsPage.value = label
+  showMobileMenu.value = false
+}
+
+watch(showSettings, (opened) => {
+  if (opened) showMobileMenu.value = !activeSettingsPage.value
+})
 </script>

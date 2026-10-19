@@ -55,7 +55,7 @@
         <div
           class="max-h-72 overflow-y-auto rounded-lg border border-outline-gray-2 bg-surface-white"
         >
-          <div class="grid grid-cols-3 gap-0">
+          <div class="grid grid-cols-1 gap-0 sm:grid-cols-2 md:grid-cols-3">
             <label
               v-for="field in filteredFields"
               :key="field.fieldname"

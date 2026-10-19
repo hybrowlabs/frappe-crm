@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { defineAsyncComponent, h } from 'vue'
+import { isMobileView } from '@/composables/settings'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
@@ -57,7 +59,10 @@ const routes = [
   {
     path: '/leads/:leadId',
     name: 'Lead',
-    component: () => import(`@/pages/${handleMobileView('Lead')}.vue`),
+    component: responsivePage(
+      () => import('@/pages/Lead.vue'),
+      () => import('@/pages/MobileLead.vue'),
+    ),
     props: true,
   },
   {
@@ -69,7 +74,10 @@ const routes = [
   {
     path: '/deals/:dealId',
     name: 'Deal',
-    component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
+    component: responsivePage(
+      () => import('@/pages/Deal.vue'),
+      () => import('@/pages/MobileDeal.vue'),
+    ),
     props: true,
   },
   {
@@ -127,7 +135,10 @@ const routes = [
   {
     path: '/contacts/:contactId',
     name: 'Contact',
-    component: () => import(`@/pages/${handleMobileView('Contact')}.vue`),
+    component: responsivePage(
+      () => import('@/pages/Contact.vue'),
+      () => import('@/pages/MobileContact.vue'),
+    ),
     props: true,
   },
   {
@@ -139,7 +150,10 @@ const routes = [
   {
     path: '/organizations/:organizationId',
     name: 'Organization',
-    component: () => import(`@/pages/${handleMobileView('Organization')}.vue`),
+    component: responsivePage(
+      () => import('@/pages/Organization.vue'),
+      () => import('@/pages/MobileOrganization.vue'),
+    ),
     props: true,
   },
   {
@@ -182,8 +196,17 @@ const routes = [
   },
 ]
 
-const handleMobileView = (componentName) => {
-  return window.innerWidth < 768 ? `Mobile${componentName}` : componentName
+// Renders the mobile or desktop page for the current width, switching when
+// the window is resized or rotated across the mobile breakpoint.
+function responsivePage(desktopLoader, mobileLoader) {
+  const Desktop = defineAsyncComponent(desktopLoader)
+  const Mobile = defineAsyncComponent(mobileLoader)
+  return {
+    name: 'ResponsivePage',
+    setup() {
+      return () => h(isMobileView.value ? Mobile : Desktop)
+    },
+  }
 }
 
 let router = createRouter({

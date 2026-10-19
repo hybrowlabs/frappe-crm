@@ -99,51 +99,55 @@
           </Card>
           <div class="flex flex-col gap-3.5">
             <Card :title="__('Dormant — No Order in 30 Days')">
-              <table v-if="d.account_health.dormant.length" class="w-full text-sm">
-                <thead>
-                  <tr class="text-xs text-ink-gray-5">
-                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                    <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
-                    <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="o in d.account_health.dormant" :key="o.organization"
-                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                    @click="goOrg(o.organization)">
-                    <td class="py-1.5 text-ink-gray-8">{{ o.organization_name }}</td>
-                    <td class="py-1.5 text-ink-gray-6">{{ formatDate(o.last_order) }}</td>
-                    <td class="py-1.5 text-right font-medium text-ink-red-3">{{ o.days }}d</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-if="d.account_health.dormant.length" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-xs text-ink-gray-5">
+                      <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                      <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
+                      <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="o in d.account_health.dormant" :key="o.organization"
+                      class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                      @click="goOrg(o.organization)">
+                      <td class="py-1.5 text-ink-gray-8">{{ o.organization_name }}</td>
+                      <td class="py-1.5 text-ink-gray-6">{{ formatDate(o.last_order) }}</td>
+                      <td class="py-1.5 text-right font-medium text-ink-red-3">{{ o.days }}d</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
               <Empty v-else :icon="LucideCircleCheck" :text="__('No dormant accounts')" />
             </Card>
             <Card :title="__('At Risk — Ordering Less Often')">
               <template v-if="d.account_health.accounts_at_risk.length" #right>
                 <span class="pa-count bad">{{ d.account_health.accounts_at_risk.length }}</span>
               </template>
-              <table v-if="d.account_health.accounts_at_risk.length" class="w-full text-sm">
-                <thead>
-                  <tr class="text-xs text-ink-gray-5">
-                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                    <th class="py-1.5 text-right font-normal">{{ __('Last Qtr') }}</th>
-                    <th class="py-1.5 text-right font-normal">{{ __('This Qtr') }}</th>
-                    <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="a in d.account_health.accounts_at_risk" :key="a.organization"
-                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                    @click="goOrg(a.organization)">
-                    <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
-                    <td class="py-1.5 text-right text-ink-gray-6">{{ a.last_qtr }}</td>
-                    <td class="py-1.5 text-right font-medium"
-                      :class="a.this_qtr < a.last_qtr ? 'text-ink-red-3' : 'text-ink-gray-8'">{{ a.this_qtr }}</td>
-                    <td class="py-1.5 text-ink-gray-6">{{ a.owner || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-if="d.account_health.accounts_at_risk.length" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-xs text-ink-gray-5">
+                      <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                      <th class="py-1.5 text-right font-normal">{{ __('Last Qtr') }}</th>
+                      <th class="py-1.5 text-right font-normal">{{ __('This Qtr') }}</th>
+                      <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="a in d.account_health.accounts_at_risk" :key="a.organization"
+                      class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                      @click="goOrg(a.organization)">
+                      <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
+                      <td class="py-1.5 text-right text-ink-gray-6">{{ a.last_qtr }}</td>
+                      <td class="py-1.5 text-right font-medium"
+                        :class="a.this_qtr < a.last_qtr ? 'text-ink-red-3' : 'text-ink-gray-8'">{{ a.this_qtr }}</td>
+                      <td class="py-1.5 text-ink-gray-6">{{ a.owner || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
               <Empty v-else :icon="LucideCircleCheck" :text="__('No accounts flagged at risk')" />
             </Card>
           </div>
@@ -162,26 +166,28 @@
             <Empty v-if="!d.waiting_time.length" :icon="LucideClock" />
           </Card>
           <Card :title="__('Bottlenecks — Highest Waiting Time')">
-            <table v-if="bottlenecks.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">#</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Stage') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Avg Wait') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Status') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(w, i) in bottlenecks" :key="w.stage" class="border-t border-outline-gray-1">
-                  <td class="py-1.5"><span class="pa-rank" :class="{ r1: i === 0 }">{{ i + 1 }}</span></td>
-                  <td class="py-1.5 text-ink-gray-8" :class="{ 'font-semibold': i === 0 }">{{ w.stage }}</td>
-                  <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ __('{0} d', [w.avg_days]) }}</td>
-                  <td class="py-1.5 text-right">
-                    <Badge :theme="waitTheme(w.avg_days)" :label="waitStatus(w.avg_days)" variant="subtle" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="bottlenecks.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">#</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Stage') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Avg Wait') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Status') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(w, i) in bottlenecks" :key="w.stage" class="border-t border-outline-gray-1">
+                    <td class="py-1.5"><span class="pa-rank" :class="{ r1: i === 0 }">{{ i + 1 }}</span></td>
+                    <td class="py-1.5 text-ink-gray-8" :class="{ 'font-semibold': i === 0 }">{{ w.stage }}</td>
+                    <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ __('{0} d', [w.avg_days]) }}</td>
+                    <td class="py-1.5 text-right">
+                      <Badge :theme="waitTheme(w.avg_days)" :label="waitStatus(w.avg_days)" variant="subtle" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else />
           </Card>
         </div>
@@ -201,23 +207,25 @@
         </div>
         <Card v-if="d.overdue_payments.accounts.length" :title="__('Overdue Payments — Accounts')"
           class="mb-4">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Amount') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Days Overdue') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.overdue_payments.accounts" :key="a.customer"
-                class="border-t border-outline-gray-1">
-                <td class="py-1.5 text-ink-gray-8">{{ a.customer }}</td>
-                <td class="py-1.5 text-right text-ink-gray-8">{{ fmtINR(a.amount) }}</td>
-                <td class="py-1.5 text-right font-medium text-ink-red-3">{{ a.days }}d</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Amount') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Days Overdue') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.overdue_payments.accounts" :key="a.customer"
+                  class="border-t border-outline-gray-1">
+                  <td class="py-1.5 text-ink-gray-8">{{ a.customer }}</td>
+                  <td class="py-1.5 text-right text-ink-gray-8">{{ fmtINR(a.amount) }}</td>
+                  <td class="py-1.5 text-right font-medium text-ink-red-3">{{ a.days }}d</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </Card>
       </template>
 

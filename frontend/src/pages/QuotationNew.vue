@@ -15,7 +15,7 @@
   </LayoutHeader>
 
   <div class="flex-1 overflow-y-auto">
-    <div class="mx-auto flex max-w-5xl flex-col gap-5 p-5">
+    <div class="mx-auto flex max-w-5xl flex-col gap-5 p-4 sm:p-5">
       <!-- Sale By: the logged-in user's Sales Person -->
       <div
         v-if="salesPersonLoading"

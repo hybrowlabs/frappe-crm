@@ -184,26 +184,28 @@
           </Card>
 
           <Card :title="__('Team Response Time Distribution')" class="mb-8">
-            <table v-if="d.team.team_response.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Engineer') }}</th>
-                  <th class="py-1.5 text-center font-normal">{{ __('< 2h') }}</th>
-                  <th class="py-1.5 text-center font-normal">{{ __('2–8h') }}</th>
-                  <th class="py-1.5 text-center font-normal">{{ __('> 8h') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Avg') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="e in d.team.team_response" :key="e.engineer" class="border-t border-outline-gray-1">
-                  <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
-                  <td class="py-1.5 text-center font-semibold text-ink-green-3">{{ e.fast }}</td>
-                  <td class="py-1.5 text-center text-ink-gray-5">{{ e.mid }}</td>
-                  <td class="py-1.5 text-center" :class="e.slow ? 'font-semibold text-ink-red-3' : 'text-ink-gray-5'">{{ e.slow }}</td>
-                  <td class="py-1.5 text-right"><Badge :theme="slaTheme(e.avg_seconds / 3600)" :label="fmtDuration(e.avg_seconds)" variant="subtle" /></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.team.team_response.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Engineer') }}</th>
+                    <th class="py-1.5 text-center font-normal">{{ __('< 2h') }}</th>
+                    <th class="py-1.5 text-center font-normal">{{ __('2–8h') }}</th>
+                    <th class="py-1.5 text-center font-normal">{{ __('> 8h') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Avg') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="e in d.team.team_response" :key="e.engineer" class="border-t border-outline-gray-1">
+                    <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
+                    <td class="py-1.5 text-center font-semibold text-ink-green-3">{{ e.fast }}</td>
+                    <td class="py-1.5 text-center text-ink-gray-5">{{ e.mid }}</td>
+                    <td class="py-1.5 text-center" :class="e.slow ? 'font-semibold text-ink-red-3' : 'text-ink-gray-5'">{{ e.slow }}</td>
+                    <td class="py-1.5 text-right"><Badge :theme="slaTheme(e.avg_seconds / 3600)" :label="fmtDuration(e.avg_seconds)" variant="subtle" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No team response data')" />
           </Card>
 
@@ -217,27 +219,31 @@
             </Card>
             <div class="flex flex-col gap-3.5">
               <Card :title="__('Trial Conversion — Ranked')">
-                <table v-if="d.team.conv_by_engineer.length" class="w-full text-sm">
-                  <tbody>
-                    <tr v-for="(e, i) in d.team.conv_by_engineer" :key="e.engineer" class="border-t border-outline-gray-1 first:border-0">
-                      <td class="py-1.5 pr-2 text-ink-gray-4">{{ i + 1 }}</td>
-                      <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
-                      <td class="py-1.5 text-right"><Badge :theme="e.rate >= 65 ? 'green' : e.rate >= 50 ? 'orange' : 'red'" :label="`${e.rate}%`" variant="subtle" /></td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div v-if="d.team.conv_by_engineer.length" class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <tbody>
+                      <tr v-for="(e, i) in d.team.conv_by_engineer" :key="e.engineer" class="border-t border-outline-gray-1 first:border-0">
+                        <td class="py-1.5 pr-2 text-ink-gray-4">{{ i + 1 }}</td>
+                        <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
+                        <td class="py-1.5 text-right"><Badge :theme="e.rate >= 65 ? 'green' : e.rate >= 50 ? 'orange' : 'red'" :label="`${e.rate}%`" variant="subtle" /></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <Empty v-else :text="__('No trial data')" />
               </Card>
               <Card :title="__('Avg Response Time — Ranked')">
-                <table v-if="d.team.resp_by_engineer.length" class="w-full text-sm">
-                  <tbody>
-                    <tr v-for="(e, i) in d.team.resp_by_engineer" :key="e.engineer" class="border-t border-outline-gray-1 first:border-0">
-                      <td class="py-1.5 pr-2 text-ink-gray-4">{{ i + 1 }}</td>
-                      <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
-                      <td class="py-1.5 text-right"><Badge :theme="slaTheme(e.avg_seconds / 3600)" :label="fmtDuration(e.avg_seconds)" variant="subtle" /></td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div v-if="d.team.resp_by_engineer.length" class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <tbody>
+                      <tr v-for="(e, i) in d.team.resp_by_engineer" :key="e.engineer" class="border-t border-outline-gray-1 first:border-0">
+                        <td class="py-1.5 pr-2 text-ink-gray-4">{{ i + 1 }}</td>
+                        <td class="py-1.5"><span class="flex items-center gap-2"><Avatar :label="engName(e.engineer)" size="sm" /><span class="text-ink-gray-8">{{ engName(e.engineer) }}</span></span></td>
+                        <td class="py-1.5 text-right"><Badge :theme="slaTheme(e.avg_seconds / 3600)" :label="fmtDuration(e.avg_seconds)" variant="subtle" /></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
                 <Empty v-else :text="__('No response data')" />
               </Card>
             </div>

@@ -7,26 +7,22 @@
       <template #right-header>
         <Button
           v-if="!editing"
-          :label="__('Refresh')"
-          :iconLeft="LucideRefreshCcw"
+          v-bind="headerButton(__('Refresh'), LucideRefreshCcw)"
           @click="dashboardItems.reload"
         />
         <Button
           v-if="!editing && isAdmin()"
-          :label="__('Edit')"
-          :iconLeft="LucidePenLine"
+          v-bind="headerButton(__('Edit'), LucidePenLine)"
           @click="enableEditing"
         />
         <Button
           v-if="editing"
-          :label="__('Chart')"
-          iconLeft="plus"
+          v-bind="headerButton(__('Chart'), 'plus')"
           @click="showAddChartModal = true"
         />
         <Button
           v-if="editing && isAdmin()"
-          :label="__('Reset to Default')"
-          :iconLeft="LucideUndo2"
+          v-bind="headerButton(__('Reset to Default'), LucideUndo2)"
           @click="resetToDefault"
         />
         <Button v-if="editing" :label="__('Cancel')" @click="cancel" />
@@ -41,7 +37,7 @@
       </template>
     </LayoutHeader>
 
-    <div class="p-5 pb-2 flex items-center gap-4">
+    <div class="flex flex-wrap items-center gap-2 px-4 pb-2 pt-4 sm:gap-4 sm:p-5 sm:pb-2">
       <Dropdown
         v-if="!showDatePicker"
         v-model="preset"
@@ -144,6 +140,7 @@ import ViewBreadcrumbs from '@/components/ViewBreadcrumbs.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import Link from '@/components/Controls/Link.vue'
 import { usersStore } from '@/stores/users'
+import { isMobileView } from '@/composables/settings'
 import { copy } from '@/utils'
 import { getLastXDays, formatter, formatRange } from '@/utils/dashboard'
 import {
@@ -158,6 +155,13 @@ import { ref, reactive, computed, provide } from 'vue'
 const { users, getUser, isManager, isAdmin } = usersStore()
 
 const editing = ref(false)
+
+// Header buttons drop their label on mobile so they fit beside the breadcrumbs.
+function headerButton(label: string, icon: any) {
+  return isMobileView.value
+    ? { icon, tooltip: label }
+    : { label, iconLeft: icon }
+}
 
 const showDatePicker = ref(false)
 const datePickerRef = ref(null)

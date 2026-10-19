@@ -6,7 +6,13 @@
     <div class="p-2">
       <UserDropdown :isCollapsed="isSidebarCollapsed" />
     </div>
-    <div class="flex-1 overflow-y-auto">
+    <div
+      class="flex-1 overflow-y-auto"
+      :class="{
+        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden':
+          isSidebarCollapsed,
+      }"
+    >
       <div class="flex flex-col">
         <SidebarLink
           id="notifications-btn"
@@ -198,7 +204,11 @@ import {
 } from '@/stores/notifications'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
-import { showSettings, activeSettingsPage } from '@/composables/settings'
+import {
+  showSettings,
+  activeSettingsPage,
+  isTabletView,
+} from '@/composables/settings'
 import { showChangePasswordModal } from '@/composables/modals'
 import { useBroadcast } from '@/composables/useBroadcast.js'
 import { FeatherIcon, call } from 'frappe-ui'
@@ -224,7 +234,20 @@ const { capture } = useTelemetry()
 const { clearDemoData, isDemoDataCreated } = useDemoData()
 const { send } = useBroadcast()
 
-const isSidebarCollapsed = useStorage('isSidebarCollapsed', false)
+const storedSidebarCollapsed = useStorage('isSidebarCollapsed', false)
+// On tablet widths the sidebar starts collapsed so the page keeps its room;
+// expanding it there is temporary and does not touch the saved preference.
+const tabletSidebarExpanded = ref(false)
+const isSidebarCollapsed = computed({
+  get: () =>
+    isTabletView.value
+      ? !tabletSidebarExpanded.value
+      : storedSidebarCollapsed.value,
+  set: (collapsed) => {
+    if (isTabletView.value) tabletSidebarExpanded.value = !collapsed
+    else storedSidebarCollapsed.value = collapsed
+  },
+})
 
 const isFCSite = ref(window.is_fc_site)
 const isDemoSite = ref(window.is_demo_site)

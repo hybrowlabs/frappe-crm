@@ -30,7 +30,7 @@
               :class="
                 i === current
                   ? 'font-semibold text-ink-gray-9'
-                  : 'font-medium text-ink-gray-7'
+                  : 'hidden font-medium text-ink-gray-7 sm:inline'
               "
             >
               {{ s.label }}

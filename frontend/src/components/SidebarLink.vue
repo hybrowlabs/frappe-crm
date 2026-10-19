@@ -17,7 +17,7 @@
           <slot name="icon">
             <Icon
               :icon="icon"
-              class="flex items-center size-[17px] text-current"
+              class="flex shrink-0 items-center size-[17px] text-current"
             />
           </slot>
         </Tooltip>

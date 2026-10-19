@@ -104,50 +104,54 @@
             <Empty v-if="!d.activity.overdue_by_ae.length" :text="__('No overdue follow-ups')" />
           </Card>
           <Card :title="__('Calls Logged — This Week')">
-            <table v-if="d.activity.calls_week.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Salesperson') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Calls') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.activity.calls_week" :key="a.ae" class="border-t border-outline-gray-1">
-                  <td class="py-1.5">
-                    <span class="flex items-center gap-2">
-                      <Avatar :label="aeName(a.ae)" size="sm" />
-                      <span class="text-ink-gray-8">{{ aeName(a.ae) }}</span>
-                    </span>
-                  </td>
-                  <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ a.calls }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.activity.calls_week.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Salesperson') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Calls') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.activity.calls_week" :key="a.ae" class="border-t border-outline-gray-1">
+                    <td class="py-1.5">
+                      <span class="flex items-center gap-2">
+                        <Avatar :label="aeName(a.ae)" size="sm" />
+                        <span class="text-ink-gray-8">{{ aeName(a.ae) }}</span>
+                      </span>
+                    </td>
+                    <td class="py-1.5 text-right font-medium text-ink-gray-8">{{ a.calls }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No calls logged this week')" />
           </Card>
         </div>
 
         <Card :title="__('Accounts With No Activity in 30 Days')" class="mb-8">
-          <table v-if="d.activity.no_activity_30d.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Days Silent') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in d.activity.no_activity_30d" :key="a.organization"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                @click="goOrg(a.organization)">
-                <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
-                <td class="py-1.5 text-ink-gray-6">{{ aeName(a.owner) }}</td>
-                <td class="py-1.5 text-right">
-                  <Badge :theme="a.days > 40 ? 'red' : 'orange'" :label="`${a.days}d`" variant="subtle" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="d.activity.no_activity_30d.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Days Silent') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in d.activity.no_activity_30d" :key="a.organization"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                  @click="goOrg(a.organization)">
+                  <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
+                  <td class="py-1.5 text-ink-gray-6">{{ aeName(a.owner) }}</td>
+                  <td class="py-1.5 text-right">
+                    <Badge :theme="a.days > 40 ? 'red' : 'orange'" :label="`${a.days}d`" variant="subtle" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <Empty v-else :text="__('All accounts have recent activity')" />
         </Card>
 
@@ -166,75 +170,81 @@
         </div>
 
         <Card v-if="d.technical.trials.length" :title="__('Trials in Progress')" class="mb-8">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-xs text-ink-gray-5">
-                <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Product') }}</th>
-                <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
-                <th class="py-1.5 text-right font-normal">{{ __('Expected Outcome') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="t in d.technical.trials" :key="t.name"
-                class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                @click="goDeal(t.name)">
-                <td class="py-1.5 text-ink-gray-8">{{ t.organization_name }}</td>
-                <td class="py-1.5 text-ink-gray-6">{{ t.product }}</td>
-                <td class="py-1.5 text-ink-gray-6">{{ aeName(t.ae) }}</td>
-                <td class="py-1.5 text-right text-ink-gray-6">{{ t.expected ? formatDate(t.expected) : '—' }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-xs text-ink-gray-5">
+                  <th class="py-1.5 text-left font-normal">{{ __('Customer') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Product') }}</th>
+                  <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
+                  <th class="py-1.5 text-right font-normal">{{ __('Expected Outcome') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in d.technical.trials" :key="t.name"
+                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                  @click="goDeal(t.name)">
+                  <td class="py-1.5 text-ink-gray-8">{{ t.organization_name }}</td>
+                  <td class="py-1.5 text-ink-gray-6">{{ t.product }}</td>
+                  <td class="py-1.5 text-ink-gray-6">{{ aeName(t.ae) }}</td>
+                  <td class="py-1.5 text-right text-ink-gray-6">{{ t.expected ? formatDate(t.expected) : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </Card>
 
         <!-- DORMANCY -->
         <SectionLabel :label="__('Dormancy — My Territory')" />
         <div class="mb-8 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
           <Card :title="__('At Risk — No Order 20–30 Days')">
-            <table v-if="d.dormancy.at_risk.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.dormancy.at_risk" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                  @click="goOrg(a.organization)">
-                  <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
-                  <td class="py-1.5 text-ink-gray-6">{{ aeName(a.owner) }}</td>
-                  <td class="py-1.5 text-right">
-                    <Badge theme="orange" :label="`${a.days}d`" variant="subtle" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.dormancy.at_risk.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Owner') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.dormancy.at_risk" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                    @click="goOrg(a.organization)">
+                    <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
+                    <td class="py-1.5 text-ink-gray-6">{{ aeName(a.owner) }}</td>
+                    <td class="py-1.5 text-right">
+                      <Badge theme="orange" :label="`${a.days}d`" variant="subtle" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No accounts in the early-warning window')" />
           </Card>
           <Card :title="__('Dormant — No Order 30+ Days')">
-            <table v-if="d.dormancy.dormant.length" class="w-full text-sm">
-              <thead>
-                <tr class="text-xs text-ink-gray-5">
-                  <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
-                  <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
-                  <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in d.dormancy.dormant" :key="a.organization"
-                  class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
-                  @click="goOrg(a.organization)">
-                  <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
-                  <td class="py-1.5 text-ink-gray-6">{{ formatDate(a.last_order) }}</td>
-                  <td class="py-1.5 text-right">
-                    <Badge theme="red" :label="`${a.days}d`" variant="subtle" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="d.dormancy.dormant.length" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-xs text-ink-gray-5">
+                    <th class="py-1.5 text-left font-normal">{{ __('Organization') }}</th>
+                    <th class="py-1.5 text-left font-normal">{{ __('Last Order') }}</th>
+                    <th class="py-1.5 text-right font-normal">{{ __('Days') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in d.dormancy.dormant" :key="a.organization"
+                    class="cursor-pointer border-t border-outline-gray-1 hover:bg-surface-gray-1"
+                    @click="goOrg(a.organization)">
+                    <td class="py-1.5 text-ink-gray-8">{{ a.organization_name }}</td>
+                    <td class="py-1.5 text-ink-gray-6">{{ formatDate(a.last_order) }}</td>
+                    <td class="py-1.5 text-right">
+                      <Badge theme="red" :label="`${a.days}d`" variant="subtle" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Empty v-else :text="__('No dormant accounts')" />
           </Card>
         </div>
