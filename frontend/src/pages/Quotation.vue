@@ -249,8 +249,10 @@ const details = computed(() => [
   { label: __('Payment Terms'), value: q.value.payment_terms_template },
 ])
 
+// On a phone the list crumb is dropped, so the document number and the
+// header buttons fit on one line (the sidebar menu leads back to the list).
 const breadcrumbs = computed(() => [
-  { label: __('Quotations'), route: { name: 'Quotations' } },
+  ...(isMobileView.value ? [] : [{ label: __('Quotations'), route: { name: 'Quotations' } }]),
   {
     label: props.quotationId,
     route: { name: 'Quotation', params: { quotationId: props.quotationId } },

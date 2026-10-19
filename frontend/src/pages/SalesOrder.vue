@@ -173,8 +173,10 @@ const details = computed(() => [
   { label: __('Billed'), value: `${Math.round(q.value.per_billed || 0)}%` },
 ])
 
+// On a phone the list crumb is dropped, so the document number and the
+// header buttons fit on one line (the sidebar menu leads back to the list).
 const breadcrumbs = computed(() => [
-  { label: __('Sales Orders'), route: { name: 'Sales Orders' } },
+  ...(isMobileView.value ? [] : [{ label: __('Sales Orders'), route: { name: 'Sales Orders' } }]),
   {
     label: props.salesOrderId,
     route: { name: 'Sales Order', params: { salesOrderId: props.salesOrderId } },
