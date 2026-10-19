@@ -757,6 +757,12 @@ const isEscalationReview = computed(
 const stageCta = computed(() => {
   const status = doc.value.status
   if (!status) return null
+  // "Ready to buy" deals skip requirement capture and go straight to the quotation.
+  if (status === 'Req. Discussion' && doc.value.direct_quotation) {
+    return isSalesTeam()
+      ? { label: __('Create Customer & Quotation'), icon: RupeeIcon }
+      : null
+  }
   // A deal the tech team sent back parks in Request for New Info until the salesperson
   // answers the questions inside the Qualified stage form — the CTA reads as a resume,
   // not a fresh start.
@@ -825,6 +831,11 @@ function onStageAction() {
   // A Not-Suitable escalation is resolved by the sales manager, not the tech team.
   if (isEscalationReview.value) {
     if (isSalesManager()) showReviewEscalationModal.value = true
+    return
+  }
+
+  if (status === 'Req. Discussion' && doc.value.direct_quotation) {
+    startDirectQuotation()
     return
   }
 
@@ -1210,6 +1221,31 @@ async function triggerStatusChange(value) {
 }
 
 const pendingProposalStatus = ref(null)
+
+// "Ready to buy" deal: run the Create Customer gate, then move straight to
+// Proposal/Quotation (the backend skips the earlier stage gates for these deals).
+function startDirectQuotation() {
+  if (organization.value?.erpnext_customer) {
+    setLostReason({ status: 'Proposal/Quotation' })
+    return
+  }
+  pendingProposalStatus.value = 'Proposal/Quotation'
+  showPreQuotationModal.value = true
+}
+
+// Coming from Create Deal with "Ready to buy" — open Create Customer once the deal
+// and its organization have loaded.
+watch(
+  () => [doc.value.status, organization.value?.name],
+  () => {
+    if (route.query.quote !== '1') return
+    if (!doc.value.direct_quotation || doc.value.status !== 'Req. Discussion') return
+    if (doc.value.organization && !organization.value?.name) return
+    router.replace({ query: { ...route.query, quote: undefined } })
+    if (isSalesTeam()) startDirectQuotation()
+  },
+  { immediate: true },
+)
 
 async function confirmPreQuotation(payload) {
   let value = pendingProposalStatus.value
