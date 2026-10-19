@@ -4,7 +4,7 @@
       <header
         class="flex h-[52px] items-center justify-between gap-2 py-[7px] sm:pl-5 pl-2"
       >
-        <div class="flex min-w-0 items-center gap-2">
+        <div class="flex min-w-0 items-center gap-2 overflow-hidden">
           <slot name="left-header" />
         </div>
         <div class="flex shrink-0 items-center gap-2">
