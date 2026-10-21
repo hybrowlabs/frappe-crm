@@ -5,6 +5,7 @@
     :subtitle="subtitle"
     size="xl"
   >
+    <DealFlowChoice v-model="dealFlow" />
     <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div class="flex items-center gap-3 text-sm text-ink-gray-5">
         <div>{{ __('Choose Existing Organization') }}</div>
@@ -213,6 +214,7 @@ import FieldGrid from '@/components/StageForms/FieldGrid.vue'
 import FieldText from '@/components/StageForms/FieldText.vue'
 import FieldCheckbox from '@/components/StageForms/FieldCheckbox.vue'
 import Link from '@/components/Controls/Link.vue'
+import DealFlowChoice from '@/components/DealFlowChoice.vue'
 import { useDocument } from '@/data/document'
 import { sessionStore } from '@/stores/session'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
@@ -275,6 +277,8 @@ const existingOrgGstin = ref('')
 const existingOrgLoading = ref(false)
 const chooseExistingContact = ref(false)
 const existingContact = ref('')
+// 'discussion' (today's flow) or 'ready' (Ready to buy → straight to quotation)
+const dealFlow = ref('discussion')
 let lastFetchedGstin = ''
 
 // the org the deal will use — existing pick, or the one created from the lead
@@ -373,6 +377,7 @@ watch(show, (val) => {
     existingOrgLoading.value = false
     chooseExistingContact.value = false
     existingContact.value = ''
+    dealFlow.value = 'discussion'
   }
 })
 
@@ -479,6 +484,7 @@ async function convertToDeal() {
 
   // Territory is mandatory on the deal; carry the modal's value through.
   deal.doc.territory = territory.value
+  deal.doc.direct_quotation = dealFlow.value === 'ready' ? 1 : 0
 
   if (!chooseExistingOrganization.value) {
     // Always carry the org name so the backend always creates an organization.
@@ -518,7 +524,12 @@ async function convertToDeal() {
       localStorage.setItem('firstDeal' + user, newDeal)
     })
     capture('convert_lead_to_deal')
-    router.push({ name: 'Deal', params: { dealId: newDeal } })
+    router.push({
+      name: 'Deal',
+      params: { dealId: newDeal },
+      // Tells the Deal page to open Create Customer straight away.
+      query: dealFlow.value === 'ready' ? { quote: '1' } : {},
+    })
   }
 }
 
