@@ -6,12 +6,9 @@
     <template #right-header>
       <div class="flex items-center gap-2">
         <Button
-          v-if="canOrder"
-          v-bind="
-            isMobileView
-              ? { icon: 'shopping-cart', tooltip: __('Create Sales Order') }
-              : { label: __('Create Sales Order'), iconLeft: 'shopping-cart' }
-          "
+          v-if="canOrder && !isMobileView"
+          :label="__('Create Sales Order')"
+          iconLeft="shopping-cart"
           variant="solid"
           :loading="ordering"
           @click="confirmCreateSalesOrder"
@@ -45,6 +42,17 @@
             size="lg"
           />
         </div>
+        <!-- On a phone the header has no room for the label, so the action sits here in full -->
+        <Button
+          v-if="canOrder && isMobileView"
+          class="w-full"
+          size="md"
+          :label="__('Create Sales Order')"
+          iconLeft="shopping-cart"
+          variant="solid"
+          :loading="ordering"
+          @click="confirmCreateSalesOrder"
+        />
 
         <!-- Address and details, in one box -->
         <div
