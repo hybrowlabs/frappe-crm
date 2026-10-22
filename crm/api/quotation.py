@@ -453,11 +453,11 @@ def _is_gst_free_customer(customer):
 	return frappe.db.get_value("Customer", customer, "gst_category") in ("SEZ", "Overseas")
 
 
-def _entitled_items(customer, branch, currency=None):
+def _entitled_items(customer, branch):
 	"""{item_code: {item_code, stock_uom, slabs}} for the rows on the customer's
 	Item Discounts table for this branch or with the branch left blank. Same
-	rule as the Customer Portal's item list. Service items are added for this
-	branch and currency."""
+	rule as the Customer Portal's item list. Freight is never one of them: PAPL
+	adds it on save from the Freight Provider / Mode."""
 	rows = frappe.get_all(
 		"Customer Item Discount",
 		filters={"parenttype": "Customer", "parent": customer, "parentfield": "custom_item_discounts"},
@@ -467,7 +467,7 @@ def _entitled_items(customer, branch, currency=None):
 	rows = [row for row in rows if row.item_code and (not row.branch or row.branch == branch)]
 	codes = list(dict.fromkeys(row.item_code for row in rows))
 	if not codes:
-		return _non_inventory_items(branch, currency)
+		return {}
 	uoms = dict(
 		frappe.get_all(
 			"Item",
@@ -476,7 +476,7 @@ def _entitled_items(customer, branch, currency=None):
 			as_list=True,
 		)
 	)
-	entitled = {
+	return {
 		code: {
 			"item_code": code,
 			"stock_uom": uoms[code],
@@ -489,51 +489,6 @@ def _entitled_items(customer, branch, currency=None):
 		for code in codes
 		if code in uoms
 	}
-	entitled.update(_non_inventory_items(branch, currency))
-	return entitled
-
-
-def _non_inventory_items(branch, currency):
-	"""{item_code: {item_code, stock_uom, slabs, min_pricing, currency, non_inventory}}
-	for the service items (freight) CRM Custom Settings lists for this branch and
-	currency. They have no Sales BOM, so the sales person types the rate, never
-	below Min Pricing (which is in that same currency)."""
-	if not (branch and currency):
-		return {}
-	rows = frappe.get_all(
-		"Non Inventory Item",
-		filters={
-			"parent": "CRM Custom Settings",
-			"parentfield": "non_inventory_items",
-			"branch": branch,
-			"currency_type": currency,
-		},
-		fields=["item", "min_pricing"],
-		order_by="idx asc",
-	)
-	codes = [row.item for row in rows if row.item]
-	if not codes:
-		return {}
-	uoms = dict(
-		frappe.get_all(
-			"Item",
-			filters={"name": ["in", codes], "disabled": 0, "is_sales_item": 1, "is_stock_item": 0},
-			fields=["name", "stock_uom"],
-			as_list=True,
-		)
-	)
-	return {
-		row.item: {
-			"item_code": row.item,
-			"stock_uom": uoms[row.item],
-			"slabs": [],
-			"min_pricing": row.min_pricing,
-			"currency": currency,
-			"non_inventory": 1,
-		}
-		for row in rows
-		if row.item in uoms
-	}
 
 
 @frappe.whitelist()
@@ -541,7 +496,29 @@ def get_customer_items(customer: str, branch: str | None = None, currency: str |
 	"""The items this customer can be quoted in this branch and currency, with
 	their discount slabs (qty ranges) so the screen can check the qty first."""
 	_check_customer(customer)
-	return list(_entitled_items(customer, branch, currency).values())
+	return list(_entitled_items(customer, branch).values())
+
+
+@frappe.whitelist()
+def get_customer_freight(customer: str):
+	"""{apply_freight, providers: [{provider, payment_mode, modes}]} for the
+	Freight Provider / Mode pickers: the customer's Fright Service Provider rows
+	with Road and/or Air ticked, as the ERPNext Quotation offers them."""
+	from papl_business_logic.papl_business_logic.custom.quotation_freight import (
+		get_customer_providers,
+		provider_modes,
+	)
+
+	_check_customer(customer)
+	if not frappe.db.get_value("Customer", customer, "custom_apply_freight"):
+		return {"apply_freight": 0, "providers": []}
+	return {
+		"apply_freight": 1,
+		"providers": [
+			{"provider": p.fright_service_provider, "payment_mode": p.payment_mode, "modes": provider_modes(p)}
+			for p in get_customer_providers(customer)
+		],
+	}
 
 
 @frappe.whitelist()
@@ -713,7 +690,7 @@ def get_items_price(customer: str, branch: str, currency: str, items):
 
 	_check_customer(customer)
 	_check_branch_currency(customer, branch, currency)
-	allowed = set(_entitled_items(customer, branch, currency))
+	allowed = set(_entitled_items(customer, branch))
 
 	rows = frappe.parse_json(items) if isinstance(items, str) else (items or [])
 	lines = []
@@ -766,13 +743,16 @@ def create_quotation(
 	items,
 	addresses=None,
 	deal: str | None = None,
+	freight_provider: str | None = None,
+	freight_mode: str | None = None,
 ):
 	"""Create and submit a quotation from the CRM, the way the Customer Portal
 	does: no rate is sent, PAPL's validate prices every line from the Sales BOM,
 	GST is chosen by the portal's tax rules, and a line left at rate 0 refuses
-	the whole quotation. Runs as the logged-in user; approval is skipped like the
-	portal's. The Sales Order is not raised here: the quotation page's Create
-	Sales Order button calls create_sales_order when the user asks for it.
+	the whole quotation. Freight is never sent as a line: PAPL's validate adds it
+	from the Freight Provider / Mode. Runs as the logged-in user; approval is
+	skipped like the portal's. The Sales Order is not raised here: the quotation
+	page's Create Sales Order button calls create_sales_order when the user asks for it.
 
 	Returns {ok, reason, message, name}."""
 	from papl_business_logic.papl_business_logic.api.quotation_tax import apply_quotation_taxes
@@ -785,7 +765,7 @@ def create_quotation(
 	_check_customer(customer)
 	_check_branch_currency(customer, branch, currency)
 	sales_person = _session_sales_person()
-	entitled = _entitled_items(customer, branch, currency)
+	entitled = _entitled_items(customer, branch)
 	warehouse = get_branch_warehouse(branch)
 	if not warehouse:
 		return refuse("no_warehouse", _(NO_WAREHOUSE).format(branch))
@@ -809,6 +789,10 @@ def create_quotation(
 			"custom_created_from_crm": 1,
 			# papl_business_logic "Created Via" (Backend / CRM / Customer Portal).
 			"custom_created_via": "CRM",
+			# PAPL's validate checks these against the customer's providers and adds
+			# the auto freight rows for a "Paid By PAPL" provider.
+			"custom_freight_provider": freight_provider,
+			"custom_freight_mode": freight_mode,
 		}
 	)
 	# Opened from a deal: link the quotation back to it.
@@ -841,20 +825,6 @@ def create_quotation(
 		if item_code not in entitled:
 			return refuse("not_entitled", _("Item {0} is not set up for this customer.").format(item_code))
 
-		# A service (freight) item has no Sales BOM: the rate is typed on the screen,
-		# and may not be under the Min Pricing set for this branch and currency.
-		freight = entitled[item_code].get("non_inventory")
-		if freight:
-			rate = flt(row.get("rate"))
-			minimum = flt(entitled[item_code].get("min_pricing"))
-			if rate <= 0 or rate < minimum:
-				return refuse(
-					"below_min_price",
-					_("Rate for item {0} cannot be below the minimum price {1} {2}.").format(
-						item_code, minimum, currency
-					),
-				)
-
 		# Pack items: qty is always packs x base qty, never taken from the screen.
 		base_qty, in_packs = frappe.db.get_value(
 			"Item", item_code, ["custom_base_qty", "custom_sell_only_as_a_multiple_of_base_qty"]
@@ -876,19 +846,7 @@ def create_quotation(
 			"custom_base_qty": base_qty,
 			"warehouse": warehouse,
 		}
-		if freight:
-			line.update(rate=rate, price_list_rate=rate)
 		doc.append("items", line)
-
-	# PAPL refuses to submit a customer with Apply Freight ticked unless a service
-	# (non-stock) item is on the quotation; say so before saving anything.
-	if frappe.db.get_value("Customer", customer, "custom_apply_freight") and not any(
-		not frappe.get_cached_value("Item", row.item_code, "is_stock_item") for row in doc.items
-	):
-		return refuse(
-			"freight_missing",
-			_("Customer {0} has Apply Freight enabled. Please add a freight item.").format(customer),
-		)
 
 	# Billing address before taxes: India Compliance re-derives place of supply
 	# (and replaces the taxes) when it is blank at validate.

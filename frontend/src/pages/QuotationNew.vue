@@ -137,6 +137,42 @@
             />
           </div>
 
+          <!-- Freight: only for Apply Freight customers. A single choice is filled
+               in and locked; PAPL adds the freight rows on save. -->
+          <div v-if="freight.apply" class="flex flex-col gap-2">
+            <div class="text-lg font-medium text-ink-gray-9">{{ __('Freight') }}</div>
+            <div
+              v-if="!freight.providers.length"
+              class="rounded-lg border border-outline-red-2 bg-surface-red-1 px-4 py-3 text-base text-ink-red-4"
+            >
+              {{ __(NO_FREIGHT_PROVIDER, [doc.party_name]) }}
+            </div>
+            <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FormControl
+                v-model="doc.custom_freight_provider"
+                type="select"
+                :label="__('Freight Provider') + ' *'"
+                :options="freightProviderOptions"
+                :placeholder="__('Select {0}', [__('Freight Provider')])"
+                :disabled="freightProviderOptions.length <= 1"
+              />
+              <FormControl
+                v-model="doc.custom_freight_mode"
+                type="select"
+                :label="__('Freight Mode') + ' *'"
+                :options="freightModeOptions"
+                :placeholder="__('Select {0}', [__('Freight Mode')])"
+                :disabled="freightModeOptions.length <= 1"
+              />
+              <FormControl
+                :modelValue="freightPaymentMode"
+                type="text"
+                :label="__('Payment Mode')"
+                disabled
+              />
+            </div>
+          </div>
+
           <!-- Items -->
           <div class="flex flex-col gap-2">
             <div class="text-lg font-medium text-ink-gray-9">
@@ -171,12 +207,6 @@
                     "
                     @update:modelValue="onItemChange(row)"
                   />
-                  <div
-                    v-if="isFreight(row) && freightError(row)"
-                    class="mt-1 text-sm text-ink-red-4"
-                  >
-                    {{ freightError(row) }}
-                  </div>
                   <div
                     v-if="row.priceMessage"
                     class="mt-1 text-sm"
@@ -217,15 +247,7 @@
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-base">
-                  <FormControl
-                    v-if="isFreight(row)"
-                    v-model="row.rate"
-                    type="number"
-                    min="0"
-                    :label="__('Rate')"
-                    :placeholder="__('Min {0} {1}', [doc.currency, freightInfo(row).min_pricing])"
-                  />
-                  <div v-else class="flex flex-col gap-1.5">
+                  <div class="flex flex-col gap-1.5">
                     <span class="text-xs text-ink-gray-5">{{ __('Rate') }}</span>
                     <span class="text-ink-gray-8">{{ rateLabel(row) }}</span>
                   </div>
@@ -277,12 +299,6 @@
                         @update:modelValue="onItemChange(row)"
                       />
                       <div
-                        v-if="isFreight(row) && freightError(row)"
-                        class="mt-1 text-sm text-ink-red-4"
-                      >
-                        {{ freightError(row) }}
-                      </div>
-                      <div
                         v-if="row.priceMessage"
                         class="mt-1 text-sm"
                         :class="row.priceState === 'error' ? 'text-ink-red-4' : 'text-ink-gray-5'"
@@ -311,18 +327,7 @@
                       <FormControl v-model="row.qty" type="number" min="0" />
                     </td>
                     <td class="px-3 py-2.5 text-ink-gray-6">{{ row.uom || '—' }}</td>
-                    <td
-                      :class="isFreight(row) ? 'px-3 py-1.5' : 'px-3 py-2.5 text-right text-ink-gray-8'"
-                    >
-                      <FormControl
-                        v-if="isFreight(row)"
-                        v-model="row.rate"
-                        type="number"
-                        min="0"
-                        :placeholder="__('Min {0} {1}', [doc.currency, freightInfo(row).min_pricing])"
-                      />
-                      <template v-else>{{ rateLabel(row) }}</template>
-                    </td>
+                    <td class="px-3 py-2.5 text-right text-ink-gray-8">{{ rateLabel(row) }}</td>
                     <td class="px-3 py-2.5 text-right text-ink-gray-8">
                       {{ row.rate ? amount(row.rate * (row.qty || 0)) : '—' }}
                     </td>
@@ -511,6 +516,8 @@ const doc = reactive({
   custom_deal: '',
   custom_branch: '',
   currency: '',
+  custom_freight_provider: '',
+  custom_freight_mode: '',
   items: [newRow()],
   customer_address: '',
   shipping_address_name: '',
@@ -657,10 +664,46 @@ const needsAddressChoice = computed(
     (addressChoices.shipping.length > 1 && !doc.shipping_address_name),
 )
 
+// ---- Freight -----------------------------------------------------------
+// Apply Freight customers pick a Freight Provider and Mode (Road / Air) from
+// the customer's Fright Service Provider rows, like the ERPNext Quotation. One
+// provider, or a provider with one mode, is filled in by itself.
+const NO_FREIGHT_PROVIDER =
+  'Customer {0} has Apply Freight enabled but no Freight Provider with Road / Air. Ask your admin to add one.'
+const freight = reactive({ apply: false, providers: [] })
+const freightProviderOptions = computed(() => freight.providers.map((p) => p.provider))
+const chosenProvider = computed(() =>
+  freight.providers.find((p) => p.provider === doc.custom_freight_provider),
+)
+const freightModeOptions = computed(() => chosenProvider.value?.modes || [])
+const freightPaymentMode = computed(() => chosenProvider.value?.payment_mode || '')
+
+watch(
+  () => doc.party_name,
+  async (customer) => {
+    Object.assign(freight, { apply: false, providers: [] })
+    doc.custom_freight_provider = ''
+    if (!customer) return
+    const result = await call('crm.api.quotation.get_customer_freight', { customer }).catch(
+      () => null,
+    )
+    if (!result || customer !== doc.party_name) return
+    Object.assign(freight, { apply: !!result.apply_freight, providers: result.providers || [] })
+    if (freight.providers.length === 1) doc.custom_freight_provider = freight.providers[0].provider
+  },
+)
+watch(
+  () => doc.custom_freight_provider,
+  () => {
+    const modes = freightModeOptions.value
+    if (modes.includes(doc.custom_freight_mode) && modes.length > 1) return
+    doc.custom_freight_mode = modes.length === 1 ? modes[0] : ''
+  },
+)
+
 // ---- Items -------------------------------------------------------------
-// Only the items on the customer's Item Discounts for this branch (plus the
-// freight items for this branch and currency); picking a different customer,
-// branch or currency starts the items over.
+// Only the items on the customer's Item Discounts for this branch; picking a
+// different customer, branch or currency starts the items over.
 const customerItems = ref([])
 const customerItemsLoaded = ref(false)
 // An empty "in" list would match every item, so fall back to one that can't exist.
@@ -754,26 +797,6 @@ function applyPrefillItems() {
 // To Qty means no upper limit. Same check as the Customer Portal.
 const fmtQty = (n) => formatQty(n || 0)
 
-// Service (freight) items from CRM Custom Settings > Non Inventory Item: no Sales
-// BOM, so the rate is typed here and may not be under the Min Pricing of the
-// branch and currency.
-const freightInfo = (row) =>
-  customerItems.value.find((i) => i.item_code === row.item_code && i.non_inventory)
-const isFreight = (row) => !!row.item_code && !!freightInfo(row)
-
-function freightError(row) {
-  const rate = Number(row.rate)
-  const minimum = Number(freightInfo(row)?.min_pricing) || 0
-  if (rate > 0 && rate < minimum) {
-    return __('Rate for {0} cannot be below the minimum price {1} {2}.', [
-      row.item_code,
-      minimum,
-      doc.currency,
-    ])
-  }
-  return ''
-}
-
 function qtyError(row) {
   const item = customerItems.value.find((i) => i.item_code === row.item_code)
   const slabs = item?.slabs || []
@@ -862,10 +885,6 @@ function clearPrice(row) {
 watch(priceKey, () => {
   clearTimeout(priceTimer)
   for (const row of doc.items) {
-    if (isFreight(row)) {
-      row.priceState = 'manual'
-      continue
-    }
     clearPrice(row)
     const error = row.item_code ? qtyError(row) : ''
     if (error) Object.assign(row, { priceState: 'error', priceMessage: error })
@@ -875,7 +894,7 @@ watch(priceKey, () => {
 
 async function fetchPrices() {
   const rows = doc.items.filter(
-    (r) => r.item_code && Number(r.qty) > 0 && r.priceState !== 'error' && !isFreight(r),
+    (r) => r.item_code && Number(r.qty) > 0 && r.priceState !== 'error',
   )
   if (!rows.length || !doc.party_name || !doc.custom_branch || !doc.currency) return
   const request = ++priceRequest
@@ -962,20 +981,19 @@ function validate() {
     return __('Please select the Customer Address on the Address tab.')
   if (addressChoices.shipping.length > 1 && !doc.shipping_address_name)
     return __('Please select the Shipping Address on the Address tab.')
+  if (freight.apply) {
+    if (!freight.providers.length) return __(NO_FREIGHT_PROVIDER, [doc.party_name])
+    if (!doc.custom_freight_provider) return __('Please select the Freight Provider.')
+    if (!doc.custom_freight_mode) return __('Please select the Freight Mode.')
+  }
   const items = doc.items.filter((r) => r.item_code)
   if (!items.length) return __('Please add at least one item.')
   const noQty = items.find((r) => !(Number(r.qty) > 0))
   if (noQty) return __('Please set a Qty for {0}.', [noQty.item_code])
-  const freight = items.filter(isFreight)
-  const noRate = freight.find((r) => !(Number(r.rate) > 0))
-  if (noRate) return __('Please enter the rate for {0}.', [noRate.item_code])
-  const lowRate = freight.find((r) => freightError(r))
-  if (lowRate) return freightError(lowRate)
-  const priced = items.filter((r) => !isFreight(r))
-  const pending = priced.find((r) => r.priceState === 'loading' || (!r.priceState && !r.rate))
+  const pending = items.find((r) => r.priceState === 'loading' || (!r.priceState && !r.rate))
   if (pending) return __('Please wait for the rates to load.')
   // Like the Customer Portal, every line needs a rate before it can be quoted.
-  const unpriced = priced.find((r) => r.priceState !== 'priced' || !(r.rate > 0))
+  const unpriced = items.find((r) => r.priceState !== 'priced' || !(r.rate > 0))
   if (unpriced)
     return __('{0} has no rate: {1}', [
       unpriced.item_code,
@@ -1031,8 +1049,9 @@ async function createQuotation() {
           item_code: r.item_code,
           qty: Number(r.qty),
           no_of_packs: r.sold_in_packs ? Number(r.custom_no_of_packs) : null,
-          rate: isFreight(r) ? Number(r.rate) : null,
         })),
+      freight_provider: doc.custom_freight_provider || null,
+      freight_mode: doc.custom_freight_mode || null,
       addresses: {
         customer_address: doc.customer_address,
         shipping_address_name: doc.shipping_address_name,
