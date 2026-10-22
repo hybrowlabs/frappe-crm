@@ -32,7 +32,6 @@ class CRMCustomSettings(Document):
 		from crm.fcrm.doctype.crm_week_days.crm_week_days import CRMWeekDays
 		from crm.fcrm.doctype.fcrm_holiday_list.fcrm_holiday_list import FCRMHolidayList
 		from crm.fcrm.doctype.fcrm_timing_setting.fcrm_timing_setting import FCRMTimingSetting
-		from crm.fcrm.doctype.non_inventory_item.non_inventory_item import NonInventoryItem
 		from frappe.types import DF
 
 		branch_stock_warehouses: DF.Table[CRMBranchStockWarehouse]
@@ -41,7 +40,6 @@ class CRMCustomSettings(Document):
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
 		lead_sla_days: DF.Int
-		non_inventory_items: DF.Table[NonInventoryItem]
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
 		week_days: DF.Table[CRMWeekDays]
 	# end: auto-generated types
@@ -61,7 +59,6 @@ class CRMCustomSettings(Document):
 
 		self.validate_branch_stock_warehouses()
 		self.validate_time_settings()
-		self.validate_non_inventory_items()
 		self.validate_email_recipients()
 
 		if self.holiday_list and (self.is_new() or self.has_value_changed("holiday_list")):
@@ -106,29 +103,6 @@ class CRMCustomSettings(Document):
 						)
 					)
 			row.child_warehouses = "\n".join(children)
-
-	def validate_non_inventory_items(self):
-		"""One row per Branch + Currency + Item. Rows without an item are not compared."""
-		seen = {}
-		for row in self.non_inventory_items:
-			if not row.item:
-				continue
-			if frappe.get_cached_value("Item", row.item, "is_stock_item"):
-				frappe.throw(
-					_("Row #{0}: {1} is a stock item. Pick a non-inventory (service) item.").format(
-						row.idx, row.item
-					),
-					title=_("Not a Non-Inventory Item"),
-				)
-			key = (row.branch, row.currency_type, row.item)
-			if key in seen:
-				frappe.throw(
-					_("Row #{0}: Item {1} is already added for Branch {2} and Currency {3} in Row #{4}.").format(
-						row.idx, row.item, row.branch, row.currency_type, seen[key]
-					),
-					title=_("Duplicate Entry"),
-				)
-			seen[key] = row.idx
 
 	def validate_email_recipients(self):
 		"""Each user may appear only once in the Email Recipients table."""

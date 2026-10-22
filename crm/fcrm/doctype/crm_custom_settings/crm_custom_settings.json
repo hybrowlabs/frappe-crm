@@ -18,8 +18,6 @@
   "week_days",
   "available_stock_tab",
   "branch_stock_warehouses",
-  "non_inventory_item_tab",
-  "non_inventory_items",
   "email_recipients_tab",
   "email_recipients"
  ],
@@ -77,17 +75,6 @@
    "fieldtype": "Table",
    "label": "Week Days",
    "options": "CRM Week Days"
-  },
-  {
-   "fieldname": "non_inventory_item_tab",
-   "fieldtype": "Tab Break",
-   "label": "Non Inventory Item"
-  },
-  {
-   "fieldname": "non_inventory_items",
-   "fieldtype": "Table",
-   "label": "Non Inventory Items",
-   "options": "Non Inventory Item"
   },
   {
    "fieldname": "section_break_sazs",
