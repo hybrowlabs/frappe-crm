@@ -80,12 +80,17 @@ def send_item_request(customer: str, branch: str, currency: str, items):
 
 
 def _request_email(requested_by, customer, customer_name, branch, currency, items):
-	"""HTML body: who asked, the branch / currency / customer, and the item table."""
-	cell = "padding:8px 12px;border-bottom:1px solid #e8eaed;font-size:14px;color:#1f272e;"
-	head = "padding:8px 12px;background:#f4f5f6;font-size:12px;font-weight:600;color:#6b7280;text-align:left;"
+	"""HTML body: who asked, the branch / currency / customer, and the item table.
+
+	Laid out with tables only (no margins, divs or <p> spacing), because Gmail,
+	Outlook and phone mail apps drop or change those. Tables are 100% wide up to
+	600px so they fit a phone screen."""
+	font = "font-family:Arial,Helvetica,sans-serif;"
+	cell = f"{font}padding:8px 12px;border-bottom:1px solid #e8eaed;font-size:14px;line-height:20px;color:#1f272e;"
+	head = f"{font}padding:8px 12px;border-bottom:1px solid #e8eaed;font-size:12px;line-height:16px;font-weight:bold;color:#6b7280;text-align:left;"
 	details = "".join(
-		f"""<tr><td style="{cell}color:#6b7280;width:140px;">{label}</td>
-			<td style="{cell}font-weight:600;">{escape_html(value)}</td></tr>"""
+		f"""<tr><td width="140" style="{cell}color:#6b7280;">{label}</td>
+			<td style="{cell}font-weight:bold;">{escape_html(value)}</td></tr>"""
 		for label, value in (
 			(_("Requested By"), requested_by),
 			(_("Branch"), branch),
@@ -94,22 +99,39 @@ def _request_email(requested_by, customer, customer_name, branch, currency, item
 		)
 	)
 	rows = "".join(
-		f"""<tr><td style="{cell}">{i}</td>
-			<td style="{cell}font-weight:600;">{escape_html(item.item_code)}</td>
+		f"""<tr><td width="24" style="{cell}color:#6b7280;">{i}</td>
+			<td style="{cell}font-weight:bold;">{escape_html(item.item_code)}</td>
 			<td style="{cell}">{escape_html(item.item_name or "")}</td>
 			<td style="{cell}">{escape_html(item.item_group or "")}</td></tr>"""
 		for i, item in enumerate(items, start=1)
 	)
 	customer_url = get_url(f"/app/customer/{customer}")
+	box = 'width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e8eaed;border-collapse:collapse;"'
+	# An empty row of fixed height: the one gap every mail client keeps.
+	gap = '<tr><td height="{0}" style="height:{0}px;font-size:0;line-height:0;">&nbsp;</td></tr>'
 	return f"""
-	<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-		<p style="font-size:14px;color:#1f272e;">{_("Please add these items to the customer's Item Discounts so they can be quoted.")}</p>
-		<table cellpadding="0" cellspacing="0" style="border:1px solid #e8eaed;border-collapse:collapse;margin-bottom:16px;">{details}</table>
-		<table cellpadding="0" cellspacing="0" style="border:1px solid #e8eaed;border-collapse:collapse;">
-			<tr><th style="{head}">#</th><th style="{head}">{_("Item Code")}</th>
-				<th style="{head}">{_("Item Name")}</th><th style="{head}">{_("Item Group")}</th></tr>
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+		<tr><td style="{font}font-size:14px;line-height:20px;color:#1f272e;">
+			{_("Please add these items to the customer's Item Discounts so they can be quoted.")}
+		</td></tr>
+		{gap.format(16)}
+		<tr><td><table role="presentation" {box}>{details}</table></td></tr>
+		{gap.format(20)}
+		<tr><td><table {box}>
+			<tr bgcolor="#f4f5f6"><th align="left" style="{head}">#</th>
+				<th align="left" style="{head}">{_("Item Code")}</th>
+				<th align="left" style="{head}">{_("Item Name")}</th>
+				<th align="left" style="{head}">{_("Item Group")}</th></tr>
 			{rows}
-		</table>
-		<p style="margin-top:20px;"><a href="{customer_url}" style="display:inline-block;background:#1f272e;color:#ffffff;text-decoration:none;font-size:14px;padding:10px 20px;border-radius:8px;">{_("Open the Customer")} &rarr;</a></p>
-	</div>
+		</table></td></tr>
+		{gap.format(24)}
+		<tr><td>
+			<!-- The colour sits on the cell, so Outlook (which ignores padding on links) still draws the button. -->
+			<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+				<td bgcolor="#1f272e" style="border-radius:8px;">
+					<a href="{customer_url}" target="_blank" style="{font}display:inline-block;padding:10px 20px;font-size:14px;line-height:20px;color:#ffffff;text-decoration:none;border-radius:8px;">{_("Open the Customer")} &rarr;</a>
+				</td>
+			</tr></table>
+		</td></tr>
+	</table>
 	"""
