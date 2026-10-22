@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2026-09-19 13:28:10.386548",
+ "creation": "2026-10-22 12:36:11.084629",
  "description": "The warehouse CRM quotations and their sales orders use, per branch.",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -19,7 +19,9 @@
   "available_stock_tab",
   "branch_stock_warehouses",
   "non_inventory_item_tab",
-  "non_inventory_items"
+  "non_inventory_items",
+  "email_recipients_tab",
+  "email_recipients"
  ],
  "fields": [
   {
@@ -108,11 +110,23 @@
    "fieldtype": "Table",
    "label": "Stock Warehouses",
    "options": "CRM Branch Stock Warehouse"
+  },
+  {
+   "fieldname": "email_recipients_tab",
+   "fieldtype": "Tab Break",
+   "label": "Email Recipients"
+  },
+  {
+   "description": "Users who receive the CRM emails. Add each user only once.",
+   "fieldname": "email_recipients",
+   "fieldtype": "Table",
+   "label": "Email Recipients",
+   "options": "CRM Email Recipient"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-09 16:00:00.000000",
+ "modified": "2026-10-22 12:39:26.060432",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Custom Settings",
@@ -132,5 +146,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

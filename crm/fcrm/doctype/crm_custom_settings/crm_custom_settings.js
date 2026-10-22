@@ -3,6 +3,10 @@
 
 frappe.ui.form.on("CRM Custom Settings", {
 	setup(frm) {
+		// Only active desk users can receive the CRM emails.
+		frm.set_query("user", "email_recipients", () => ({
+			filters: { enabled: 1, user_type: "System User" },
+		}));
 		frm.$wrapper.on("click", "[data-select-warehouses]", (e) => {
 			e.preventDefault();
 			const cdn = $(e.currentTarget).attr("data-select-warehouses");

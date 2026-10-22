@@ -110,6 +110,11 @@ const routes = [
     props: true,
   },
   {
+    path: '/item-request',
+    name: 'Item Request',
+    component: () => import('@/pages/ItemRequest.vue'),
+  },
+  {
     path: '/available-stock',
     name: 'Available Stock',
     component: () => import('@/pages/AvailableStock.vue'),
