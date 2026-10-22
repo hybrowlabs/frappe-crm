@@ -26,10 +26,9 @@ class CRMCustomSettings(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from crm.fcrm.doctype.crm_branch_stock_warehouse.crm_branch_stock_warehouse import (
-			CRMBranchStockWarehouse,
-		)
+		from crm.fcrm.doctype.crm_branch_stock_warehouse.crm_branch_stock_warehouse import CRMBranchStockWarehouse
 		from crm.fcrm.doctype.crm_branch_warehouse.crm_branch_warehouse import CRMBranchWarehouse
+		from crm.fcrm.doctype.crm_email_recipient.crm_email_recipient import CRMEmailRecipient
 		from crm.fcrm.doctype.crm_week_days.crm_week_days import CRMWeekDays
 		from crm.fcrm.doctype.fcrm_holiday_list.fcrm_holiday_list import FCRMHolidayList
 		from crm.fcrm.doctype.fcrm_timing_setting.fcrm_timing_setting import FCRMTimingSetting
@@ -38,6 +37,7 @@ class CRMCustomSettings(Document):
 
 		branch_stock_warehouses: DF.Table[CRMBranchStockWarehouse]
 		branch_warehouses: DF.Table[CRMBranchWarehouse]
+		email_recipients: DF.Table[CRMEmailRecipient]
 		holiday_list: DF.Link | None
 		holiday_list_table: DF.Table[FCRMHolidayList]
 		lead_sla_days: DF.Int
@@ -45,6 +45,7 @@ class CRMCustomSettings(Document):
 		time_setting_branch_wise: DF.Table[FCRMTimingSetting]
 		week_days: DF.Table[CRMWeekDays]
 	# end: auto-generated types
+
 	def validate(self):
 		seen = set()
 		for row in self.branch_warehouses:
@@ -61,6 +62,7 @@ class CRMCustomSettings(Document):
 		self.validate_branch_stock_warehouses()
 		self.validate_time_settings()
 		self.validate_non_inventory_items()
+		self.validate_email_recipients()
 
 		if self.holiday_list and (self.is_new() or self.has_value_changed("holiday_list")):
 			self.set("holiday_list_table", [])
@@ -127,6 +129,19 @@ class CRMCustomSettings(Document):
 					title=_("Duplicate Entry"),
 				)
 			seen[key] = row.idx
+
+	def validate_email_recipients(self):
+		"""Each user may appear only once in the Email Recipients table."""
+		seen = {}
+		for row in self.email_recipients:
+			if row.user in seen:
+				frappe.throw(
+					_("Row #{0}: User {1} is already added in Row #{2}.").format(
+						row.idx, row.user, seen[row.user]
+					),
+					title=_("Duplicate User"),
+				)
+			seen[row.user] = row.idx
 
 	def validate_time_settings(self):
 		"""From Time before To Time, and no two rows of one branch overlapping for
@@ -196,6 +211,16 @@ def get_branch_warehouse(branch):
 		"CRM Branch Warehouse",
 		{"parent": "CRM Custom Settings", "parentfield": "branch_warehouses", "branch": branch},
 		"warehouse",
+	)
+
+
+def get_email_recipients():
+	"""The users on the Email Recipients tab, in table order."""
+	return frappe.get_all(
+		"CRM Email Recipient",
+		filters={"parent": "CRM Custom Settings", "parentfield": "email_recipients"},
+		pluck="user",
+		order_by="idx asc",
 	)
 
 

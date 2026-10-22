@@ -107,6 +107,7 @@ import LucideMegaphone from '~icons/lucide/megaphone'
 import LucideFileText from '~icons/lucide/file-text'
 import LucidePackageCheck from '~icons/lucide/package-check'
 import LucideWarehouse from '~icons/lucide/warehouse'
+import LucidePackagePlus from '~icons/lucide/package-plus'
 import Section from '@/components/Section.vue'
 import PinIcon from '@/components/Icons/PinIcon.vue'
 import UserDropdown from '@/components/UserDropdown.vue'
@@ -190,6 +191,11 @@ const links = [
     label: 'Sales Orders',
     icon: LucidePackageCheck,
     to: 'Sales Orders',
+  },
+  {
+    label: 'Item Request',
+    icon: LucidePackagePlus,
+    to: 'Item Request',
   },
   {
     label: 'Available Stock',
@@ -281,6 +287,8 @@ function getIcon(routeName, icon) {
       return LucideFileText
     case 'Sales Orders':
       return LucidePackageCheck
+    case 'Item Request':
+      return LucidePackagePlus
     case 'Available Stock':
       return LucideWarehouse
     case 'Contacts':
