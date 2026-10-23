@@ -974,6 +974,13 @@ function validate() {
     if (!freight.providers.length) return __(NO_FREIGHT_PROVIDER, [doc.party_name])
     if (!doc.custom_freight_provider) return __('Please select the Freight Provider.')
     if (!doc.custom_freight_mode) return __('Please select the Freight Mode.')
+    // PAPL charges freight only for "Paid By PAPL"; a blank Payment Mode would
+    // quietly leave the quotation without freight.
+    if (!chosenProvider.value?.payment_mode)
+      return __(
+        'Payment Mode is not set for Freight Provider {0} on Customer {1}. Ask your admin to set it.',
+        [doc.custom_freight_provider, doc.party_name],
+      )
   }
   const items = doc.items.filter((r) => r.item_code)
   if (!items.length) return __('Please add at least one item.')
