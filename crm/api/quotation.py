@@ -433,6 +433,7 @@ def get_quotation_window(branch: str):
 # the salesperson's branch in CRM Warehouse Settings; the Item's own warehouse
 # is not used.
 NO_WAREHOUSE = "No warehouse is set for branch {0} in CRM Warehouse Settings."
+NO_PAYMENT_MODE = "Payment Mode is not set for Freight Provider {0} on Customer {1}. Ask your admin to set it."
 
 
 def _check_customer(customer):
@@ -492,8 +493,8 @@ def _entitled_items(customer, branch):
 
 
 @frappe.whitelist()
-def get_customer_items(customer: str, branch: str | None = None, currency: str | None = None):
-	"""The items this customer can be quoted in this branch and currency, with
+def get_customer_items(customer: str, branch: str | None = None):
+	"""The items this customer can be quoted in this branch, with
 	their discount slabs (qty ranges) so the screen can check the qty first."""
 	_check_customer(customer)
 	return list(_entitled_items(customer, branch).values())
@@ -769,6 +770,14 @@ def create_quotation(
 	warehouse = get_branch_warehouse(branch)
 	if not warehouse:
 		return refuse("no_warehouse", _(NO_WAREHOUSE).format(branch))
+
+	# PAPL charges freight only for "Paid By PAPL": a provider whose Payment Mode
+	# was left blank would quietly carry none, so refuse until it is set.
+	provider = next(
+		(p for p in get_customer_freight(customer)["providers"] if p["provider"] == freight_provider), None
+	)
+	if provider and not provider["payment_mode"]:
+		return refuse("no_payment_mode", _(NO_PAYMENT_MODE).format(freight_provider, customer))
 
 	rows = frappe.parse_json(items) if isinstance(items, str) else (items or [])
 	rows = [row for row in rows if (row or {}).get("item_code")]

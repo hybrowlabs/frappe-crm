@@ -164,12 +164,6 @@
                 :placeholder="__('Select {0}', [__('Freight Mode')])"
                 :disabled="freightModeOptions.length <= 1"
               />
-              <FormControl
-                :modelValue="freightPaymentMode"
-                type="text"
-                :label="__('Payment Mode')"
-                disabled
-              />
             </div>
           </div>
 
@@ -676,7 +670,6 @@ const chosenProvider = computed(() =>
   freight.providers.find((p) => p.provider === doc.custom_freight_provider),
 )
 const freightModeOptions = computed(() => chosenProvider.value?.modes || [])
-const freightPaymentMode = computed(() => chosenProvider.value?.payment_mode || '')
 
 watch(
   () => doc.party_name,
@@ -722,11 +715,7 @@ watch(
     customerItems.value = []
     customerItemsLoaded.value = false
     if (!customer) return
-    const list = await call('crm.api.quotation.get_customer_items', {
-      customer,
-      branch,
-      currency,
-    }).catch((e) => {
+    const list = await call('crm.api.quotation.get_customer_items', { customer, branch }).catch((e) => {
       toast.error(e?.messages?.[0] || __('Could not load the items for this customer.'))
       return []
     })
@@ -985,6 +974,13 @@ function validate() {
     if (!freight.providers.length) return __(NO_FREIGHT_PROVIDER, [doc.party_name])
     if (!doc.custom_freight_provider) return __('Please select the Freight Provider.')
     if (!doc.custom_freight_mode) return __('Please select the Freight Mode.')
+    // PAPL charges freight only for "Paid By PAPL"; a blank Payment Mode would
+    // quietly leave the quotation without freight.
+    if (!chosenProvider.value?.payment_mode)
+      return __(
+        'Payment Mode is not set for Freight Provider {0} on Customer {1}. Ask your admin to set it.',
+        [doc.custom_freight_provider, doc.party_name],
+      )
   }
   const items = doc.items.filter((r) => r.item_code)
   if (!items.length) return __('Please add at least one item.')
