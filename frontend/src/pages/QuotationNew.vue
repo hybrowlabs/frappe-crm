@@ -164,12 +164,6 @@
                 :placeholder="__('Select {0}', [__('Freight Mode')])"
                 :disabled="freightModeOptions.length <= 1"
               />
-              <FormControl
-                :modelValue="freightPaymentMode"
-                type="text"
-                :label="__('Payment Mode')"
-                disabled
-              />
             </div>
           </div>
 
@@ -676,7 +670,6 @@ const chosenProvider = computed(() =>
   freight.providers.find((p) => p.provider === doc.custom_freight_provider),
 )
 const freightModeOptions = computed(() => chosenProvider.value?.modes || [])
-const freightPaymentMode = computed(() => chosenProvider.value?.payment_mode || '')
 
 watch(
   () => doc.party_name,
