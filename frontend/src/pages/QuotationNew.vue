@@ -715,11 +715,7 @@ watch(
     customerItems.value = []
     customerItemsLoaded.value = false
     if (!customer) return
-    const list = await call('crm.api.quotation.get_customer_items', {
-      customer,
-      branch,
-      currency,
-    }).catch((e) => {
+    const list = await call('crm.api.quotation.get_customer_items', { customer, branch }).catch((e) => {
       toast.error(e?.messages?.[0] || __('Could not load the items for this customer.'))
       return []
     })

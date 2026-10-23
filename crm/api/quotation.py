@@ -492,8 +492,8 @@ def _entitled_items(customer, branch):
 
 
 @frappe.whitelist()
-def get_customer_items(customer: str, branch: str | None = None, currency: str | None = None):
-	"""The items this customer can be quoted in this branch and currency, with
+def get_customer_items(customer: str, branch: str | None = None):
+	"""The items this customer can be quoted in this branch, with
 	their discount slabs (qty ranges) so the screen can check the qty first."""
 	_check_customer(customer)
 	return list(_entitled_items(customer, branch).values())
