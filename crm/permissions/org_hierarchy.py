@@ -14,6 +14,31 @@ def hierarchy_enabled() -> bool:
 	return bool(frappe.db.get_single_value("FCRM Settings", "enable_sales_hierarchy"))
 
 
+# NB: not @request_cache — it hashes its arguments and `frappe.get_roles`
+# returns a list, which is unhashable. The query below is a single indexed
+# lookup on a tiny child table.
+def _has_oversight_role(roles: tuple | list) -> bool:
+	"""True if any role is flagged Oversight on an Endovia Vertical.
+
+	Guarded by a table check so this module keeps working on a plain CRM
+	site where endovia_finance is not installed.
+	"""
+	if not frappe.db.table_exists("Vertical Role"):
+		return False
+	return bool(
+		frappe.get_all(
+			"Vertical Role",
+			filters={
+				"parenttype": "Vertical",
+				"parentfield": "roles",
+				"oversight": 1,
+				"role": ("in", list(roles)),
+			},
+			limit=1,
+		)
+	)
+
+
 def _permission_query_conditions(user: str | None, doctype: str):
 	if not user:
 		user = frappe.session.user
@@ -29,6 +54,13 @@ def _permission_query_conditions(user: str | None, doctype: str):
 
 	# Sales Manager outside the tree retains the default ie sees everything
 	if "Sales Manager" in roles and not in_tree:
+		return ""
+
+	# Endovia: an oversight role (department head) owns its vertical's whole
+	# pipeline. Leaving it to the owner/assignment filter below would hide the
+	# team's records from the person accountable for them. The vertical itself
+	# is scoped by endovia_finance's own permission hook.
+	if _has_oversight_role(roles):
 		return ""
 
 	owner_field = _OWNER_FIELD[doctype]
@@ -83,6 +115,20 @@ def _has_permission(doc, ptype, user, doctype: str) -> bool | None:
 
 	in_tree = hierarchy_enabled() and _in_hierarchy(user)
 	if "Sales Manager" in roles and not in_tree:
+		return True
+
+	# Oversight roles are unrestricted here for the same reason as above; the
+	# vertical scope is applied by endovia_finance's hook. Without this the
+	# empty condition below would fall through to `.where("")`.
+	if _has_oversight_role(roles):
+		return True
+
+	# An unsaved document has no row to scope against, so the query below would
+	# always come back empty and deny `create` to every user. Ownership is not
+	# decided yet at that point - the DocPerm create check already ran.
+	# `is_new()` reads the __islocal flag, which a dict-built doc never sets;
+	# a missing name is the reliable signal.
+	if not doc.name:
 		return True
 
 	conditions = _permission_query_conditions(user, doctype)
