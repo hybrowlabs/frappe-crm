@@ -62,6 +62,13 @@
               variant="subtle"
             />
           </SidebarItem>
+          <SidebarItem :label="__('Quotation')" @click="openQuotation">
+            <template #prefix>
+              <LucideFileText class="size-4 text-ink-gray-7" />
+            </template>
+            <span class="truncate text-sm">{{ __('Quotation') }}</span>
+          </SidebarItem>
+
 
           <CollapsibleSection
             v-for="section in allViews"
@@ -211,6 +218,7 @@ import HelpIcon from '@/components/Icons/HelpIcon.vue'
 import Notifications from '@/components/Notifications.vue'
 import KeyboardShortcut from '@/components/KeyboardShortcut.vue'
 import LucideSearch from '~icons/lucide/search'
+import LucideFileText from '~icons/lucide/file-text'
 import { openCommandPalette } from '@/composables/useCommandPalette'
 import Settings from '@/components/Settings/Settings.vue'
 import { viewsStore } from '@/stores/views'
@@ -373,6 +381,13 @@ watch(
   () => (activeItem.value = currentRouteKey()),
 )
 
+
+function openQuotation() {
+  window.open('/app/quotation', '_blank', 'noopener')
+  if (props.mobile) {
+    mobileSidebarOpened.value = false
+  }
+}
 function onSearchClick() {
   if (props.mobile) closeMobileSidebar(openCommandPalette)
   else openCommandPalette()
