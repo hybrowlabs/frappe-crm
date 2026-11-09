@@ -73,11 +73,7 @@ class ERPNextCRMSettings(Document):
 
 	def create_custom_fields(self):
 		if not self.is_erpnext_in_different_site:
-			try:
-				from erpnext.crm.frappe_crm_api import create_custom_fields_for_frappe_crm
-
-				create_custom_fields_for_frappe_crm()
-			except ImportError:
+			if not _is_erpnext_installed():
 				frappe.throw(_("ERPNext is not installed in the current site"))
 		else:
 			self.create_custom_fields_in_remote_site()
@@ -95,6 +91,37 @@ class ERPNextCRMSettings(Document):
 				}
 			]
 		}
+		if frappe.db.exists("DocType", "Item"):
+			custom_fields["Item"] = [
+				{
+					"fieldname": "crm_product_code",
+					"fieldtype": "Data",
+					"label": "CRM Product",
+					"read_only": 1,
+					"no_copy": 1,
+					"insert_after": "item_code",
+				}
+			]
+		if frappe.db.exists("DocType", "Quotation"):
+			custom_fields["Quotation"] = [
+				{
+					"fieldname": "crm_deal",
+					"fieldtype": "Data",
+					"label": "Frappe CRM Deal",
+					"read_only": 1,
+					"insert_after": "party_name",
+				}
+			]
+		if frappe.db.exists("DocType", "Customer"):
+			custom_fields["Customer"] = [
+				{
+					"fieldname": "crm_deal",
+					"fieldtype": "Data",
+					"label": "Frappe CRM Deal",
+					"read_only": 1,
+					"insert_after": "prospect_name",
+				}
+			]
 		_create_custom_fields(custom_fields, ignore_validate=True)
 
 	def create_custom_fields_in_remote_site(self):
@@ -102,9 +129,18 @@ class ERPNextCRMSettings(Document):
 		try:
 			client.post_api("erpnext.crm.frappe_crm_api.create_custom_fields_for_frappe_crm")
 		except Exception:
-			_log_and_throw(
-				"Error while creating custom field in ERPNext, check error log for more details",
-				f"Error while creating custom field in the remote erpnext site: {self.erpnext_site_url}",
+			frappe.log_error(
+				frappe.get_traceback(),
+				f"Could not create custom fields on remote ERPNext site: {self.erpnext_site_url}",
+			)
+			frappe.msgprint(
+				_(
+					"Could not create the Frappe CRM custom fields on {0} automatically. "
+					"If it is running the latest ERPNext, enable <b>Frappe CRM Data Synchronization</b> "
+					"in its CRM Settings, Otherwise check the Error Log."
+				).format(self.erpnext_site_url),
+				title=_("ERPNext custom fields not created"),
+				indicator="orange",
 			)
 
 	def create_crm_form_script(self):
@@ -360,7 +396,7 @@ def create_customer_in_erpnext(doc, method):
 				"Error while creating customer in ERPNext, check error log for more details",
 				f"Error while creating customer in ERPNext for CRM Deal: {doc.name}",
 			)
-	except frappe.ValidationError:
+	except (frappe.ValidationError, frappe.PermissionError):
 		raise
 	except Exception:
 		_log_and_throw("Error while creating customer in ERPNext, check error log for more details")
