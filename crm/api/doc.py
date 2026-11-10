@@ -631,13 +631,17 @@ def get_fields(doctype: str, allow_all_fieldtypes: bool = False):
 	not_allowed_fieldtypes = [*list(frappe.model.no_value_fields), "Read Only"]
 	if allow_all_fieldtypes:
 		not_allowed_fieldtypes = []
-	fields = frappe.get_meta(doctype).fields
+	meta = frappe.get_meta(doctype)
+	writable_levels = None if allow_all_fieldtypes else meta.get_permlevel_access("write")
 
 	_fields = []
 
-	for field in fields:
-		if field.fieldtype not in not_allowed_fieldtypes and field.fieldname:
-			_fields.append(field)
+	for field in meta.fields:
+		if field.fieldtype in not_allowed_fieldtypes or not field.fieldname:
+			continue
+		if writable_levels is not None and field.permlevel and field.permlevel not in writable_levels:
+			continue
+		_fields.append(field)
 
 	return _fields
 
