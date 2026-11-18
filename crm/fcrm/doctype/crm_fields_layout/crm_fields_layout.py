@@ -66,6 +66,7 @@ def get_fields_layout(doctype: str, type: str, parent_doctype: str | None = None
 		required_fields = [
 			field for field in frappe.get_meta(doctype, False).fields if field.reqd and not field.default
 		]
+	hidden_fields = _chatnext_view_hidden_fields(doctype)
 
 	for tab in tabs:
 		for section in tab.get("sections"):
@@ -77,7 +78,9 @@ def get_fields_layout(doctype: str, type: str, parent_doctype: str | None = None
 					field = next((f for f in fields if f.fieldname == field), None)
 					if field:
 						field = field.as_dict()
-						handle_perm_level_restrictions(field, doctype, parent_doctype)
+						handle_perm_level_restrictions(
+							field, doctype, parent_doctype, hidden_fields=hidden_fields
+						)
 						column["fields"][column.get("fields").index(field["fieldname"])] = field
 
 						# remove field from required_fields if it is already present
@@ -128,6 +131,7 @@ def get_sidepanel_sections(doctype: str):
 
 	fields = frappe.get_meta(doctype).fields
 	fields = [field for field in fields if field.fieldtype not in not_allowed_fieldtypes]
+	hidden_fields = _chatnext_view_hidden_fields(doctype)
 
 	for section in layout:
 		section["name"] = section.get("name") or section.get("label")
@@ -136,7 +140,7 @@ def get_sidepanel_sections(doctype: str):
 				field_obj = next((f for f in fields if f.fieldname == field), None)
 				if field_obj:
 					field_obj = field_obj.as_dict()
-					handle_perm_level_restrictions(field_obj, doctype)
+					handle_perm_level_restrictions(field_obj, doctype, hidden_fields=hidden_fields)
 					column["fields"][column.get("fields").index(field)] = get_field_obj(field_obj)
 
 	fields_meta = {}
@@ -146,7 +150,10 @@ def get_sidepanel_sections(doctype: str):
 	return layout
 
 
-def handle_perm_level_restrictions(field, doctype, parent_doctype=None):
+def handle_perm_level_restrictions(field, doctype, parent_doctype=None, hidden_fields=None):
+	if hidden_fields and field.get("fieldname") in hidden_fields:
+		field.hidden = 1
+		return
 	if field.permlevel == 0:
 		return
 	field_has_write_access = field.permlevel in get_permlevel_access("write", doctype, parent_doctype)
@@ -156,6 +163,14 @@ def handle_perm_level_restrictions(field, doctype, parent_doctype=None):
 		field.read_only = 1
 	if not field_has_read_access and not field_has_write_access:
 		field.hidden = 1
+
+
+def _chatnext_view_hidden_fields(doctype):
+	if "nextai" not in frappe.get_installed_apps():
+		return set()
+	from nextai.monkey_patches.custom_permission import get_hidden_fields_for_desk_form
+
+	return get_hidden_fields_for_desk_form(doctype)
 
 
 def get_permlevel_access(permission_type="write", doctype=None, parent_doctype=None):
