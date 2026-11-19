@@ -62,13 +62,6 @@
               variant="subtle"
             />
           </SidebarItem>
-          <SidebarItem :label="__('Quotation')" @click="openQuotation">
-            <template #prefix>
-              <LucideFileText class="size-4 text-ink-gray-7" />
-            </template>
-            <span class="truncate text-sm">{{ __('Quotation') }}</span>
-          </SidebarItem>
-
 
           <CollapsibleSection
             v-for="section in allViews"
@@ -118,6 +111,20 @@
               </SidebarItem>
             </nav>
           </CollapsibleSection>
+
+          <SidebarItem :label="__('Quotation')" @click="openQuotation">
+            <template #prefix>
+              <LucideFileText class="size-4 text-ink-gray-7" />
+            </template>
+            <Tooltip
+              :text="__('Quotation')"
+              side="right"
+              :hoverDelay="1500"
+              :disabled="isCollapsed"
+            >
+              <span class="truncate text-sm">{{ __('Quotation') }}</span>
+            </Tooltip>
+          </SidebarItem>
         </div>
 
         <div v-if="!mobile" class="mt-auto flex flex-col gap-1 pt-2">
@@ -381,13 +388,13 @@ watch(
   () => (activeItem.value = currentRouteKey()),
 )
 
-
 function openQuotation() {
   window.open('/app/quotation', '_blank', 'noopener')
   if (props.mobile) {
     mobileSidebarOpened.value = false
   }
 }
+
 function onSearchClick() {
   if (props.mobile) closeMobileSidebar(openCommandPalette)
   else openCommandPalette()
