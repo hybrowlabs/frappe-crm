@@ -11,6 +11,11 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.utils import get_url_to_form, get_url_to_list
 
+from crm.fcrm.doctype.erpnext_crm_settings.party import (
+	link_contacts_to_customer,
+	set_organization_on_customer,
+)
+
 
 def _is_erpnext_installed():
 	return "erpnext" in frappe.get_installed_apps()
@@ -140,7 +145,14 @@ class ERPNextCRMSettings(Document):
 					"label": "Frappe CRM Deal",
 					"read_only": 1,
 					"insert_after": "prospect_name",
-				}
+				},
+				{
+					"fieldname": "crm_organization",
+					"fieldtype": "Data",
+					"label": "Frappe CRM Organization",
+					"read_only": 1,
+					"insert_after": "crm_deal",
+				},
 			]
 		_create_custom_fields(custom_fields, ignore_validate=True)
 
@@ -713,6 +725,12 @@ def create_customer_from_deal(doc, erpnext_crm_settings):
 
 	if customer_name:
 		frappe.db.set_value("CRM Deal", doc.name, "erpnext_customer", customer_name)
+		# Keep the Customer reachable from the Organization it was raised against,
+		# and let the Deal's contacts appear on the Customer's ERPNext forms. Both
+		# no-op when the Customer lives on a remote site.
+		if doc.organization:
+			set_organization_on_customer(customer_name, doc.organization)
+		link_contacts_to_customer([c["contact"] for c in contacts], customer_name)
 		frappe.publish_realtime("crm_customer_created", user=frappe.session.user)
 
 	return customer_name

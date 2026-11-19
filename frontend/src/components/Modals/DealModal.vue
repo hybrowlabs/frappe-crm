@@ -87,7 +87,7 @@ import { isMobileView } from '@/composables/settings'
 import { showQuickEntryModal, quickEntryProps } from '@/composables/modals'
 import { useDocument } from '@/data/document'
 import { useTelemetry } from '@framework/ui/telemetry'
-import { Dialog, Switch, createResource } from 'frappe-ui'
+import { Dialog, Switch, call, createResource } from 'frappe-ui'
 import { computed, ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -106,6 +106,12 @@ const { document: deal, triggerOnBeforeCreate } = useDocument('CRM Deal')
 
 const hasOrganizationSections = ref(true)
 const hasContactSections = ref(true)
+
+// A site can expose its ERPNext Customer on the Deal under any fieldname, so the
+// field is found by shape - the Link that points at Customer - instead of by a
+// hardcoded name. Null when the site has no such field, which leaves the dialog
+// behaving exactly as it did before.
+const customerField = ref(null)
 
 const isDealCreating = ref(false)
 const chooseExistingContact = ref(false)
@@ -136,6 +142,10 @@ const tabs = createResource({
             hasContactSections.value = true
           }
           column.fields.forEach((field) => {
+            if (field.fieldtype === 'Link' && field.options === 'Customer') {
+              customerField.value = field.fieldname
+            }
+
             if (field.fieldname == 'status') {
               field.fieldtype = 'Select'
               field.options = dealStatuses.value
@@ -171,6 +181,55 @@ watch(
   },
   { immediate: true },
 )
+
+// Picking an existing Customer should answer the Organization and Contact
+// questions rather than ask them again: ERPNext already knows both.
+watch(
+  () => (customerField.value ? deal.doc[customerField.value] : null),
+  async (customer) => {
+    if (!customer) return
+
+    const defaults = await call(
+      'crm.fcrm.doctype.erpnext_crm_settings.party.get_deal_defaults_from_customer',
+      { customer },
+    )
+    if (defaults && Object.keys(defaults).length) applyCustomerDefaults(defaults)
+  },
+)
+
+function applyCustomerDefaults(defaults) {
+  // Fill only what is still blank, so a Customer picked after some typing never
+  // overwrites what the user entered by hand.
+  const fillEmpty = (fields) => {
+    for (const field of fields) {
+      if (defaults[field] && !deal.doc[field]) deal.doc[field] = defaults[field]
+    }
+  }
+
+  fillEmpty(['organization_name', 'website', 'territory', 'industry', 'currency'])
+
+  // An Organization that already exists is linked outright. Without one, the
+  // organization_name above seeds it when the Deal is created.
+  if (defaults.organization) {
+    deal.doc.organization = defaults.organization
+    chooseExistingOrganization.value = true
+  }
+
+  const contact = defaults.contact || (defaults.contacts || [])[0]
+  if (contact) {
+    deal.doc.contact = contact
+    chooseExistingContact.value = true
+  } else {
+    fillEmpty([
+      'salutation',
+      'first_name',
+      'last_name',
+      'email',
+      'mobile_no',
+      'gender',
+    ])
+  }
+}
 
 const dealStatuses = computed(() => statusOptions('deal'))
 
